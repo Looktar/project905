@@ -155,6 +155,12 @@ for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListe
   save(); applyTexts();
 });
 
+// accidental-touch guards (M1b): iOS Safari ignores user-scalable=no, so block pinch / double-tap zoom
+// and the long-press menu explicitly; one-finger scrolling inside panels keeps working
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+addEventListener('contextmenu', (e) => e.preventDefault());
 initTouch(app, $('joy'), $('knob'), [[$('bA'), 'a'], [$('bB'), 'b'], [$('bC'), 'c']]);
 if (isTouch) document.body.classList.add('touch');
 
