@@ -57,6 +57,24 @@ const TFS = `#version 300 es
 precision highp float; in vec2 vU; uniform sampler2D uT; uniform vec3 uE; out vec4 o;
 void main(){ vec4 c=texture(uT,vU); if(c.a<0.4) discard; o=vec4(c.rgb,1.0); }`;
 
+// tilt-shift "miniature" depth of field (spec 4): sharp band around the player, blur toward top/bottom
+const PVS = `#version 300 es
+out vec2 vU;
+void main(){ vec2 p = vec2((gl_VertexID<<1)&2, gl_VertexID&2); vU = p; gl_Position = vec4(p*2.0-1.0, 0.0, 1.0); }`;
+const PFS = `#version 300 es
+precision highp float; in vec2 vU; uniform sampler2D uT; uniform vec2 uPx; uniform float uFocus, uBand, uMaxR; out vec4 o;
+void main(){
+  vec3 c = texture(uT, vU).rgb;
+  float k = smoothstep(uBand, uBand + 0.32, abs(vU.y - uFocus));
+  if (k < 0.02) { o = vec4(c, 1.0); return; }
+  vec3 acc = c; float r = k * uMaxR;
+  for (int i = 0; i < 16; i++) {
+    float f = float(i) + 0.5, a = f * 2.39996;
+    acc += texture(uT, vU + vec2(cos(a), sin(a)) * sqrt(f / 16.0) * r * uPx).rgb;
+  }
+  o = vec4(acc / 17.0, 1.0);
+}`;
+
 export const INST_FLOATS = 22;
 
 export class Renderer {
@@ -67,9 +85,12 @@ export class Renderer {
     this.pMain = this.prog(VS, FS);
     this.pDepth = this.prog(DVS, DFS);
     this.pSign = this.prog(TVS, TFS);
+    this.pPost = this.prog(PVS, PFS);
+    this.post = null;      // offscreen MSAA target while tilt-shift is on
+    this.tiltShift = false;
     this.u = {};
-    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar', 'uAlpha', 'uSil']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']]])
-      for (const n of names) this.u[p === this.pMain ? n : (p === this.pDepth ? 'd' : 's') + n] = gl.getUniformLocation(p, n);
+    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar', 'uAlpha', 'uSil']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']], [this.pPost, ['uT', 'uPx', 'uFocus', 'uBand', 'uMaxR']]])
+      for (const n of names) this.u[p === this.pMain ? n : (p === this.pDepth ? 'd' : p === this.pSign ? 's' : 'p') + n] = gl.getUniformLocation(p, n);
     this.shadowSize = 2048;
     this.initShadow(this.shadowSize);
     this.lightDir = (() => { const v = [0.62, 1.0, -0.5]; const l = Math.hypot(...v); return v.map((x) => x / l); })();
@@ -218,6 +239,57 @@ export class Renderer {
     gl.bindVertexArray(null);
     return { vao, tex, count: quads.p.length / 3 };
   }
+  // ---- post (tilt-shift) ----
+  _postTargets() {
+    const gl = this.gl, W = this.canvas.width, H = this.canvas.height;
+    if (this.post && this.post.w === W && this.post.h === H) return this.post;
+    this._freePost();
+    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES));
+    const ms = gl.createFramebuffer(), col = gl.createRenderbuffer(), dep = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, col); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, W, H);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, dep); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.DEPTH24_STENCIL8, W, H);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ms);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, col);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, dep);
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const res = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, res);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.post = { w: W, h: H, ms, col, dep, tex, res };
+    if (!ok) { this._freePost(); this.tiltShift = false; }
+    return this.post;
+  }
+  _freePost() {
+    const gl = this.gl, p = this.post;
+    if (!p) return;
+    gl.deleteFramebuffer(p.ms); gl.deleteFramebuffer(p.res); gl.deleteRenderbuffer(p.col); gl.deleteRenderbuffer(p.dep); gl.deleteTexture(p.tex);
+    this.post = null;
+  }
+  // resolve the MSAA scene and draw it to the screen with the tilt-shift blur; focus = screen y (0 top .. 1 bottom)
+  endFrame(focus, opts) {
+    if (!this.tiltShift || !this.post) return;
+    const gl = this.gl, p = this.post;
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, p.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, p.res);
+    gl.blitFramebuffer(0, 0, p.w, p.h, 0, 0, p.w, p.h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, p.w, p.h);
+    gl.disable(gl.DEPTH_TEST);
+    gl.useProgram(this.pPost);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, p.tex);
+    gl.uniform1i(this.u.puT, 2);
+    gl.uniform2f(this.u.puPx, 1 / p.w, 1 / p.h);
+    gl.uniform1f(this.u.puFocus, 1 - focus);
+    gl.uniform1f(this.u.puBand, opts.band);
+    gl.uniform1f(this.u.puMaxR, opts.maxR * (p.h / 900));
+    gl.bindVertexArray(null);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.enable(gl.DEPTH_TEST);
+    this.stats.calls++;
+  }
   // ---- frame ----
   resize(w, h) { this.canvas.width = w; this.canvas.height = h; }
   begin(camEye, camTarget, fov, focus, shadowRadius) {
@@ -252,6 +324,8 @@ export class Renderer {
   }
   mainPass(drawFn, fogNear, fogFar) {
     const gl = this.gl;
+    if (this.tiltShift) this._postTargets(); else if (this.post) this._freePost();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tiltShift && this.post ? this.post.ms : null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(this.fog[0], this.fog[1], this.fog[2], 1);
     gl.clearStencil(0);

@@ -21,6 +21,7 @@ const settings = {
   mute: !!store.mute,
   mini: store.mini !== false,                       // minimap expanded
   shadows: store.shadows !== false,
+  tilt: typeof store.tilt === 'boolean' ? store.tilt : !isTouch, // miniature tilt-shift blur (spec 4: off on phones by default)
   res: DPR[store.res] ? store.res : Q.defaultRes[isTouch ? 'touch' : 'desktop'], // pixel-ratio level: low / mid / high
   manualQ: !!store.manualQ,                         // graphics picked by hand: no auto-lowering
 };
@@ -40,7 +41,7 @@ function applyTexts() {
   $('credit').textContent = t('credit');
   for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
   $('muteBtn').textContent = settings.mute ? '🔇' : '🔊';
-  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', res: settings.res };
+  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', res: settings.res };
   for (const seg of document.querySelectorAll('.seg[data-key]'))
     for (const b of seg.children) b.classList.toggle('on', b.dataset.v === cur[seg.dataset.key]);
   if (game) game.hud.setMode(!!game.inCar); else ['bA', 'bB', 'bC'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run'][i])));
@@ -61,13 +62,15 @@ function resize() {
 function applyQuality() {
   if (!renderer) return;
   renderer.shadowsOn = settings.shadows;
+  renderer.tiltShift = settings.tilt;
   const size = isTouch ? Q.shadowMap.touch : Q.shadowMap.desktop;
   if (renderer.shadowSize !== size) renderer.initShadow(size);
   resize();
 }
-// one step down when the frame rate stays low: sharp -> normal resolution, then shadows off, then saver
+// one step down when the frame rate stays low: tilt-shift off, sharp -> normal resolution, shadows off, saver
 function lowerQuality() {
-  if (settings.res === 'high') settings.res = 'mid';
+  if (settings.tilt) settings.tilt = false;
+  else if (settings.res === 'high') settings.res = 'mid';
   else if (settings.shadows) settings.shadows = false;
   else if (settings.res === 'mid') settings.res = 'low';
   else return false;
@@ -147,6 +150,7 @@ for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListe
   if (k === 'sound') settings.mute = v === 'off';
   if (k === 'mini') { settings.mini = v === 'open'; if (hud) hud.setMiniOpen(settings.mini); }
   if (k === 'shadows') { settings.shadows = v === 'on'; settings.manualQ = true; applyQuality(); }
+  if (k === 'tilt') { settings.tilt = v === 'on'; settings.manualQ = true; applyQuality(); }
   if (k === 'res') { settings.res = v; settings.manualQ = true; applyQuality(); }
   save(); applyTexts();
 });
@@ -275,6 +279,9 @@ function render(target, dist, dt) {
     if (fade) renderer.fadePass(fade.list);
   }, CFG.world.fogNear * (dist / 50), CFG.world.fogFar * (dist / 50));
   renderer.drawSigns(world.signs);
+  // tilt-shift: keep the band around the player sharp
+  const fp = game ? renderer.project([game.playerPos().x, 1, game.playerPos().z]) : null;
+  renderer.endFrame(fp ? Math.min(0.8, Math.max(0.2, fp[1])) : 0.5, CFG.post);
 }
 
 boot();
