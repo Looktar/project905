@@ -63,6 +63,21 @@ body.touch .btn{display:flex}
 #loading{color:#2d3a55;font-weight:700}
 #langBtn{position:absolute;top:14px;right:14px}
 #dbg{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);color:#fff;font:12px monospace;text-shadow:0 1px 2px #000;z-index:30}
+#banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
+.modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
+.modal.show{display:flex}
+.card{background:#fff;color:#2d3a55;border-radius:22px;box-shadow:0 6px 0 rgba(30,40,70,.3);padding:12px 18px 14px;width:min(460px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.card h2{margin:0 0 8px;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card .x{background:#eef1f6;color:#2d3a55;border:none;border-radius:999px;width:34px;height:34px;font:900 16px inherit;font-family:inherit;cursor:pointer;flex:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-top:2px solid #eef1f6;font-weight:800;font-size:15px}
+.seg{display:flex;background:#eef1f6;border-radius:999px;padding:3px;gap:2px;flex:none}
+.seg button{border:none;background:none;color:#5b6782;font:800 14px inherit;font-family:inherit;padding:5px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:#ff6b4a;color:#fff;box-shadow:0 2px 0 rgba(30,40,70,.2)}
+.card .wide{display:block;width:100%;margin-top:8px;text-align:center}
+.credits p{margin:6px 0;font-size:14px;line-height:1.45;font-weight:600}
+.credits b{font-weight:900}
+.credits a{color:#2563eb}
+#titleCredits{position:absolute;top:14px;left:14px}
 </style>
 </head>
 <body>
@@ -72,7 +87,7 @@ body.touch .btn{display:flex}
     <canvas id="mini" width="180" height="180"></canvas>
     <div id="street"></div>
     <div id="hp"><span>♥</span><div class="bar"><i id="hpfill"></i></div></div>
-    <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="qBtn" class="ui"></button></div>
+    <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="setBtn" class="ui">⚙</button></div>
     <div id="banner"></div>
     <div id="meter"><i></i></div>
     <div id="bubbles"></div>
@@ -82,6 +97,7 @@ body.touch .btn{display:flex}
   </div>
   <div id="title">
     <button id="langBtn" class="ui"></button>
+    <button id="titleCredits" class="ui" data-t="credits"></button>
     <h1>Project 905</h1>
     <div id="subtitle"></div>
     <div id="tagline"></div>
@@ -89,6 +105,28 @@ body.touch .btn{display:flex}
     <div id="loading"></div>
     <div id="controls"></div>
     <div id="credit"></div>
+  </div>
+  <div id="settings" class="modal">
+    <div class="card">
+      <h2><span data-t="settings"></span><button class="x" data-close="settings">✕</button></h2>
+      <div class="row"><span data-t="language"></span><div class="seg" data-key="lang"><button data-v="zh">中文</button><button data-v="en">English</button></div></div>
+      <div class="row"><span data-t="sound"></span><div class="seg" data-key="sound"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
+      <div class="row"><span data-t="minimap"></span><div class="seg" data-key="mini"><button data-v="open" data-t="expanded"></button><button data-v="small" data-t="collapsed"></button></div></div>
+      <div class="row"><span data-t="shadows"></span><div class="seg" data-key="shadows"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
+      <div class="row"><span data-t="resolution"></span><div class="seg" data-key="res"><button data-v="low" data-t="resLow"></button><button data-v="mid" data-t="resMid"></button><button data-v="high" data-t="resHigh"></button></div></div>
+      <button class="ui wide" id="openCredits" data-t="credits"></button>
+    </div>
+  </div>
+  <div id="credits" class="modal">
+    <div class="card credits">
+      <h2><span>Project 905 · <span data-t="subtitle"></span></span><button class="x" data-close="credits">✕</button></h2>
+      <p><b data-t="cProducer"></b> looktar</p>
+      <p><b data-t="cDev"></b> <span data-t="cDevText"></span></p>
+      <p><b data-t="cMap"></b> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <span data-t="cMapText"></span></p>
+      <p><b data-t="cArt"></b> <span data-t="cArtText"></span></p>
+      <p data-t="cDisclaimer"></p>
+      <p style="opacity:.6">v0.1</p>
+    </div>
   </div>
   <div id="dbg"></div>
 </div>

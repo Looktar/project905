@@ -12,8 +12,9 @@ export class HUD {
     this.bannerEl = this.el('banner'); this.bustEl = this.el('bust'); this.meter = this.el('meter');
     this.lastStreet = '';
     this.miniOpen = true;
-    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.miniOpen = !this.miniOpen; this.mini.classList.toggle('small', !this.miniOpen); });
+    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.setMiniOpen(!this.miniOpen); if (this.onMiniToggle) this.onMiniToggle(this.miniOpen); });
   }
+  setMiniOpen(open) { this.miniOpen = open; this.mini.classList.toggle('small', !open); }
   setWorld(world) { this.world = world; }
   bubble(text, pos, cls = '') {
     const d = document.createElement('div');

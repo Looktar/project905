@@ -14,9 +14,19 @@ const $ = (id) => document.getElementById(id);
 
 // ---------------- settings (persisted)
 const store = (() => { try { return JSON.parse(localStorage.getItem('p905') || '{}'); } catch (e) { return {}; } })();
-const settings = { lang: store.lang || getLang(), mute: !!store.mute, quality: store.quality || (isTouch ? 'low' : 'high') };
+const Q = CFG.quality;
+const DPR = isTouch ? Q.dpr.touch : Q.dpr.desktop;
+const settings = {
+  lang: store.lang || getLang(),
+  mute: !!store.mute,
+  mini: store.mini !== false,                       // minimap expanded
+  shadows: store.shadows !== false,
+  res: DPR[store.res] ? store.res : Q.defaultRes[isTouch ? 'touch' : 'desktop'], // pixel-ratio level: low / mid / high
+  manualQ: !!store.manualQ,                         // graphics picked by hand: no auto-lowering
+};
 const save = () => { try { localStorage.setItem('p905', JSON.stringify(settings)); } catch (e) { /* private mode */ } };
 setLang(settings.lang); sfx.setMuted(settings.mute);
+const autoQ = !/noauto=1/.test(location.search);    // ?noauto=1 keeps graphics fixed (benchmarks, screenshots)
 
 function applyTexts() {
   document.documentElement.lang = settings.lang === 'zh' ? 'zh-CN' : 'en';
@@ -26,8 +36,11 @@ function applyTexts() {
   $('langBtn').textContent = t('lang');
   $('controls').textContent = isTouch ? t('controlsMobile') : t('controlsPC');
   $('credit').textContent = t('credit');
+  for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
   $('muteBtn').textContent = settings.mute ? '🔇' : '🔊';
-  $('qBtn').textContent = t('quality') + (settings.lang === 'zh' ? '：' : ': ') + t(settings.quality);
+  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', res: settings.res };
+  for (const seg of document.querySelectorAll('.seg[data-key]'))
+    for (const b of seg.children) b.classList.toggle('on', b.dataset.v === cur[seg.dataset.key]);
   if (game) game.hud.setMode(!!game.inCar); else ['bA', 'bB', 'bC'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run'][i])));
 }
 
@@ -36,8 +49,7 @@ let renderer, world, game, hud;
 let W = 0, H = 0;
 function resize() {
   [W, H] = layout(app);
-  const dprMax = settings.quality === 'high' ? 2 : isTouch ? 1.25 : 1.25;
-  const dpr = Math.min(window.devicePixelRatio || 1, dprMax);
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR[settings.res]);
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   if (renderer) renderer.resize(Math.round(W * dpr), Math.round(H * dpr));
   const mini = $('mini'), ms = Math.round(Math.min(W, H) * 0.26);
@@ -46,10 +58,18 @@ function resize() {
 }
 function applyQuality() {
   if (!renderer) return;
-  const hi = settings.quality === 'high';
-  renderer.shadowsOn = true;
-  renderer.initShadow(hi ? 2048 : 1024);
+  renderer.shadowsOn = settings.shadows;
+  const size = isTouch ? Q.shadowMap.touch : Q.shadowMap.desktop;
+  if (renderer.shadowSize !== size) renderer.initShadow(size);
   resize();
+}
+// one step down when the frame rate stays low: sharp -> normal resolution, then shadows off, then saver
+function lowerQuality() {
+  if (settings.res === 'high') settings.res = 'mid';
+  else if (settings.shadows) settings.shadows = false;
+  else if (settings.res === 'mid') settings.res = 'low';
+  else return false;
+  return true;
 }
 addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 200));
@@ -68,6 +88,8 @@ async function boot() {
   const res = await fetch('maps/markham.json');
   const map = await res.json();
   hud = new HUD(app);
+  hud.setMiniOpen(settings.mini);
+  hud.onMiniToggle = (open) => { settings.mini = open; save(); applyTexts(); };
   world = new World(renderer, map);
   hud.setWorld(world);
   $('loading').style.display = 'none';
@@ -94,7 +116,37 @@ $('startBtn').addEventListener('click', async () => {
 });
 $('langBtn').addEventListener('click', () => { settings.lang = settings.lang === 'zh' ? 'en' : 'zh'; setLang(settings.lang); save(); applyTexts(); });
 $('muteBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); settings.mute = !settings.mute; sfx.setMuted(settings.mute); save(); applyTexts(); });
-$('qBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); settings.quality = settings.quality === 'high' ? 'low' : 'high'; save(); applyQuality(); applyTexts(); });
+
+// ---------------- settings + credits panels (spec 5.6, M4)
+let paused = false; // the game pauses while a panel is open
+const anyModal = () => !!document.querySelector('.modal.show');
+function openModal(id) { $(id).classList.add('show'); paused = true; sfx.setMuted(true); }
+function closeModal(id) { $(id).classList.remove('show'); paused = anyModal(); if (!paused) sfx.setMuted(settings.mute); }
+for (const m of document.querySelectorAll('.modal')) {
+  m.addEventListener('pointerdown', (e) => e.stopPropagation()); // never start the joystick under a panel
+  m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
+}
+for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModal(b.dataset.close));
+$('setBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
+$('setBtn').addEventListener('click', () => openModal('settings'));
+$('openCredits').addEventListener('click', () => openModal('credits'));
+$('titleCredits').addEventListener('click', () => openModal('credits'));
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape') return;
+  if (anyModal()) for (const m of document.querySelectorAll('.modal.show')) closeModal(m.id);
+  else if (game) openModal('settings');
+});
+for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const v = b.dataset.v, k = seg.dataset.key;
+  if (k === 'lang') { settings.lang = v; setLang(v); }
+  if (k === 'sound') settings.mute = v === 'off';
+  if (k === 'mini') { settings.mini = v === 'open'; if (hud) hud.setMiniOpen(settings.mini); }
+  if (k === 'shadows') { settings.shadows = v === 'on'; settings.manualQ = true; applyQuality(); }
+  if (k === 'res') { settings.res = v; settings.manualQ = true; applyQuality(); }
+  save(); applyTexts();
+});
 
 initTouch(app, $('joy'), $('knob'), [[$('bA'), 'a'], [$('bB'), 'b'], [$('bC'), 'c']]);
 if (isTouch) document.body.classList.add('touch');
@@ -109,16 +161,16 @@ function loop(now) {
   fpsAcc += raw; fpsN++;
   const cpu0 = performance.now();
   if (fpsAcc > 1) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
-    // auto-lower quality on slow devices
-    if (game && fps < 26) {
+    // auto-lower quality on slow devices (spec 5.6), unless the player chose graphics by hand
+    if (game && autoQ && !settings.manualQ && !paused && fps < Q.autoFps) {
       lowFpsT++;
-      if (lowFpsT >= 4) { lowFpsT = 0; if (settings.quality === 'high') { settings.quality = 'low'; applyQuality(); applyTexts(); } else if (fps < 22) renderer.shadowsOn = false; }
+      if (lowFpsT >= 4) { lowFpsT = 0; if (lowerQuality()) { applyQuality(); save(); applyTexts(); hud.banner(t('autoLowered'), 'blue'); } }
     } else lowFpsT = 0;
   }
   poll(game && !!game.inCar);
   let target, dist, car = null;
   if (game) {
-    game.update(dt);
+    if (!paused) game.update(dt);
     const P = game.playerPos();
     car = game.inCar;
     const lead = car ? 0.55 : 0.25;
