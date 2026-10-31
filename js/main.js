@@ -172,7 +172,7 @@ function render(target, dist) {
   const shadowVis = vis.filter((c) => Math.hypot(c.cx - target[0], c.cz - target[2]) < shR + 70);
   if (game) game.fillBatches();
   const dyn = game ? Object.values(game.B) : [];
-  const drawChunks = (list) => { for (const c of list) { renderer.draw(c.static); renderer.draw(c.houseInst); renderer.draw(c.treeInst); renderer.draw(c.lampInst); renderer.draw(c.carInst); } };
+  const drawChunks = (list) => { for (const c of list) { renderer.draw(c.static); for (const m of c.inst) renderer.draw(m); } };
   renderer.shadowPass(() => { drawChunks(shadowVis); for (const b of dyn) renderer.draw(b); });
   renderer.mainPass(() => { renderer.draw(world.ground); drawChunks(vis); for (const b of dyn) renderer.draw(b); }, CFG.world.fogNear * (dist / 50), CFG.world.fogFar * (dist / 50));
   renderer.drawSigns(world.signs);

@@ -41,4 +41,13 @@ export const CFG = {
   bus: { count: 2, speed: 9 },
   minimap: { pxPerM: 0.5, radiusM: 170 },
   world: { viewRadius: 210, fogNear: 150, fogFar: 300 },
+  // ---- v0.1 work-package sections (one block each, kept apart to ease merges)
+  // input: touch / forced-landscape
+  input: { rotateDir: 1 },
+  // signals: traffic lights
+  signals: {},
+  // props: street furniture + landmarks
+  props: {},
+  // occlusion: buildings fade when they hide the player
+  occlusion: {},
 };

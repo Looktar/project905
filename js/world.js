@@ -460,6 +460,8 @@ export class World {
         c.lotCars.forEach((l, i) => { writeTRS(d, i * INST_FLOATS, l[0], 0, l[1], l[2], 1, 1, 1); d.set(carCols[l[3]], i * INST_FLOATS + 16); d.set(carCols[l[3]], i * INST_FLOATS + 19); });
         c.carInst = this.r.instanced(carMB, 0, d);
       }
+      // every per-chunk instanced mesh goes into c.inst (drawn in both passes by main.js)
+      c.inst = [c.houseInst, c.treeInst, c.lampInst, c.carInst].filter(Boolean);
       c.houses = c.trees = c.lamps = c.lotCars = null;
     }
     // ground plane tiles (large flat quads, one per chunk area incl. outside border)
