@@ -154,7 +154,7 @@ export class World {
     const C = 16; this.cc = C; this.cg = new Map();
     this.colliders = [];
     const addPoly = (poly, kind) => this.addCollider(poly, kind);
-    for (const b of this.map.buildings) addPoly(b.p, 'b');
+    this.map.buildings.forEach((b, i) => { this.colliders[addPoly(b.p, 'b')].bi = i; });
     for (const h of this.map.houses) {
       const [x, z, a, w, d] = h;
       const c = Math.cos(a), s = Math.sin(a), hw = w / 2, hd = d / 2;
@@ -176,12 +176,14 @@ export class World {
     const xs = poly.map((p) => p[0]), zs = poly.map((p) => p[1]);
     const c = { poly, kind, x0: Math.min(...xs), z0: Math.min(...zs), x1: Math.max(...xs), z1: Math.max(...zs) };
     const id = this.colliders.push(c) - 1;
+    c.id = id;
     for (let i = Math.floor(c.x0 / C); i <= Math.floor(c.x1 / C); i++)
       for (let j = Math.floor(c.z0 / C); j <= Math.floor(c.z1 / C); j++) {
         const k = i + ',' + j;
         if (!this.cg.has(k)) this.cg.set(k, []);
         this.cg.get(k).push(id);
       }
+    return id;
   }
   query(x0, z0, x1, z1) {
     const C = this.cc, out = new Set();
@@ -344,8 +346,11 @@ export class World {
         }
       }
     // OSM buildings
+    this.bRange = [];
+    this.fade = new Map(); // building index -> current alpha (occlusion fade)
     for (const b of m.buildings) {
       const c = this.chunk(...centroid(b.p));
+      const v0 = c.mb.count;
       const wc = hex(b.c);
       const rc = [wc[0] * 0.82 + 0.1, wc[1] * 0.82 + 0.1, wc[2] * 0.82 + 0.12];
       extrude(c.mb, b.p, b.t, b.h, wc, rc);
@@ -357,6 +362,7 @@ export class World {
         const [cx, cz] = centroid(b.p);
         for (let i = 0; i < 3; i++) c.mb.add(rbox(2.4, 1.2, 2.4, 0.2), M.T(cx + (i - 1) * 4, b.h + 0.6, cz + (i % 2) * 3), '#c9ced8');
       }
+      this.bRange.push([c, v0, c.mb.count]);
     }
     // landmarks
     for (const lm of m.landmarks) this.buildLandmark(lm);
@@ -558,6 +564,48 @@ export class World {
     });
     this.signs = this.r.signMesh({ p: P, u: U }, cv);
   }
+  // ---------------------------------------------------------------- occlusion fade
+  // Buildings standing between the camera and the player fade out (spec 4).
+  // Returns indices of buildings whose prism cuts the segment from (x, y, z) to the eye for any y in ys.
+  occluders(eye, x, z, ys) {
+    const out = new Set(), maxH = CFG.occlusion.maxH;
+    for (const y0 of ys) {
+      const dy = eye[1] - y0;
+      if (dy <= 0) continue;
+      // past tMax the ray is above every roof, so only that stretch of the ground projection matters
+      const tMax = Math.min(1, (maxH - y0) / dy);
+      const ex = x + (eye[0] - x) * tMax, ez = z + (eye[2] - z) * tMax;
+      for (const id of this.query(Math.min(x, ex), Math.min(z, ez), Math.max(x, ex), Math.max(z, ez))) {
+        const c = this.colliders[id];
+        if (c.bi === undefined || out.has(c.bi)) continue;
+        const t = segPolyEntry(x, z, ex, ez, c.poly);
+        if (t >= 0 && y0 + dy * tMax * t < this.map.buildings[c.bi].h) out.add(c.bi);
+      }
+    }
+    return out;
+  }
+  // animate fade alphas; returns { skip: Map(chunk -> sorted [[s, e]]), list: [{ m, s, e, a }] }
+  updateFade(eye, P, dt) {
+    const O = CFG.occlusion;
+    const hit = this.occluders(eye, P.x, P.z, O.sampleY);
+    for (const bi of hit) if (!this.fade.has(bi)) this.fade.set(bi, 1);
+    const k = 1 - Math.exp(-O.speed * dt);
+    const skip = new Map(), list = [];
+    for (const [bi, a] of this.fade) {
+      const want = hit.has(bi) ? O.alpha : 1;
+      const na = a + (want - a) * k;
+      if (want === 1 && na > 0.98) { this.fade.delete(bi); continue; }
+      this.fade.set(bi, na);
+      const [c, s, e] = this.bRange[bi];
+      if (!c.static) continue;
+      if (!skip.has(c)) skip.set(c, []);
+      skip.get(c).push([s, e]);
+      list.push({ m: c.static, s, e, a: na });
+    }
+    for (const r of skip.values()) r.sort((p, q) => p[0] - q[0]);
+    return { skip, list };
+  }
+
   // ---------------------------------------------------------------- minimap image
   buildMinimap() {
     const S = CFG.minimap.pxPerM;
@@ -616,6 +664,20 @@ function pip(x, z, p) {
     if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi + 1e-12) + xi) inside = !inside;
   }
   return inside;
+}
+// parameter t in [0,1] where segment a->b first enters polygon (0 if a is inside), -1 if it never does
+function segPolyEntry(ax, az, bx, bz, poly) {
+  if (pip(ax, az, poly)) return 0;
+  const rx = bx - ax, rz = bz - az;
+  let best = -1;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [cx, cz] = poly[j], [dx, dz] = poly[i];
+    const sx = dx - cx, sz = dz - cz, den = rx * sz - rz * sx;
+    if (Math.abs(den) < 1e-9) continue;
+    const t = ((cx - ax) * sz - (cz - az) * sx) / den, u = ((cx - ax) * rz - (cz - az) * rx) / den;
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && (best < 0 || t < best)) best = t;
+  }
+  return best;
 }
 function centroid(p) { let x = 0, z = 0; for (const q of p) { x += q[0]; z += q[1]; } return [x / p.length, z / p.length]; }
 function polyArea(p) { let s = 0; for (let i = 0; i < p.length; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % p.length]; s += x1 * z2 - x2 * z1; } return s / 2; }

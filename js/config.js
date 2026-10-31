@@ -49,5 +49,5 @@ export const CFG = {
   // props: street furniture + landmarks
   props: {},
   // occlusion: buildings fade when they hide the player
-  occlusion: {},
+  occlusion: { alpha: 0.32, speed: 9, maxH: 50, sampleY: [0.9, 2.4], silhouette: [0.45, 0.88, 1.0, 0.9] },
 };

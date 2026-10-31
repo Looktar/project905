@@ -781,10 +781,14 @@ export class Game {
   // ------------------------------------------------------------------ render
   fillBatches() {
     for (const b of Object.values(this.B)) b.n = 0;
+    // the player (or the car they drive) goes first in every batch: instances [0, pk) are "the player",
+    // which lets the renderer draw an x-ray silhouette of just them (spec 4)
+    if (this.inCar) this.drawCar(this.inCar); else if (!this.player.hidden) this.drawChar(this.player);
+    for (const b of Object.values(this.B)) b.pk = b.n;
     const P = this.playerPos();
     const R = 120;
-    for (const c of this.chars) if (!c.hidden && Math.abs(c.x - P.x) < R && Math.abs(c.z - P.z) < R) this.drawChar(c);
-    for (const car of this.cars) if (Math.abs(car.x - P.x) < R + 30 && Math.abs(car.z - P.z) < R + 30) this.drawCar(car);
+    for (const c of this.chars) if (c !== this.player && !c.hidden && Math.abs(c.x - P.x) < R && Math.abs(c.z - P.z) < R) this.drawChar(c);
+    for (const car of this.cars) if (car !== this.inCar && Math.abs(car.x - P.x) < R + 30 && Math.abs(car.z - P.z) < R + 30) this.drawCar(car);
     for (const b of this.buses) if (Math.abs(b.x - P.x) < R + 40 && Math.abs(b.z - P.z) < R + 40) {
       const m = M.chain(M.T(b.x, 0, b.z), M.RY(b.a));
       this.put(this.B.busBody, M.mul(m, M.T(0, 1.8, 0)), [0.15, 0.39, 0.92]);

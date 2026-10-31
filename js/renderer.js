@@ -19,7 +19,7 @@ void main(){
 const FS = `#version 300 es
 precision highp float; precision highp sampler2DShadow;
 in vec3 vN; in vec3 vCol; in float vEm; in vec4 vL; in vec3 vW;
-uniform sampler2DShadow uSh; uniform vec3 uL, uE, uFog; uniform float uShOn, uTexel, uFogNear, uFogFar;
+uniform sampler2DShadow uSh; uniform vec3 uL, uE, uFog; uniform float uShOn, uTexel, uFogNear, uFogFar, uAlpha; uniform vec4 uSil;
 out vec4 o;
 float sh(){
   if(uShOn<0.5) return 1.0;
@@ -31,6 +31,7 @@ float sh(){
 }
 void main(){
   vec3 n = normalize(vN); vec3 v = normalize(uE-vW); if(dot(n,v)<0.0) n=-n;
+  if(uSil.a>0.0){ float r=1.0-max(dot(n,v),0.0); o=vec4(uSil.rgb, uSil.a*(0.45+0.55*r)); return; }
   vec3 b = vCol; float s = sh(); float d = max(dot(n,uL),0.0);
   vec3 amb = mix(vec3(0.62,0.58,0.70), vec3(0.86,0.90,1.0), n.y*0.5+0.5);
   vec3 h = normalize(uL+v); float sp = pow(max(dot(n,h),0.0),40.0)*0.18*s;
@@ -39,7 +40,7 @@ void main(){
   col = mix(col, b*1.15, clamp(vEm,0.0,1.0));
   float dist = length(vW-uE);
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist)*0.85);
-  o = vec4(col,1.0);
+  o = vec4(col,uAlpha);
 }`;
 const DVS = `#version 300 es
 layout(location=0) in vec3 aP;
@@ -60,14 +61,14 @@ export const INST_FLOATS = 22;
 
 export class Renderer {
   constructor(canvas) {
-    const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
+    const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, stencil: true, powerPreference: 'high-performance' });
     if (!gl) throw new Error('WebGL2 not supported');
     this.gl = gl; this.canvas = canvas;
     this.pMain = this.prog(VS, FS);
     this.pDepth = this.prog(DVS, DFS);
     this.pSign = this.prog(TVS, TFS);
     this.u = {};
-    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']]])
+    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar', 'uAlpha', 'uSil']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']]])
       for (const n of names) this.u[p === this.pMain ? n : (p === this.pDepth ? 'd' : 's') + n] = gl.getUniformLocation(p, n);
     this.shadowSize = 2048;
     this.initShadow(this.shadowSize);
@@ -147,12 +148,59 @@ export class Renderer {
     gl.vertexAttrib3f(7, 1, 1, 1); gl.vertexAttrib3f(8, 1, 1, 1);
   }
   draw(m) {
-    if (!m) return;
+    if (!m || (!m.static && !m.n)) return;
     const gl = this.gl;
     gl.bindVertexArray(m.vao);
     if (m.static) { this._staticAttribs(); gl.drawArrays(gl.TRIANGLES, 0, m.count); }
     else if (m.n > 0) gl.drawArraysInstanced(gl.TRIANGLES, 0, m.count, m.n);
     this.stats.calls++;
+  }
+  // only the first k instances of an instanced mesh
+  drawFirst(m, k) {
+    if (!m || !k) return;
+    const gl = this.gl;
+    gl.bindVertexArray(m.vao);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, m.count, Math.min(k, m.n));
+    this.stats.calls++;
+  }
+  // static mesh, but leave out the vertex ranges in skip ([[start, end], ...] sorted)
+  drawSkipping(m, skip) {
+    if (!m) return;
+    const gl = this.gl;
+    gl.bindVertexArray(m.vao); this._staticAttribs();
+    let at = 0;
+    for (const [s, e] of skip) { if (s > at) { gl.drawArrays(gl.TRIANGLES, at, s - at); this.stats.calls++; } at = Math.max(at, e); }
+    if (at < m.count) { gl.drawArrays(gl.TRIANGLES, at, m.count - at); this.stats.calls++; }
+  }
+  // x-ray silhouette: draws only where the geometry is hidden behind what is already in the depth buffer.
+  // Call before drawing the same geometry normally (so it cannot hide itself); stencil keeps one layer.
+  silhouette(drawFn, col) {
+    const gl = this.gl;
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false); gl.depthFunc(gl.GREATER);
+    gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.EQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
+    gl.uniform4fv(this.u.uSil, col);
+    drawFn();
+    gl.uniform4f(this.u.uSil, 0, 0, 0, 0);
+    gl.disable(gl.STENCIL_TEST); gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND);
+  }
+  // semi-transparent static ranges: depth pre-pass, then blend only the front-most surface
+  fadePass(list) {
+    if (!list.length) return;
+    const gl = this.gl;
+    for (const f of list) {
+      const m = f.m; gl.bindVertexArray(m.vao); this._staticAttribs();
+      gl.colorMask(false, false, false, false);
+      gl.drawArrays(gl.TRIANGLES, f.s, f.e - f.s);
+      gl.colorMask(true, true, true, true);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false); gl.depthFunc(gl.LEQUAL);
+      gl.uniform1f(this.u.uAlpha, f.a);
+      gl.drawArrays(gl.TRIANGLES, f.s, f.e - f.s);
+      gl.uniform1f(this.u.uAlpha, 1);
+      gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND);
+      this.stats.calls += 2;
+    }
   }
   // ---- signs (billboard textured quads) ----
   signMesh(quads, canvasTex) {
@@ -206,8 +254,10 @@ export class Renderer {
     const gl = this.gl;
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(this.fog[0], this.fog[1], this.fog[2], 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clearStencil(0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     gl.useProgram(this.pMain);
+    gl.uniform1f(this.u.uAlpha, 1); gl.uniform4f(this.u.uSil, 0, 0, 0, 0);
     gl.uniformMatrix4fv(this.u.uVP, false, this.VP);
     gl.uniformMatrix4fv(this.u.uLVP, false, this.LVP);
     gl.uniform3fv(this.u.uL, this.lightDir);

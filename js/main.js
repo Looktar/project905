@@ -136,7 +136,7 @@ function loop(now) {
     dist = 70;
   }
   clearEdges();
-  render(target, dist);
+  render(target, dist, dt);
   hud.update(dt, game, renderer, W, H);
   cpuMs = cpuMs * 0.95 + (performance.now() - cpu0) * 0.05;
   if (debug) $('dbg').textContent = `${fps.toFixed(0)} fps · cpu ${cpuMs.toFixed(1)}ms · ${renderer.stats.calls} draws · ${game ? game.chars.length + ' chars ' + game.cars.length + ' cars' : ''}`;
@@ -160,7 +160,7 @@ function groundFootprint(eye, target, fov, aspect) {
 }
 function norm(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
 
-function render(target, dist) {
+function render(target, dist, dt) {
   const C = CFG.camera;
   const eye = [target[0] + Math.sin(C.azimuth) * Math.cos(C.elevation) * dist, Math.sin(C.elevation) * dist, target[2] + Math.cos(C.azimuth) * Math.cos(C.elevation) * dist];
   // the visible ground is shifted away from the camera; centre culling there
@@ -172,9 +172,24 @@ function render(target, dist) {
   const shadowVis = vis.filter((c) => Math.hypot(c.cx - target[0], c.cz - target[2]) < shR + 70);
   if (game) game.fillBatches();
   const dyn = game ? Object.values(game.B) : [];
-  const drawChunks = (list) => { for (const c of list) { renderer.draw(c.static); for (const m of c.inst) renderer.draw(m); } };
-  renderer.shadowPass(() => { drawChunks(shadowVis); for (const b of dyn) renderer.draw(b); });
-  renderer.mainPass(() => { renderer.draw(world.ground); drawChunks(vis); for (const b of dyn) renderer.draw(b); }, CFG.world.fogNear * (dist / 50), CFG.world.fogFar * (dist / 50));
+  // buildings between the camera and the player fade out; the player shows an x-ray silhouette when hidden
+  const fade = game ? world.updateFade(eye, game.playerPos(), dt) : null;
+  renderer.shadowPass(() => {
+    for (const c of shadowVis) { renderer.draw(c.static); for (const m of c.inst) renderer.draw(m); }
+    for (const b of dyn) renderer.draw(b);
+  });
+  renderer.mainPass(() => {
+    renderer.draw(world.ground);
+    for (const c of vis) {
+      const sk = fade && fade.skip.get(c);
+      if (sk) renderer.drawSkipping(c.static, sk); else renderer.draw(c.static);
+      for (const m of c.inst) renderer.draw(m);
+    }
+    // silhouette before any character is drawn: the player's first instances in each batch (see game.fillBatches)
+    if (game) renderer.silhouette(() => { for (const b of dyn) renderer.drawFirst(b, b.pk); }, CFG.occlusion.silhouette);
+    for (const b of dyn) renderer.draw(b);
+    if (fade) renderer.fadePass(fade.list);
+  }, CFG.world.fogNear * (dist / 50), CFG.world.fogFar * (dist / 50));
   renderer.drawSigns(world.signs);
 }
 
