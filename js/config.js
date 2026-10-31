@@ -25,7 +25,7 @@ export const CFG = {
     walk: 1.6, flee: 6.4, radius: 0.5,
     hp: [30, 120], power: [0.5, 2.0],
     temper: { timid: 0.5, normal: 0.35, angry: 0.13, master: 0.02 },
-    downTime: [8, 12], witness: 15,
+    downTime: [8, 12], witness: 15, crossRate: 0.015, crossSpeed: 1.25, crossMaxWait: 12,
   },
   traffic: {
     countDesktop: 16, countMobile: 11, parked: 8,

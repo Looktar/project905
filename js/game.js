@@ -333,6 +333,21 @@ export class Game {
     }
   }
 
+  // can someone walking at `speed` get from a to b before any approaching car or bus arrives?
+  roadClear(ax, az, bx, bz, speed) {
+    const need = Math.hypot(bx - ax, bz - az) / speed + 1.5;
+    const movers = [...this.cars, ...this.buses.filter((b) => b.moving).map((b) => ({ x: b.x, z: b.z, speed: CFG.bus.speed, vx: Math.sin(b.a), vz: Math.cos(b.a) }))];
+    for (const car of movers) {
+      const v = Math.abs(car.speed);
+      if (v < 1) continue;
+      const r = segDist(car.x, car.z, ax, az, bx, bz);
+      if (r.d > 90) continue;
+      if (r.d > 4 && (r.cx - car.x) * car.vx + (r.cz - car.z) * car.vz <= 0) continue; // moving away
+      if (r.d / v < need) return false;
+    }
+    return true;
+  }
+
   // ------------------------------------------------------------------ spawning
   spawnAround(initial = false) {
     const P = this.playerPos();
@@ -514,14 +529,31 @@ export class Game {
       c.speed = speed;
       return L;
     };
+    if (c.state === 'cross') {
+      // look both ways at the curb (give up waiting after a while), then walk over to the other sidewalk
+      const sp = PD.walk * PD.crossSpeed;
+      if (c.crossWait > 0) {
+        c.crossWait -= dt; c.speed = 0;
+        c.face += angDiff(c.face, Math.atan2(c.crossTo[0] - c.x, c.crossTo[1] - c.z)) * Math.min(1, 6 * dt);
+        if (c.crossWait > 0 && !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp)) return;
+        c.crossWait = 0;
+      }
+      if (moveTo(c.crossTo[0], c.crossTo[1], sp) < 0.4) { c.state = c.crossBack; c.crossTo = null; }
+      return;
+    }
     if (c.state === 'walk' || c.state === 'patrol') {
       if (!c.path) { c.state = 'wander'; return; }
+      // now and then cross a two-way street (spec 2.2): same spot, opposite direction = other sidewalk
+      if (!c.path.e.oneway && c.path.e.len > 20 && Math.random() < dt * PD.crossRate)
+        c.path = { e: c.path.e, s: c.path.e.len - c.path.s, dir: -c.path.dir };
       this.advancePath(c.path, PD.walk * dt, true);
       // on one-way carriageways (divided roads) only use the outer/curb side
       const pe = c.path.e, off = (pe.oneway ? c.path.dir : 1) * (pe.w / 2 + 1.7);
       const p = this.w.edgePoint(pe, c.path.s, c.path.dir, off);
       const dx = p.x - c.x, dz = p.z - c.z;
-      if (Math.hypot(dx, dz) > 6) { c.x = p.x; c.z = p.z; } else { c.x += dx * Math.min(1, 6 * dt); c.z += dz * Math.min(1, 6 * dt); }
+      // far from the path point (crossing, turning across a junction, dead-end turn-around): walk there, never snap
+      if (Math.hypot(dx, dz) > 6) { c.crossBack = c.state; c.state = 'cross'; c.crossTo = [p.x, p.z]; c.crossWait = PD.crossMaxWait; return; }
+      c.x += dx * Math.min(1, 6 * dt); c.z += dz * Math.min(1, 6 * dt);
       c.face += angDiff(c.face, Math.atan2(p.dx, p.dz)) * Math.min(1, 8 * dt);
       c.speed = PD.walk;
       return;
