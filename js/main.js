@@ -26,7 +26,9 @@ const settings = {
 };
 const save = () => { try { localStorage.setItem('p905', JSON.stringify(settings)); } catch (e) { /* private mode */ } };
 setLang(settings.lang); sfx.setMuted(settings.mute);
-const autoQ = !/noauto=1/.test(location.search);    // ?noauto=1 keeps graphics fixed (benchmarks, screenshots)
+// ?bench=1: baseline benchmark at the spawn (Hwy 7 x Kennedy, entities full), spec 7
+const bench = /bench=1/.test(location.search) ? { t: 0, frames: [], calls: 0, cpu: 0, n: 0, done: false } : null;
+const autoQ = !/noauto=1/.test(location.search) && !bench; // ?noauto=1 keeps graphics fixed (benchmarks, screenshots)
 
 function applyTexts() {
   document.documentElement.lang = settings.lang === 'zh' ? 'zh-CN' : 'en';
@@ -96,12 +98,13 @@ async function boot() {
   $('startBtn').disabled = false;
   // preview camera behind the title screen
   previewCam = map.spawn;
+  if (bench) startGame();
   requestAnimationFrame(loop);
 }
 let previewCam = null;
 
-$('startBtn').addEventListener('click', async () => {
-  sfx.unlock();
+$('startBtn').addEventListener('click', () => { sfx.unlock(); startGame(); });
+async function startGame() {
   $('title').classList.add('hide');
   $('hudwrap').classList.add('on');
   if (isTouch) {
@@ -113,7 +116,7 @@ $('startBtn').addEventListener('click', async () => {
   game = new Game(world, renderer, hud);
   window.__game = game; window.__input = input;
   applyTexts();
-});
+}
 $('langBtn').addEventListener('click', () => { settings.lang = settings.lang === 'zh' ? 'en' : 'zh'; setLang(settings.lang); save(); applyTexts(); });
 $('muteBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); settings.mute = !settings.mute; sfx.setMuted(settings.mute); save(); applyTexts(); });
 
@@ -190,8 +193,37 @@ function loop(now) {
   clearEdges();
   render(target, dist, dt);
   hud.update(dt, game, renderer, W, H);
-  cpuMs = cpuMs * 0.95 + (performance.now() - cpu0) * 0.05;
+  const cpuFrame = performance.now() - cpu0;
+  cpuMs = cpuMs * 0.95 + cpuFrame * 0.05;
+  if (bench && game && !bench.done) benchFrame(raw, cpuFrame);
   if (debug) $('dbg').textContent = `${fps.toFixed(0)} fps · cpu ${cpuMs.toFixed(1)}ms · ${renderer.stats.calls} draws · ${game ? game.chars.length + ' chars ' + game.cars.length + ' cars' : ''}`;
+}
+
+// ---------------- benchmark (?bench=1): warm up, then measure; results for the PROGRESS log
+function benchFrame(raw, cpuFrame) {
+  const B = CFG.bench;
+  bench.t += raw;
+  if (bench.t < B.warmup) return;
+  bench.frames.push(raw); bench.calls += renderer.stats.calls; bench.cpu += cpuFrame; bench.n++;
+  $('dbg').textContent = `bench ${Math.ceil(B.warmup + B.measure - bench.t)}s…`;
+  if (bench.t < B.warmup + B.measure) return;
+  bench.done = true;
+  $('dbg').textContent = '';
+  const f = bench.frames.slice().sort((a, b) => a - b), sum = f.reduce((a, b) => a + b, 0);
+  const r = {
+    fps: +(f.length / sum).toFixed(1),
+    low1: +(1 / f[Math.min(f.length - 1, Math.floor(f.length * 0.99))]).toFixed(1),
+    draws: Math.round(bench.calls / bench.n), cpu: +(bench.cpu / bench.n).toFixed(1),
+    chars: game.chars.length, cars: game.cars.length,
+    res: settings.res, shadows: settings.shadows, canvas: canvas.width + '×' + canvas.height,
+  };
+  window.__bench = r;
+  $('benchOut').textContent = [
+    `平均帧率 Avg FPS: ${r.fps}`, `最差 1% 1% low: ${r.low1} fps`, `Draw calls: ${r.draws}`, `CPU: ${r.cpu} ms/帧`,
+    `实体 Entities: ${r.chars} 人 / ${r.cars} 车`, `画质 Quality: ${r.res} · ${r.shadows ? '阴影开' : '阴影关'} · ${r.canvas}`,
+    navigator.userAgent.replace(/^Mozilla\/5.0 /, '').slice(0, 120),
+  ].join('\n');
+  $('benchRes').classList.add('show');
 }
 
 // rectangle of ground (y=0) covered by the camera frustum

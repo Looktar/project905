@@ -53,5 +53,6 @@ export const CFG = {
     dpr: { touch: { low: 1, mid: 1.25, high: 1.5 }, desktop: { low: 1, mid: 1.5, high: 2 } },  // spec 6.3: phones <= 1.5
     defaultRes: { touch: 'mid', desktop: 'high' }, shadowMap: { touch: 1024, desktop: 2048 }, autoFps: 26,
   },
+  bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   occlusion: { alpha: 0.32, speed: 9, maxH: 50, sampleY: [0.9, 2.4], silhouette: [0.45, 0.88, 1.0, 0.9] },
 };
