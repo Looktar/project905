@@ -1,0 +1,25 @@
+{
+  "name": "project905",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Markham toy-town sandbox. The game itself is zero-build static files; everything here is dev-only tooling (lint, tests, smoke).",
+  "scripts": {
+    "serve": "python3 -m http.server 8905",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "smoke": "node tests/e2e/smoke.mjs",
+    "map": "python3 tools/build_map.py",
+    "check:map": "python3 tools/build_map.py && git diff --exit-code maps/markham.json"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.13.0",
+    "playwright": "1.63.0",
+    "vitest": "^5.0.5"
+  }
+}
