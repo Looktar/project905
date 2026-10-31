@@ -63,6 +63,7 @@ body.touch .btn{display:flex}
 #loading{color:#2d3a55;font-weight:700}
 #langBtn{position:absolute;top:14px;right:14px}
 #dbg{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);color:#fff;font:12px monospace;text-shadow:0 1px 2px #000;z-index:30}
+#street small{margin-left:10px;font-size:.62em;font-weight:700;opacity:.65}
 #banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
 .modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
 .modal.show{display:flex}
@@ -85,7 +86,7 @@ body.touch .btn{display:flex}
   <canvas id="c"></canvas>
   <div id="hudwrap">
     <canvas id="mini" width="180" height="180"></canvas>
-    <div id="street"></div>
+    <div id="street"><span id="streetName"></span><small>万锦 Markham</small></div>
     <div id="hp"><span>♥</span><div class="bar"><i id="hpfill"></i></div></div>
     <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="setBtn" class="ui">⚙</button></div>
     <div id="banner"></div>
