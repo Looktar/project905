@@ -681,6 +681,19 @@ def tims_host(x, z, max_area, near=2.5):
             best = (dist, b)
     return best[1] if best else None
 
+# the camera always looks from the same direction (js/config.js camera.azimuth / elevation)
+CAM_DIR = (math.sin(0.55), math.cos(0.55))
+CAM_SLOPE = 0.85  # flatter than tan(elevation): rays to the upper part of the screen are flatter
+
+def hidden_from_camera(x, z, top):
+    """is a rooftop prop at height `top` hidden behind a taller building on the camera side?"""
+    for d in range(2, 42, 2):
+        px, pz = x + CAM_DIR[0] * d, z + CAM_DIR[1] * d
+        for b in occ.query((px, pz, px, pz)):
+            if b.get('h', 0) > top + d * CAM_SLOPE and point_in_poly(px, pz, b['p']):
+                return True
+    return False
+
 def tims_spot(x, z, rmax):
     """search rings around the OSM point for a free store footprint facing the nearest road"""
     best = None
@@ -699,8 +712,9 @@ def tims_spot(x, z, rmax):
                 poly = rect_poly(cx, cz, facing_road(cx, cz, nr), w, d)
                 if not spot_ok(poly, road_pad=1.2, occ_pad=1.0):
                     continue
-                # close to the real store, with street frontage, preferably not in a park
-                score = r + max(0, nr[0] - d / 2 - 12) * 1.5 + (12 if in_park(cx, cz) else 0)
+                # close to the real store, with street frontage, not in a park, visible from the camera
+                score = r + max(0, nr[0] - d / 2 - 12) * 1.5 + (12 if in_park(cx, cz) else 0) \
+                    + (25 if hidden_from_camera(cx, cz, 7) else 0)
                 if best is None or score < best[0]:
                     best = (score, cx, cz, poly)
                 if first is None:
@@ -733,10 +747,15 @@ tims_report = []
 for (x, z) in tims_pts + TIMS_FALLBACK:
     if any(math.hypot(x - a, z - b) < 30 for a, b in tims_done):
         continue
-    host = tims_host(x, z, 320)
+    # the store's own building (or the small plaza it sits in) is the most faithful spot
+    host = tims_host(x, z, 450)
     spot = None if host else tims_spot(x, z, 32)
-    if not host and not spot:
-        host = tims_host(x, z, 700, near=6)
+    if not host:
+        # a bigger building at the point beats a free lot spot that the camera cannot see
+        big = tims_host(x, z, 700, near=6)
+        if big and (not spot or (hidden_from_camera(spot[1], spot[2], 7)
+                                 and not hidden_from_camera(*centroid(big['p']), 7))):
+            host, spot = big, None
     if not host and not spot:
         spot = tims_spot(x, z, 75)
     if host:
@@ -935,8 +954,14 @@ if cin:
         h = prng.choice((26, 30, 34, 38, 42, 46))
         place_building(r2p(rect_poly(x, z, 0, w, d)), h, prng.choice(TOWER_COLS), 'tower')
         towers += 1
+    # landmark point = centre of the finished high-rise cluster (OSM + procedural towers)
+    tall = [(centroid(b['p']), b['h']) for b in buildings if b['h'] >= 20]
+    tall = [(c, h) for c, h in tall if math.hypot(c[0] - dx, c[1] - dz) < 200]
+    if tall:
+        dx = sum(c[0] * h for c, h in tall) / sum(h for _, h in tall)
+        dz = sum(c[1] * h for c, h in tall) / sum(h for _, h in tall)
     landmarks.append({'t': 'downtown', 'x': round(dx, 1), 'z': round(dz, 1)})
-    print('downtown towers added:', towers)
+    print('downtown towers added:', towers, 'cluster centre', round(dx), round(dz))
 
 # ---------------------------------------------------------------- Viva rapidway stations + bus stops
 def lane_clear(x, z):

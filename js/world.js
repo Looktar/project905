@@ -4,7 +4,7 @@ import { M, hex, segDist, rnd } from './math.js';
 import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, disc, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
-import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip } from './props.js';
+import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -381,6 +381,7 @@ export class World {
           if (!pip(x, z, poly)) continue;
           if (this.collide(x, z, 2.9).hit) continue;
           if (this.nearestEdge(x, z, 6)) continue;
+          if (buswayDist(m, x, z) < 6.5) continue; // no stalls / parked cars on the bus lanes
           const ch = this.chunk(x, z);
           ribbon(ch.mb, [[x - 1.5, z - 2.6], [x - 1.5, z + 2.6]], 0.14, 0.02, '#ffffff', false);
           if (rl() < fill) {
@@ -405,6 +406,7 @@ export class World {
       for (let s = 15; s < e.len - 10; s += 34)
         for (const side of e.oneway ? [1] : [1, -1]) {
           const p = this.edgePoint(e, s, side, e.w / 2 + 1.4);
+          if (buswayDist(m, p.x, p.z) < 3.6) continue; // keep the bus lanes clear
           this.chunk(p.x, p.z).lamps.push([p.x, p.z, Math.atan2(p.dz, -p.dx)]);
         }
     }
@@ -506,7 +508,8 @@ export class World {
     const c = this.chunk(lm.x, lm.z);
     const mb = c.mb, y = lm.h;
     if (lm.t === 'tims') {
-      const T = M.chain(M.T(lm.x, y + 2.2, lm.z), M.RX(0.5));
+      const k = Math.min(1.5, Math.max(1, (lm.r || 3) / 5)); // bigger donut on bigger stores
+      const T = M.chain(M.T(lm.x, y + 2.2 * k, lm.z), M.RX(0.5), M.S(k));
       mb.add(torus(2.2, 1.0, 30, 12), T, '#d89b5a');
       mb.add(torus(2.2, 0.88, 30, 12), M.chain(T, M.T(0, 0.34, 0), M.S(1, 0.72, 1)), '#f58fb6');
       for (let i = 0; i < 36; i++) {

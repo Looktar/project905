@@ -59,6 +59,31 @@ function busDist(map, x, z) {
   return best;
 }
 
+// bbox-prefiltered lookups for bulk placement (World.inWater scans every water polygon)
+function fastLookups(w) {
+  const box2 = (pts, pad) => { let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9; for (const [x, z] of pts) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); } return [x0 - pad, z0 - pad, x1 + pad, z1 + pad]; };
+  const polys = w.water.map((p) => ({ p, b: box2(p, 0) }));
+  const segs = [];
+  for (const rv of w.rivers) for (let k = 0; k < rv.pts.length - 1; k++) segs.push({ a: rv.pts[k], c: rv.pts[k + 1], r: rv.w / 2, b: box2([rv.pts[k], rv.pts[k + 1]], rv.w / 2) });
+  const bus = [];
+  for (const pts of w.map.busways) for (let k = 0; k < pts.length - 1; k++) bus.push({ a: pts[k], c: pts[k + 1], b: box2([pts[k], pts[k + 1]], 8) });
+  const inB = (b, x, z) => x >= b[0] && x <= b[2] && z >= b[1] && z <= b[3];
+  return {
+    // any lake / pond / river (bridges included: no props on bridges)
+    wet(x, z) {
+      for (const q of polys) if (inB(q.b, x, z) && pip(x, z, q.p)) return true;
+      for (const q of segs) if (inB(q.b, x, z) && segDist(x, z, q.a[0], q.a[1], q.c[0], q.c[1]).d < q.r) return true;
+      return false;
+    },
+    // distance to the busway centre line (capped at 8 m)
+    bus(x, z) {
+      let best = 8;
+      for (const q of bus) if (inB(q.b, x, z)) best = Math.min(best, segDist(x, z, q.a[0], q.a[1], q.c[0], q.c[1]).d);
+      return best;
+    },
+  };
+}
+
 // colliders + walkable decks (called at the end of World.buildCollision) ----------------------
 export function propColliders(w) {
   const m = w.map;
@@ -139,21 +164,21 @@ function dock(mb, lm) {
 function popcorn(mb, lm, w) {
   const az = CFG.camera.azimuth, fx = Math.sin(az), fz = Math.cos(az);
   const x = lm.x - fx * lm.r * 0.25, z = lm.z - fz * lm.r * 0.25, y = lm.h;
-  const H = 5.6, rb = 2.1, rt = 2.9, base = M.T(x, y + H / 2, z);
+  const H = 7.4, rb = 2.8, rt = 3.9, base = M.T(x, y + H / 2, z);
   const [a, b] = stripedTube(rb, rt, H, 16);
   mb.add(a, base, '#e11d48', MAT_V); mb.add(b, base, COL.white, MAT_V);
   mb.add(cyl(rb, rb, 0.2, 16), M.T(x, y + 0.1, z), '#e11d48', MAT_V);
-  mb.add(torus(rt, 0.16, 20, 6), M.T(x, y + H, z), COL.white, MAT_V);
+  mb.add(torus(rt, 0.2, 20, 6), M.T(x, y + H, z), COL.white, MAT_V);
   let s = 7;
   const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
   const cols = ['#fff3c4', '#ffe8a3', '#fffaf0', '#f8d77e'];
-  for (let i = 0; i < 34; i++) {
-    const ang = r() * Math.PI * 2, rr = Math.sqrt(r()) * (rt - 0.35), hh = (1 - (rr / rt) ** 2) * 1.5;
-    mb.add(ico(0.42 + r() * 0.18), M.chain(M.T(x + Math.cos(ang) * rr, y + H + 0.15 + hh * (0.6 + r() * 0.5), z + Math.sin(ang) * rr), M.RY(r() * 3)), cols[i % 4], MAT_V);
+  for (let i = 0; i < 40; i++) {
+    const ang = r() * Math.PI * 2, rr = Math.sqrt(r()) * (rt - 0.45), hh = (1 - (rr / rt) ** 2) * 2.0;
+    mb.add(ico(0.55 + r() * 0.25), M.chain(M.T(x + Math.cos(ang) * rr, y + H + 0.15 + hh * (0.6 + r() * 0.5), z + Math.sin(ang) * rr), M.RY(r() * 3)), cols[i % 4], MAT_V);
   }
   for (let i = 0; i < 6; i++) { // a few kernels spilt on the roof
-    const ang = r() * Math.PI * 2, rr = rb + 0.8 + r() * 1.6;
-    mb.add(ico(0.38), M.T(x + Math.cos(ang) * rr, y + 0.3, z + Math.sin(ang) * rr), cols[i % 4], MAT_V);
+    const ang = r() * Math.PI * 2, rr = rb + 1.2 + r() * 2.0;
+    mb.add(ico(0.5), M.T(x + Math.cos(ang) * rr, y + 0.4, z + Math.sin(ang) * rr), cols[i % 4], MAT_V);
   }
 }
 
@@ -166,9 +191,23 @@ function signPosts(mb, x, z, y0, y1, half, r, col) {
   }
 }
 
-// "Downtown Markham" sign on two posts at a free spot near the tower cluster
+// "Downtown Markham" sign on two posts beside a street on the camera side of the tower cluster,
+// at a free spot that no tower hides from the (fixed) camera
 function downtownSign(w, lm) {
-  const az = CFG.camera.azimuth, rx = Math.cos(az), rz = -Math.sin(az);
+  const az = CFG.camera.azimuth, rx = Math.cos(az), rz = -Math.sin(az), fx = Math.sin(az), fz = Math.cos(az);
+  const ox = lm.x + fx * 22, oz = lm.z + fz * 22;
+  const visible = (x, z) => {
+    for (let d = 2; d <= 40; d += 2) {
+      const px = x + fx * d, pz = z + fz * d;
+      for (const b of w.map.buildings) {
+        if (b.h < 6.5 + d * 0.85) continue;
+        const p = b.p;
+        if (px < p[0][0] - 60 || px > p[0][0] + 60 || pz < p[0][1] - 60 || pz > p[0][1] + 60) continue;
+        if (pip(px, pz, p)) return false;
+      }
+    }
+    return true;
+  };
   const free = (x, z) => {
     const ne = w.nearestEdge(x, z, 14);
     if (!ne || ne.d < 1.8 || ne.d > 9) return false; // beside a street, not on it
@@ -178,12 +217,12 @@ function downtownSign(w, lm) {
       if (n2 && n2.d < 0.5) return false;
       if (w.collide(sx, sz, 0.7).hit || w.inWater(sx, sz) || busDist(w.map, sx, sz) < 4.5) return false;
     }
-    return true;
+    return visible(x, z);
   };
   let spot = null;
   for (let r = 0; r <= 90 && !spot; r += 3)
     for (let i = 0, n = Math.max(1, Math.round(r / 2)); i < n; i++) {
-      const a = (i / n) * Math.PI * 2, x = lm.x + Math.cos(a) * r, z = lm.z + Math.sin(a) * r;
+      const a = (i / n) * Math.PI * 2, x = ox + Math.cos(a) * r, z = oz + Math.sin(a) * r;
       if (free(x, z)) { spot = [x, z]; break; }
     }
   if (!spot) return;
@@ -220,7 +259,7 @@ export function propIcons(g, T, landmarks) {
     else if (lm.t === 'gazebo') dot(x, y, 5, '#ffffff', '#2f6b4f');
     else if (lm.t === 'cinema') dot(x, y, 6, '#1e1b4b', '#ffd23f', true);
     else if (lm.t === 'downtown') dot(x, y, 7, '#0f766e');
-    else if (lm.t === 'viva') dot(x, y, 3.5, '#2563eb', '#fff', true);
+    else if (lm.t === 'viva') dot(x, y, 3.5, '#ffffff', '#2563eb', true); // white square: not a police dot
   }
 }
 
@@ -288,6 +327,9 @@ export function buildHeritage(w) {
         put(mb, F, box(1.15, 1.4, 0.05), at(wx, wy, fz + 0.02), COL.white);
         put(mb, F, box(0.85, 1.1, 0.06), at(wx, wy, fz + 0.04), COL.windowUp, 0.15);
       }
+    // back: door + upper windows so the side seen from the camera is not blank
+    put(mb, F, box(0.95, 2.0, 0.06), at(W * 0.22, 1.0, -fz - 0.03), '#8b5a3c');
+    if (wy > 3.9) for (const wx of [-W * 0.25, W * 0.25]) put(mb, F, box(0.85, 1.05, 0.06), at(wx, wy, -fz - 0.03), COL.windowUp, 0.15);
     verts += mb.count - v0;
   }
   return verts;
@@ -295,7 +337,8 @@ export function buildHeritage(w) {
 
 // street props --------------------------------------------------------------------------------
 export function buildStreetProps(w) {
-  const cfg = CFG.props, stats = { hydrants: 0, manholes: 0, stops: 0, verts: 0 };
+  const t0 = performance.now(), cfg = CFG.props, stats = { hydrants: 0, manholes: 0, stops: 0, verts: 0, ms: 0 };
+  const F = fastLookups(w);
   const vcount = () => { let n = 0; for (const c of w.chunks.values()) if (c.mb) n += c.mb.count; return n; };
   const v0 = vcount();
   let seed = 905;
@@ -314,27 +357,40 @@ export function buildStreetProps(w) {
   for (const s of w.map.stops || []) gAdd(stopsG, s[0], s[1]);
   for (const lm of w.map.landmarks) if (lm.t === 'viva') gAdd(stopsG, lm.x, lm.z);
 
-  // fire hydrants on the sidewalk next to the curb along arterials (collectors: one side, sparser)
+  // fire hydrants on the sidewalk next to the curb: first at arterial junction corners, then along
+  // arterials (collectors: one side, sparser)
   const hyd = mkGrid(cfg.hydrantGap);
+  const tryHydrant = (e, s, dir, off) => {
+    if (s < 6 || s > e.len - 6) return false;
+    const p = w.edgePoint(e, s, dir, off);
+    if (gNear(hyd, p.x, p.z, cfg.hydrantGap) || gNear(lamps, p.x, p.z, 2.6) || gNear(stopsG, p.x, p.z, 7)) return false;
+    const ne = w.nearestEdge(p.x, p.z, 3);
+    if (ne && ne.d < 0.25) return false; // on another road
+    if (F.bus(p.x, p.z) < 3.8 || F.wet(p.x, p.z) || w.collide(p.x, p.z, 0.45).hit) return false;
+    hydrant(w.chunk(p.x, p.z).mb, p.x, p.z, Math.atan2(p.dx, p.dz));
+    w.addCollider(rectPoly(p.x, p.z, 0, 0.5, 0.5), 't');
+    gAdd(hyd, p.x, p.z); stats.hydrants++;
+    return true;
+  };
+  for (let ni = 0; ni < w.nodes.length; ni++) {
+    const inc = w.adj[ni];
+    if (inc.length < 3 || inc.filter((a) => w.edges[a.e].cls <= 1).length < 2) continue;
+    const maxW = Math.max(...inc.map((a) => w.edges[a.e].w));
+    for (const a of inc) {
+      const e = w.edges[a.e], off = e.w / 2 + cfg.hydrantOffset;
+      if (e.cls > 1) continue;
+      // one-way carriageways: only the outer (curb) side, i.e. right of the legal direction
+      const offs = e.oneway ? [a.dir > 0 ? off : -off] : [off, -off];
+      if (offs.some((o) => tryHydrant(e, maxW / 2 + cfg.hydrantCorner, a.dir, o))) break;
+    }
+  }
   for (const e of w.edges) {
     if (e.cls > 2 || e.len < 2 * cfg.hydrantFirst) continue;
     const spacing = e.cls <= 1 ? cfg.hydrantSpacing : cfg.hydrantSpacing * 1.6;
     const sides = e.oneway || e.cls === 2 ? [1] : [1, -1];
     for (const side of sides)
       for (let s = cfg.hydrantFirst; s < e.len - cfg.hydrantFirst; s += spacing)
-        for (const ds of [0, 4, -4, 8]) {
-          const ss = s + ds;
-          if (ss < 8 || ss > e.len - 8) continue;
-          const p = w.edgePoint(e, ss, side, e.w / 2 + cfg.hydrantOffset);
-          if (gNear(hyd, p.x, p.z, cfg.hydrantGap) || gNear(lamps, p.x, p.z, 2.6) || gNear(stopsG, p.x, p.z, 7)) continue;
-          const ne = w.nearestEdge(p.x, p.z, 3);
-          if (ne && ne.d < 0.25) continue; // on another road
-          if (w.collide(p.x, p.z, 0.45).hit || w.inWater(p.x, p.z) || busDist(w.map, p.x, p.z) < 3.8) continue;
-          hydrant(w.chunk(p.x, p.z).mb, p.x, p.z, Math.atan2(p.dx, p.dz));
-          w.addCollider(rectPoly(p.x, p.z, 0, 0.5, 0.5), 't');
-          gAdd(hyd, p.x, p.z); stats.hydrants++;
-          break;
-        }
+        for (const ds of [0, 4, -4, 8]) if (tryHydrant(e, s + ds, side, e.w / 2 + cfg.hydrantOffset)) break;
   }
   // manhole covers on the carriageway, away from junctions, centre lines and the busway
   const mh = mkGrid(cfg.manholeGap);
@@ -346,7 +402,7 @@ export function buildStreetProps(w) {
       if (!e.oneway && e.cls <= 2) lat = (rl() < 0.5 ? -1 : 1) * e.w / 4;
       else if (e.oneway) lat = (rl() - 0.5) * Math.max(0, e.w - 3);
       const p = w.edgePoint(e, s, 1, lat);
-      if (!gNear(mh, p.x, p.z, cfg.manholeGap) && busDist(w.map, p.x, p.z) > 4.2 && !w.inWater(p.x, p.z)) {
+      if (!gNear(mh, p.x, p.z, cfg.manholeGap) && F.bus(p.x, p.z) > 4.2 && !F.wet(p.x, p.z)) {
         const mb = w.chunk(p.x, p.z).mb;
         disc(mb, p.x, p.z, 0.62, 0.066, COL.manholeRim, 8);
         disc(mb, p.x, p.z, 0.5, 0.069, COL.manhole, 8);
@@ -358,6 +414,7 @@ export function buildStreetProps(w) {
   // bus stops: Viva curbside shelters, small shelters, bench + pole
   for (const st of w.map.stops || []) { busStop(w.chunk(st[0], st[1]).mb, st); stats.stops++; }
   stats.verts = vcount() - v0;
+  stats.ms = Math.round(performance.now() - t0);
   return stats;
 }
 
@@ -396,4 +453,4 @@ function busStop(mb, st) {
   }
 }
 
-export { pip as propPip };
+export { pip as propPip, busDist as buswayDist };

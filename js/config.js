@@ -48,6 +48,7 @@ export const CFG = {
   signals: {},
   // props: street furniture + landmarks
   props: {
+    hydrantCorner: 6.5,      // m past the junction box for the corner hydrant at arterial junctions
     hydrantFirst: 18,        // m from the junction to the first hydrant along an arterial
     hydrantSpacing: 70,      // m between hydrants on one side of an arterial (collectors: x1.6, one side)
     hydrantGap: 28,          // min distance between any two hydrants
