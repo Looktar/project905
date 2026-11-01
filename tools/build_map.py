@@ -1291,13 +1291,17 @@ for brand, b, gc, t in gas:
     else:
         groups.append([brand, [(b, gc, t)]])
 
-def station_spot(kx, kz):
+def crosses_road(a, b):
+    n = int(math.hypot(b[0] - a[0], b[1] - a[1]) / 1.5) + 1
+    return any(road_clear(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n, 0) < 0 for i in range(n + 1))
+
+def station_spot(kx, kz, same_side=True):
     jn = min(art_junctions, key=lambda j: math.hypot(j[0] - kx, j[1] - kz), default=None)
     if jn and math.hypot(jn[0] - kx, jn[1] - kz) > 90:
         jn = None
     for (W, D) in ((13.0, 9.6), (11.4, 8.8)):
         best = None
-        for r in range(0, 42, 2):
+        for r in range(0, 26 if same_side else 42, 2):
             n = 1 if r == 0 else max(8, int(2 * math.pi * r / 2.5))
             for k in range(n):
                 a = 2 * math.pi * k / n
@@ -1315,13 +1319,16 @@ def station_spot(kx, kz):
                 poly = rect_poly(cx, cz, ang, W, D)
                 if not spot_ok(poly, road_pad=2.6, occ_pad=1.4, allow_park=False):
                     continue
+                if same_side and crosses_road((kx, kz), (cx, cz)):
+                    continue
                 if hidden_from_camera(cx, cz, 5.5):
                     score += 20
                 if best is None or score < best[0]:
                     best = (score, cx, cz, ang, W, D, gap, jn)
         if best:
             return best
-    return None
+    # no room on the store's own corner (within ~25 m): the nearest free corner across the street
+    return station_spot(kx, kz, False) if same_side else None
 
 stations = 0
 for brand, members in groups:
@@ -1335,6 +1342,10 @@ for brand, members in groups:
     if not sp:
         print('gas station FAILED', brand, round(kx), round(kz)); continue
     _, cx, cz, ang, W, D, gap, jn = sp
+    across = lambda b: b is not None and crosses_road(centroid(b['p']), (cx, cz))
+    if across(kiosk):
+        kiosk = None   # the forecourt only fits across the street: the station gets a new shop beside it
+    members = [q for q in members if not across(q[0])]
     fx, fz = math.sin(ang), math.cos(ang)       # toward the road
     sx, sz = math.cos(ang), -math.sin(ang)      # along the road (local +x)
     reserve(grow(rect_poly(cx, cz, ang, W, D), 0.8))

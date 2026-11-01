@@ -65,7 +65,7 @@ export const poiStyle = (b) => STYLE[b.s] || STYLE[b.poi] || DEF;
 const band = (b) => { const s = poiStyle(b); return s.band || s.bg; };
 const CAR_COLS = ['#ef4444', '#f8fafc', '#1f2937', '#2563eb', '#cbd5e1', '#f59e0b', '#10b981', '#a78bfa'];
 // sign size per category (height in m; width follows the text)
-const SIGN_H = { gas: 2.3, dealer: 1.9, plaza: 2.5, bigbox: 2.4, grocer: 2.2, hotel: 2.2, school: 2.0, fire: 1.9, fast: 1.9 };
+const SIGN_H = { gas: 2.3, dealer: 2.2, plaza: 2.5, bigbox: 2.5, grocer: 2.4, hotel: 2.2, school: 2.0, fire: 1.9, fast: 1.9 };
 const BRAND_DOTS = new Set(['gas', 'dealer', 'fast', 'grocer', 'bigbox', 'plaza', 'bank', 'shop', 'hotel']);
 
 const put = (mb, base, g, m, col, em = 0) => mb.add(g, M.mul(base, m), col, MAT_V, em);
@@ -122,7 +122,7 @@ export function poiColliders(w) {
       }
       w.aprons.push(apronPoly(s));
     }
-    for (const c of b.cars || []) w.addCollider(rectPoly(c[0], c[1], c[2], 2.1, 4.4), 'c');
+    for (const c of b.cars || []) w.addCollider(rectPoly(c[0], c[1], c[2], 2.8, 5.0), 'c'); // display car on its plinth
     if (b.bus) w.addCollider(rectPoly(b.bus[0], b.bus[1], b.bus[2], 2.6, 9.6), 'c');
   });
 }
@@ -161,7 +161,10 @@ export function poiDetail(w, mb, b) {
     case 'dealer':
       edgeBoxes(mb, b, 2.1, 3.0, 0.08, '#8fd3f7', 0.05, 0.94, 0.3);     // glass showroom
       edgeBoxes(mb, b, h - 0.45, 0.9, 0.32, band(b), 0.14, 1, 0.1);
-      for (const c of b.cars || []) bakedCar(mb, c[0], c[1], c[2], CAR_COLS[c[3] % CAR_COLS.length]);
+      for (const c of b.cars || []) { // shiny cars on white display plinths
+        put(mb, frame(c[0], c[1], c[2]), box(2.8, 0.14, 5.0), at(0, 0.07, 0), '#f8fafc', 0.1);
+        bakedCar(mb, c[0], c[1], c[2], CAR_COLS[c[3] % CAR_COLS.length], 0.14);
+      }
       break;
     case 'fast':
       edgeBoxes(mb, b, 1.7, 1.6, 0.06, '#a5dcf7', 0.03, 0.62, 0.2);
@@ -234,8 +237,8 @@ function gasStation(mb, b, s, st) {
 const PYLON_SIGN = { y: 3.05, w: 3.0, h: 3.4 };
 
 // static display car (same shape as the parked-car batch, baked with vertex colours)
-function bakedCar(mb, x, z, a, col) {
-  const F = frame(x, z, a);
+function bakedCar(mb, x, z, a, col, y0 = 0) {
+  const F = M.chain(M.T(x, y0, z), M.RY(a));
   put(mb, F, rbox(2.1, 0.85, 4.4, 0.3, 1), at(0, 0.72, 0), col, 0.12);
   put(mb, F, rbox(1.8, 0.78, 2.3, 0.28, 1), at(0, 1.47, -0.25), '#bfe6ff', 0.25);
   put(mb, F, rbox(1.86, 0.14, 2.0, 0.06, 1), at(0, 2.2, -0.25), col, 0.12);
