@@ -68,6 +68,7 @@ export class Game {
     this.player.hp = CFG.player.hp; this.player.face = -Math.PI / 2;
     this.inCar = null;
     this.camPos = [sx, 0, sz]; this.camDist = CFG.camera.distWalk;
+    this.viewAspect = 844 / 390; // main.js sets the real screen aspect every frame
     this.spawnAround(true);
     // a parked car right next to the spawn point so cars are discoverable immediately
     const near = world.nearestEdge(sx, sz, 40);
@@ -411,6 +412,30 @@ export class Game {
     return null;
   }
 
+  // back onto the sidewalk network from wherever a pedestrian / officer ended up (after fleeing, a chase...)
+  rejoinPath(c) {
+    const ne = this.w.nearestEdge(c.x, c.z, 30);
+    if (!ne || ne.e.len < 8) { c.timer = 3; return; }
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const s0 = ne.e.cum[ne.k] + ne.t * (ne.e.cum[ne.k + 1] - ne.e.cum[ne.k]);
+    c.path = this.startPath(ne.e, dir > 0 ? s0 : ne.e.len - s0, dir);
+    c.state = c.kind === 'cop' ? 'patrol' : 'walk'; c.lagT = 0;
+  }
+  // is (x, y, z) inside the camera view (+margin in screen fractions)? main.js keeps camPos, camDist
+  // and viewAspect current; the projection matches main.js render()
+  onScreen(x, z, margin = 0, y = 1) {
+    const C = CFG.camera, d = this.camDist, t = this.camPos;
+    const key = t[0] + ',' + t[2] + ',' + d + ',' + this.viewAspect;
+    if (this._vpKey !== key) {
+      const eye = [t[0] + Math.sin(C.azimuth) * Math.cos(C.elevation) * d, Math.sin(C.elevation) * d, t[2] + Math.cos(C.azimuth) * Math.cos(C.elevation) * d];
+      this._vp = M.mul(M.persp(C.fov, this.viewAspect, 2, 1200), M.look(eye, [t[0], 0, t[2]], [0, 1, 0]));
+      this._vpKey = key;
+    }
+    const V = this._vp;
+    const cx = V[0] * x + V[4] * y + V[8] * z + V[12], cy = V[1] * x + V[5] * y + V[9] * z + V[13], cw = V[3] * x + V[7] * y + V[11] * z + V[15];
+    return cw > 0 && Math.abs(cx / cw) < 1 + margin && Math.abs(cy / cw) < 1 + margin;
+  }
+
   // can someone walking at `speed` get from a to b before any approaching car or bus arrives?
   roadClear(ax, az, bx, bz, speed) {
     const need = Math.hypot(bx - ax, bz - az) / speed + 1.5;
@@ -444,11 +469,17 @@ export class Game {
     this.cars = this.cars.filter((c) => c === this.inCar || this.dist(c, P) < (c.chasing ? 320 : TR.despawn));
     const peds = this.chars.filter((c) => c.kind === 'ped').length;
     const cops = this.chars.filter((c) => c.kind === 'cop').length;
+    // a road near a random point of the ring [a, b] m around the player; after the first frame it must
+    // be off-screen so nothing pops into view (the camera is wider when driving, so retry further out)
     const ringPoint = (a, b, cls = 9) => {
-      for (let i = 0; i < 6; i++) {
-        const ang = rr(0, 6.28), d = rr(a, b);
+      for (let i = 0; i < 16; i++) {
+        const far = i >= 10 ? 40 : 0;
+        const ang = rr(0, 6.28), d = rr(a + far, b + far);
         const ne = this.w.nearestEdge(P.x + Math.cos(ang) * d, P.z + Math.sin(ang) * d, 25);
-        if (ne && ne.e.cls <= cls && ne.e.len > 8) return ne;
+        if (!ne || ne.e.cls > cls || ne.e.len <= 8) continue;
+        const q = this.w.edgePoint(ne.e, ne.e.cum[ne.k] + ne.t * (ne.e.cum[ne.k + 1] - ne.e.cum[ne.k]), 1, 0);
+        if (!initial && this.onScreen(q.x, q.z, CFG.peds.spawnMargin)) continue;
+        return ne;
       }
       return null;
     };
@@ -493,7 +524,7 @@ export class Game {
     this.buses = this.buses.filter((b) => Math.hypot(b.x - P.x, b.z - P.z) < 400);
     if (this.buses.length < CFG.bus.count) {
       let best = null, bd = 1e9;
-      for (const pts of this.w.map.busways) for (let k = 0; k < pts.length; k++) { const d = Math.hypot(pts[k][0] - P.x, pts[k][1] - P.z); if (d < bd && d > 60) { bd = d; best = { pts, k }; } }
+      for (const pts of this.w.map.busways) for (let k = 0; k < pts.length; k++) { const d = Math.hypot(pts[k][0] - P.x, pts[k][1] - P.z); if (d < bd && d > 60 && !this.onScreen(pts[k][0], pts[k][1], 0.35)) { bd = d; best = { pts, k }; } }
       if (best && bd < 350) {
         const cum = [0]; for (let k = 1; k < best.pts.length; k++) cum.push(cum[k - 1] + Math.hypot(best.pts[k][0] - best.pts[k - 1][0], best.pts[k][1] - best.pts[k - 1][1]));
         if (cum[cum.length - 1] > 60) this.buses.push({ pts: best.pts, cum, s: cum[best.k], dir: Math.random() < 0.5 ? 1 : -1, x: 0, z: 0, a: 0, stopT: 0 });
@@ -624,7 +655,11 @@ export class Game {
         if (c.crossWait > 0 && !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp)) return;
         c.crossWait = 0;
       }
-      if (moveTo(c.crossTo[0], c.crossTo[1], sp) < 0.4) { c.state = c.crossBack; c.crossTo = null; }
+      const left = moveTo(c.crossTo[0], c.crossTo[1], sp);
+      if (left < 0.4) { c.state = c.crossBack; c.crossTo = null; return; }
+      // blocked (a wall, a crowd)? after 3 s without progress give up and rejoin the sidewalk from here
+      if (left < c.crossBest - 0.3) { c.crossBest = left; c.crossStall = 0; } else c.crossStall += dt;
+      if (c.crossStall > 3) { c.state = 'wander'; c.timer = 1.5; c.crossTo = null; }
       return;
     }
     if (c.state === 'walk' || c.state === 'patrol') {
@@ -632,16 +667,19 @@ export class Game {
       // now and then cross a two-way street (spec 2.2): same spot, opposite direction = other sidewalk
       if (!c.path.e.oneway && c.path.e.len > 20 && Math.random() < dt * PD.crossRate)
         c.path = { e: c.path.e, s: c.path.e.len - c.path.s, dir: -c.path.dir };
-      this.advancePath(c.path, PD.walk * dt, true);
       // on one-way carriageways (divided roads) only use the outer/curb side
-      const pe = c.path.e, off = (pe.oneway ? c.path.dir : 1) * (pe.w / 2 + 1.7);
-      const p = this.w.edgePoint(pe, c.path.s, c.path.dir, off);
-      const dx = p.x - c.x, dz = p.z - c.z;
+      const pathPoint = () => { const pe = c.path.e, off = (pe.oneway ? c.path.dir : 1) * (pe.w / 2 + 1.7); return this.w.edgePoint(pe, c.path.s, c.path.dir, off); };
+      let p = pathPoint(), gap = Math.hypot(p.x - c.x, p.z - c.z);
+      // the path point only runs on while we keep up (or are stuck behind something for a moment), so
+      // corners and shoves are walked at walking pace instead of gliding over (the old exponential catch-up)
+      c.lagT = gap > PD.keepUp ? (c.lagT || 0) + dt : 0;
+      if (gap <= PD.keepUp || c.lagT > 1.5) { this.advancePath(c.path, PD.walk * dt, true); p = pathPoint(); gap = Math.hypot(p.x - c.x, p.z - c.z); }
       // far from the path point (crossing, turning across a junction, dead-end turn-around): walk there, never snap
-      if (Math.hypot(dx, dz) > 6) { c.crossBack = c.state; c.state = 'cross'; c.crossTo = [p.x, p.z]; c.crossWait = PD.crossMaxWait; return; }
-      c.x += dx * Math.min(1, 6 * dt); c.z += dz * Math.min(1, 6 * dt);
-      c.face += angDiff(c.face, Math.atan2(p.dx, p.dz)) * Math.min(1, 8 * dt);
-      c.speed = PD.walk;
+      if (gap > 6) { c.crossBack = c.state; c.state = 'cross'; c.crossTo = [p.x, p.z]; c.crossWait = PD.crossMaxWait; c.crossBest = 1e9; c.crossStall = 0; c.lagT = 0; return; }
+      const step = Math.min(gap, PD.walk * PD.catchUp * dt);
+      if (gap > 1e-4) { c.x += ((p.x - c.x) / gap) * step; c.z += ((p.z - c.z) / gap) * step; }
+      c.face += angDiff(c.face, gap > 0.6 ? Math.atan2(p.x - c.x, p.z - c.z) : Math.atan2(p.dx, p.dz)) * Math.min(1, 8 * dt);
+      c.speed = step / dt; // legs swing with the real pace
       return;
     }
     if (c.state === 'wander' || c.state === 'leave') {
@@ -649,6 +687,7 @@ export class Game {
       const ff = c.face;
       c.x += Math.sin(ff) * PD.walk * dt; c.z += Math.cos(ff) * PD.walk * dt; c.speed = PD.walk;
       if (Math.random() < dt * 0.3) c.face += rr(-1, 1);
+      if (c.timer <= 0) this.rejoinPath(c);
       return;
     }
     if (c.state === 'flee') {
@@ -847,7 +886,8 @@ export class Game {
       if (c.state === 'fly') continue;
       const res = this.w.collide(c.x, c.z, c.r);
       c.x = res.x; c.z = res.z;
-      if (c.kind !== 'player' && this.w.inWater(c.x, c.z)) { c.face += Math.PI; c.x += Math.sin(c.face) * 0.6; c.z += Math.cos(c.face) * 0.6; }
+      // NPCs turn back at the water's edge (step back to where they were instead of hopping 0.6 m)
+      if (c.kind !== 'player' && this.w.inWater(c.x, c.z)) { c.face += Math.PI; c.x = c.px ?? c.x; c.z = c.pz ?? c.z; }
       if (c === this.player && this.w.inWater(c.x, c.z)) { c.x = c.px ?? c.x; c.z = c.pz ?? c.z; }
       c.px = c.x; c.pz = c.z;
     }
@@ -937,9 +977,16 @@ export class Game {
       this.chase.reinforce = PO.reinforce;
       const cops = this.chars.filter((c) => c.kind === 'cop' && c.state === 'chase').length;
       if (cops < PO.footChase && !this.inCar && this.policeCount() < PO.max) {
-        const a = rr(0, 6.28);
-        const ne = this.w.nearestEdge(P.x + Math.cos(a) * 45, P.z + Math.sin(a) * 45, 25);
-        if (ne) { const p = this.w.edgePoint(ne.e, ne.e.cum[ne.k], 1, ne.e.w / 2 + 1.6); const c = this.makeChar2('cop', p.x, p.z); c.state = 'chase'; }
+        // backup arrives on foot from just outside the view
+        for (let i = 0; i < 10; i++) {
+          const a = rr(0, 6.28), d = rr(45, 75);
+          const ne = this.w.nearestEdge(P.x + Math.cos(a) * d, P.z + Math.sin(a) * d, 25);
+          if (!ne) continue;
+          const p = this.w.edgePoint(ne.e, ne.e.cum[ne.k], 1, ne.e.w / 2 + 1.6);
+          if (this.onScreen(p.x, p.z, CFG.peds.spawnMargin) || this.w.inWater(p.x, p.z)) continue;
+          const c = this.makeChar2('cop', p.x, p.z); c.state = 'chase';
+          break;
+        }
       }
     }
     // bust checks

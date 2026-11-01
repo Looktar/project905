@@ -97,8 +97,12 @@ async function joystickDrag(page, context, shotPath) {
   const [x0, y0] = s.joy, L = 50;
   const cdp = await context.newCDPSession(page);
   const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1, radiusX: 3, radiusY: 3, force: 1 }] });
+  // record whether the game cancelled each touchmove (iOS Safari / in-app browsers otherwise drag the whole page)
+  await page.evaluate(() => { window.__tmPrevented = []; addEventListener('touchmove', (e) => window.__tmPrevented.push(e.defaultPrevented), { passive: false }); });
   await touch('touchStart', x0, y0);
   for (let i = 1; i <= 5; i++) { await touch('touchMove', x0 + (s.up[0] * L * i) / 5, y0 + (s.up[1] * L * i) / 5); await sleep(30); }
+  const tm = await page.evaluate(() => window.__tmPrevented);
+  check(tm.length > 0 && tm.every(Boolean), `joystick touchmoves must be cancelled so the page cannot pan, got ${JSON.stringify(tm)}`);
   await page.waitForFunction(() => window.__input.my > 0.5, null, { timeout: 15000 })
     .catch(async () => { throw new Error('joystick drag toward visual up did not give input.my > 0.5, got ' + JSON.stringify(await page.evaluate(() => [window.__input.mx, window.__input.my]))); });
   const [mx, my] = await page.evaluate(() => [window.__input.mx, window.__input.my]);

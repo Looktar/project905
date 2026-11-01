@@ -321,3 +321,58 @@ describe('respawn distance after a bust (spec 2.5: 150-300 m)', () => {
     for (const d of dists) expect(d).toBeLessThanOrEqual(300 + 10);
   });
 });
+
+describe('NPCs move like people (no gliding, no popping into view)', () => {
+  const WALKING = ['walk', 'patrol', 'cross', 'wander', 'leave'];
+  // main.js camera: follow the player, zoom out with car speed
+  const followCamera = (g, dt) => {
+    const car = g.inCar, C = CFG.camera, P = g.playerPos();
+    const want = car ? C.distCarMin + (C.distCarMax - C.distCarMin) * Math.min(1, Math.abs(car.speed) / CFG.car.maxSpeed) : C.distWalk;
+    g.camDist += (want - g.camDist) * (1 - Math.exp(-1.5 * dt));
+    g.camPos[0] += (P.x - g.camPos[0]) * (1 - Math.exp(-6 * dt));
+    g.camPos[2] += (P.z - g.camPos[2]) * (1 - Math.exp(-6 * dt));
+  };
+
+  it('walking pedestrians and officers never move faster than a brisk walk', async () => {
+    const sim = await newSim(71);
+    const g = sim.game, last = new Map(), limit = CFG.peds.walk * 2.2; // ~3.5 m/s: a brisk walk (crossing is 2 m/s)
+    let glideFrames = 0;
+    sim.seconds(60, DT, () => {
+      for (const c of g.chars) {
+        if (c === g.player) continue;
+        const l = last.get(c);
+        if (l && WALKING.includes(c.state) && WALKING.includes(l.state) && Math.hypot(c.vx, c.vz) < 0.5) {
+          if (Math.hypot(c.x - l.x, c.z - l.z) / DT > limit) glideFrames++;
+        }
+        last.set(c, { x: c.x, z: c.z, state: c.state });
+      }
+    });
+    // the old exponential catch-up glided ~900 frames a minute at junction corners (often > 6 m/s);
+    // a few single-frame shoves (crowding, walls) are fine
+    expect(glideFrames).toBeLessThan(15);
+  });
+
+  it('new pedestrians, officers and cars appear off-screen while the camera follows the player', async () => {
+    for (const drive of [false, true]) {
+      const sim = await newSim(drive ? 73 : 72);
+      const g = sim.game;
+      if (drive) g.enterCar(sim.parkCarNear(g.player.x, g.player.z));
+      const seen = new Set([...g.chars, ...g.cars]);
+      let spawned = 0;
+      const popped = [];
+      sim.seconds(45, DT, (s, i) => {
+        s.setInput({ mx: Math.cos(i / 300), my: Math.sin(i / 300), run: true, analog: true });
+        followCamera(g, DT);
+        for (const c of [...g.chars, ...g.cars]) {
+          if (seen.has(c)) continue;
+          seen.add(c); spawned++;
+          // carjacked drivers and officers stepping out of their car appear next to it on purpose
+          const nearCar = g.cars.some((car) => car !== c && Math.hypot(car.x - c.x, car.z - c.z) < 4);
+          if (g.onScreen(c.x, c.z) && !nearCar) popped.push(c.kind || c.type);
+        }
+      });
+      expect(spawned).toBeGreaterThan(10);
+      expect(popped).toEqual([]);
+    }
+  });
+});
