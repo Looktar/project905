@@ -1,7 +1,7 @@
 // World: loads the processed OSM map, builds chunked render meshes, collision
 // data, the road graph and the minimap image.
 import { M, hex, segDist, rnd } from './math.js';
-import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, disc, flatPoly, extrude } from './geo.js';
+import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
