@@ -11,6 +11,7 @@
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#a9b8cf;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{position:fixed;inset:0;width:100%}
 body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif}
 #app{position:fixed;left:0;top:0;transform-origin:0 0;overflow:hidden}
 #c{position:absolute;left:0;top:0;display:block}
@@ -67,7 +68,7 @@ body.touch .btn{display:flex}
 #banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
 .modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
 .modal.show{display:flex}
-.card{background:#fff;color:#2d3a55;border-radius:22px;box-shadow:0 6px 0 rgba(30,40,70,.3);padding:12px 18px 14px;width:min(460px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.card{background:#fff;color:#2d3a55;border-radius:22px;box-shadow:0 6px 0 rgba(30,40,70,.3);padding:12px 18px 14px;width:min(460px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}
 .card h2{margin:0 0 8px;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .card .x{background:#eef1f6;color:#2d3a55;border:none;border-radius:999px;width:34px;height:34px;font:900 16px inherit;font-family:inherit;cursor:pointer;flex:none}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-top:2px solid #eef1f6;font-weight:800;font-size:15px}

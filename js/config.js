@@ -9,7 +9,7 @@ export const CFG = {
     distCarMax: 112,        // zooms out with speed
   },
   player: {
-    walk: 4.6, run: 8.2, radius: 0.55, hp: 100,
+    walk: 5.6, run: 9.4, radius: 0.55, hp: 100,
     regenDelay: 5, regenRate: 9,
     punchCooldown: 0.36, punchRange: 1.9, punchArc: 1.2, punchDmg: [12, 19],
     koTime: 3, invuln: 3,
@@ -22,10 +22,11 @@ export const CFG = {
   peds: {
     countDesktop: 30, countMobile: 22,
     spawnMin: 40, spawnMax: 95, despawn: 130,
-    walk: 1.6, flee: 6.4, radius: 0.5,
+    walk: 2.2, flee: 7.2, radius: 0.5,
     hp: [30, 120], power: [0.5, 2.0],
     temper: { timid: 0.5, normal: 0.35, angry: 0.13, master: 0.02 },
     downTime: [8, 12], witness: 15, crossRate: 0.015, crossSpeed: 1.25, crossMaxWait: 12,
+    keepUp: 1.2, catchUp: 1.2, spawnMargin: 0.25, avoidPlayer: 3.2,
   },
   traffic: {
     countDesktop: 16, countMobile: 11, parked: 8,
@@ -40,7 +41,7 @@ export const CFG = {
   police: {
     footPatrol: 2, carPatrol: 1, footChase: 4, carChase: 3,
     sight: 25, alert: 60, giveUp: 10,
-    runSpeed: 7.0, hp: 150, punchDmg: 9,
+    runSpeed: 8.0, hp: 150, punchDmg: 9,
     bustFoot: 1.5, bustCar: 2.0, reinforce: 6, respawn: [150, 300], max: 8,
   },
   bus: { count: 2, speed: 9 },

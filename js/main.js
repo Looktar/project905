@@ -156,9 +156,14 @@ for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListe
 });
 
 // accidental-touch guards (M1b): iOS Safari ignores user-scalable=no, so block pinch / double-tap zoom
-// and the long-press menu explicitly; one-finger scrolling inside panels keeps working
+// and the long-press menu explicitly. iOS Safari and in-app browsers (WeChat etc.) also drag/bounce the
+// whole page under a one-finger drag despite touch-action:none, so the page followed the joystick:
+// cancel every touchmove except inside a scrollable panel. Pointer events (joystick) are unaffected.
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
-document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', (e) => {
+  const inPanel = e.target instanceof Element && e.target.closest('.card');
+  if (!inPanel || e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 addEventListener('contextmenu', (e) => e.preventDefault());
 initTouch(app, $('joy'), $('knob'), [[$('bA'), 'a'], [$('bB'), 'b'], [$('bC'), 'c']]);
@@ -183,6 +188,7 @@ function loop(now) {
   poll(game && !!game.inCar);
   let target, dist, car = null;
   if (game) {
+    game.viewAspect = W / H;
     if (!paused) game.update(dt);
     const P = game.playerPos();
     car = game.inCar;
