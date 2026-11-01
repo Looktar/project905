@@ -13,6 +13,12 @@ const SKIN = ['#f3c9a2', '#e2ad84', '#c68b62', '#f6d5b8', '#a8714d'];
 const SHIRT = ['#ef4444', '#f59e0b', '#22c3a6', '#a78bfa', '#60a5fa', '#f472b6', '#fde047', '#fb923c', '#34d399', '#e5e7eb', '#38bdf8', '#c084fc'];
 const PANTS = ['#2f3b59', '#5b4a8a', '#3b4a6b', '#334155', '#475569', '#1e3a8a', '#374151', '#6b4f3a'];
 const HAIR = ['#2b2320', '#6b4429', '#d9a441', '#1f1f1f', '#5b3a29', '#111111', '#9ca3af'];
+// South Asian residents: skin, hair and outfit colours (kurta / salwar kameez, dupatta, dastar)
+const SA_SKIN = ['#c68642', '#a86b3c', '#8d5524', '#b5774a', '#9c6644'];
+const SA_HAIR = ['#141010', '#1f1612', '#2b1d16', '#111111'];
+const SA_TOP = ['#f59e0b', '#9f1239', '#0f766e', '#ca8a04', '#1d4ed8', '#f8fafc', '#c026d3', '#ea580c', '#15803d'];
+const SA_LOW = ['#f5f5f4', '#e7e5e4', '#1f2937', '#334155', '#fde68a', '#fbcfe8'];
+const SA_WRAP = ['#f97316', '#1e3a8a', '#b91c1c', '#111827', '#db2777', '#f8fafc', '#facc15', '#16a34a'];
 const CARCOL = ['#38bdf8', '#fb7185', '#34d399', '#a78bfa', '#f97316', '#e5e7eb', '#94a3b8', '#fde68a', '#ef4444', '#2563eb', '#10b981', '#f8fafc'];
 const SUVCOL = ['#2563eb', '#ef4444', '#10b981', '#f8fafc', '#475569', '#0ea5e9', '#84cc16', '#f59e0b'];
 const VANCOL = ['#f8fafc', '#e5e7eb', '#fde68a', '#93c5fd', '#fca5a5', '#86efac', '#c4b5fd'];
@@ -133,7 +139,15 @@ export class Game {
     const roll = Math.random();
     const T = P.temper;
     const temper = roll < T.timid ? 'timid' : roll < T.timid + T.normal ? 'normal' : roll < T.timid + T.normal + T.angry ? 'angry' : 'master';
-    const c = this.makeChar('ped', x, z, temper === 'master' ? { shirt: '#111111', pants: '#b91c1c' } : {});
+    const sa = temper !== 'master' && Math.random() < P.southAsian;
+    const c = this.makeChar('ped', x, z, temper === 'master' ? { shirt: '#111111', pants: '#b91c1c' }
+      : sa ? { skin: pick(SA_SKIN), hair: pick(SA_HAIR), shirt: pick(SA_TOP), pants: pick(SA_LOW) } : {});
+    if (sa) {
+      // half dressed traditionally: a kurta (long tunic); some men wear a dastar, some women a dupatta + braid
+      if (Math.random() < P.kurta) c.kurta = true;
+      if (Math.random() < 0.5) { if (Math.random() < P.turban) c.turban = hexc(pick(SA_WRAP)); }
+      else { c.braid = true; if (Math.random() < P.dupatta) { c.dupatta = hexc(pick(SA_WRAP)); c.kurta = true; } }
+    }
     c.temper = temper;
     c.hp = c.maxhp = temper === 'master' ? 220 : rr(P.hp[0], P.hp[1]);
     c.power = temper === 'master' ? 3.2 : rr(P.power[0], P.power[1]);
@@ -726,8 +740,9 @@ export class Game {
       if (c.crossWait > 0) {
         c.crossWait -= dt; c.speed = 0;
         c.face += angDiff(c.face, Math.atan2(c.crossTo[0] - c.x, c.crossTo[1] - c.z)) * Math.min(1, 6 * dt);
-        const red = c.crossSig && this.w.signalState(c.crossSig, c.crossAxis, this.time) !== SIG_GREEN;
-        if (c.crossWait > 0 && (red || !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp))) return;
+        // never start on red at a signal (giving up waiting only skips the turning-car check)
+        if (c.crossSig && this.w.signalState(c.crossSig, c.crossAxis, this.time) !== SIG_GREEN) { c.crossWait = Math.max(c.crossWait, dt); return; }
+        if (c.crossWait > 0 && !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp)) return;
         c.crossWait = 0;
       }
       const left = this.stepToward(c, c.crossTo[0], c.crossTo[1], sp, dt); c.speed = sp;
@@ -1161,6 +1176,8 @@ export class Game {
     const sw = lying ? 0 : Math.sin(c.phase) * Math.min(1, (c.speed || 0) / 4) * 0.7;
     for (const [sx, s] of [[1, sw], [-1, -sw]]) A(M.chain(M.T(sx * 0.17, 0.55, 0), M.RX(s), M.T(0, -0.27, 0)), B.limb, c.pants);
     A(M.T(0, 0.95, 0), B.body, c.shirt);
+    if (c.kurta) A(M.chain(M.T(0, 0.6, 0), M.S(1.04, 0.62, 1.02)), B.body, c.shirt); // long tunic over the thighs
+    if (c.dupatta) A(M.chain(M.T(0, 1.0, 0.02), M.RZ(0.75), M.S(0.9, 1.75, 2.15)), B.limb, c.dupatta); // scarf across the chest
     let la = -sw, ra = sw, lz = 0, rz = 0;
     if (c.punchT > 0) { ra = -Math.PI / 2; la = 0.5; }
     else if (c.state === 'flee' || c.mouth) { la = ra = Math.PI * 0.95; lz = -0.3; rz = 0.3; }
@@ -1170,7 +1187,9 @@ export class Game {
       A(M.chain(M.T(sx * 0.5, 1.2, 0), M.RZ(rzz), M.RX(rx), M.T(0, -0.6, 0)), B.hand, c.skin);
     }
     A(M.T(0, 1.85, 0), B.head, c.skin);
-    A(M.chain(M.T(0, 1.98, -0.06), M.S(1.06, 0.78, 1.06)), B.hair, c.hair);
+    if (c.turban) A(M.chain(M.T(0, 2.06, -0.02), M.S(1.13, 0.9, 1.13)), B.hair, c.turban); // dastar
+    else A(M.chain(M.T(0, 1.98, -0.06), M.S(1.06, 0.78, 1.06)), B.hair, c.hair);
+    if (c.braid) A(M.chain(M.T(0, 1.42, -0.5), M.RX(0.15), M.S(0.55, 1.05, 0.55)), B.limb, c.hair);
     for (const sx of [-1, 1]) A(M.T(sx * 0.18, 1.83, 0.52), B.eye);
     if (c.mouth || c.state === 'fight') A(M.chain(M.T(0, 1.66, 0.53), M.S(1, 0.7, 0.4)), B.mouth);
     if (c.cap) { A(M.T(0, 2.3, 0), B.cap, c.cap); A(M.T(0, 2.18, 0.42), B.brim, c.cap); A(M.T(0, 2.38, 0.47), B.badge); }

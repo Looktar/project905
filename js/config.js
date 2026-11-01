@@ -25,6 +25,8 @@ export const CFG = {
     walk: 2.2, flee: 7.2, radius: 0.5,
     hp: [30, 120], power: [0.5, 2.0],
     temper: { timid: 0.5, normal: 0.35, angry: 0.13, master: 0.02 },
+    // South Asian residents (a large part of Markham): share of pedestrians, then outfit chances
+    southAsian: 0.35, kurta: 0.45, turban: 0.3, dupatta: 0.5,
     downTime: [8, 12], witness: 15, crossRate: 0.015, crossSpeed: 1.25, crossMaxWait: 12, crossSignalWait: 30, signalReach: 28,
     keepUp: 1.2, catchUp: 1.2, spawnMargin: 0.25, avoidPlayer: 3.2,
   },
@@ -39,10 +41,10 @@ export const CFG = {
     passGap: 2.35,                                     // m sideways clearance when pulling out around a parked car
   },
   police: {
-    footPatrol: 2, carPatrol: 1, footChase: 4, carChase: 3,
+    footPatrol: 1, carPatrol: 1, footChase: 2, carChase: 2,   // owner: fewer police (was 2/1/4/3)
     sight: 25, alert: 60, giveUp: 10,
     runSpeed: 8.0, hp: 150, punchDmg: 9,
-    bustFoot: 1.5, bustCar: 2.0, reinforce: 6, respawn: [150, 300], max: 8,
+    bustFoot: 1.5, bustCar: 2.0, reinforce: 10, respawn: [150, 300], max: 5,
   },
   streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
