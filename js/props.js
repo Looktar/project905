@@ -280,7 +280,7 @@ export function buildingDetail(mb, b) {
   }
 }
 // boxes along every footprint edge (bands / windows); frac = share of the edge length used
-function edgeBoxes(mb, b, y, h, depth, col, out, frac = 1, em = 0) {
+export function edgeBoxes(mb, b, y, h, depth, col, out, frac = 1, em = 0) {
   const p = b.p, n = p.length;
   let area = 0;
   for (let i = 0; i < n; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % n]; area += x1 * z2 - x2 * z1; }

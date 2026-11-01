@@ -345,6 +345,7 @@ export class Renderer {
   }
   drawSigns(sm) {
     if (!sm) return;
+    if (Array.isArray(sm)) { for (const m of sm) this.drawSigns(m); return; } // multi-page sign atlas
     const gl = this.gl;
     gl.useProgram(this.pSign);
     gl.uniformMatrix4fv(this.u.suVP, false, this.VP);

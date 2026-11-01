@@ -475,6 +475,8 @@ def in_heritage_zone(x, z):
     return False
 
 TIMS_FALLBACK = []
+osm_placed = []      # (building, OSM tags) for the v0.2 POI pass
+poi_rejected = []    # (OSM tags, game centroid) of brand buildings that did not fit
 blds = []
 for w in ways:
     t = w['tags']
@@ -513,6 +515,8 @@ for w, p in blds:
     if not ok:
         if t.get('brand') == 'Tim Hortons':
             TIMS_FALLBACK.append(gc)
+        elif t.get('brand') or t.get('amenity') == 'fire_station':
+            poi_rejected.append((t, gc))   # v0.2 POIs: placed near the OSM spot later if there is room
         continue
     gp = [(round(x, 2), round(z, 2)) for x, z in sp]
     try:
@@ -542,7 +546,7 @@ for w, p in blds:
     elif (not lm and btype in ('retail', 'commercial', 'yes') and abs(poly_area(gp)) < 130
           and in_heritage_zone(*centroid(gp))):
         continue  # tiny shop boxes on a historic main street are replaced by procedural storefronts
-    place_building(gp, h, color, btype, extra)
+    osm_placed.append((place_building(gp, h, color, btype, extra), t))
 
 # ---------------------------------------------------------------- v0.1 landmark / prop placement helpers
 prng = random.Random(9050)   # own RNG so landmark/prop tweaks do not reshuffle the rest of the map
@@ -1096,6 +1100,444 @@ for nd in nodes_pt:
             break
 print('viva stations:', len(stations), 'bus stops:', len(stops), '(viva curbside: %d)' % sum(1 for s in stops if s[3] == 2))
 landmarks.extend(stations)
+
+# ---------------------------------------------------------------- v0.2 POIs: gas stations, brands, categorised buildings
+# Content red line: real brands never appear in the game, each one gets a pun.
+# real brand (OSM `brand`, or a word of the name for car dealers) -> (category, game name, style key)
+BRANDS = {
+    'Petro-Canada': ('gas', 'Petro-Kanada', 'petro'),
+    'Circle K': ('gas', 'Circle Q', 'circleq'),
+    'Esso': ('gas', 'Ezzo', 'ezzo'),
+    'Shell': ('gas', 'Shel', 'shel'),
+    "McDonald's": ('fast', "McDanold's", 'mcd'),
+    'Boston Pizza': ('fast', 'Bostin Pizza', 'bpizza'),
+    'Swiss Chalet': ('fast', 'Swiss Chalay', 'chalay'),
+    'No Frills': ('grocer', 'No Thrills', 'nothrills'),
+    'Loblaws': ('grocer', 'Loblawz', 'loblawz'),
+    'FreshCo': ('grocer', 'FreshGo', 'freshgo'),
+    'Walmart': ('bigbox', 'Wallmort', 'wallmort'),
+    'Costco': ('bigbox', 'Costgo', 'costgo'),
+    'The Home Depot': ('bigbox', 'Home Deepot', 'deepot'),
+    'Canadian Tire': ('bigbox', 'Canadian Tyre', 'tyre'),
+    'Rona': ('bigbox', 'Rhona', 'rhona'),
+    'Rona+': ('bigbox', 'Rhona', 'rhona'),
+    'Shoppers Drug Mart': ('shop', 'Shoppers Drug Mark', 'shoppers'),
+    'LCBO': ('shop', 'LCB0', 'lcb0'),
+    'Staples': ('shop', 'Stables', 'stables'),
+    'Canada Computers': ('shop', 'Canada Komputers', 'kompu'),
+    'Winners': ('shop', 'Winnerz', 'winnerz'),
+    'RBC': ('bank', 'RBG', 'rbg'),
+    'TD': ('bank', 'TB Bank', 'tb'),
+    'TD Canada Trust': ('bank', 'TB Bank', 'tb'),
+    'BMO': ('bank', 'BNO', 'bno'),
+    'CIBC': ('bank', 'CIBS', 'cibs'),
+    'HSBC': ('bank', 'HSBB', 'hsbb'),
+    'Scotiabank': ('bank', 'Scotchiabank', 'scotchia'),
+    'Hilton': ('hotel', 'Hiltun Suites', 'hiltun'),
+    'Courtyard': ('hotel', 'Courtyerd', 'hotel'),
+    'Monte Carlo Inn': ('hotel', 'Monte Carla Inn', 'hotel'),
+    'YMCA': ('cc', 'YNCA', 'ymca'),
+}
+DEALERS = {   # word in the dealer's brand / name -> pun
+    'Toyota': 'Toyoda', 'Honda': 'Hondo', 'Kia': 'Kio', 'Mazda': 'Mazba', 'Mercedes-Benz': 'Mercedez',
+    'BMW': 'BMV', 'Audi': 'Oudi', 'Volvo': 'Volvu', 'Infiniti': 'Infinitty', 'Ford': 'Forb',
+    'Cadillac': 'Cadillak', 'Chevrolet': 'Chevvy', 'Porsche': 'Porshe', 'Subaru': 'Subaro',
+    'Lexus': 'Lexxus', 'Nissan': 'Nissun', 'Hyundai': 'Hyundoi', 'Acura': 'Akura',
+}
+DEALER_PLACES = ('Markham', 'Unionville', 'Uptown', 'Markville', 'Agincourt')
+NAMED = {     # well-known names (real place names may stay; shops and malls get a pun)
+    'New Kennedy Square': ('plaza', 'New Kennedy Sqare', 'plaza'),
+    '朗豪坊 Langham Square': ('plaza', '朗好坊 Langhum Square', 'plaza'),
+    'Market Village': ('plaza', 'Markit Village', 'plaza'),
+    'Splendid China Mall': ('plaza', '华丽中国 Splendid Chyna Mall', 'plaza'),
+    'J-Town': ('plaza', 'J-Toun', 'plaza'),
+    'Sherwood Plaza': ('plaza', 'Sherwud Plaza', 'plaza'),
+    '冠業超市 First Choice Supermarket': ('grocer', '冠叶超市 First Choyce', 'firstchoyce'),
+    'Village Grocer': ('grocer', 'Village Grosser', 'vgrocer'),
+    'Flato Markham Theatre': ('theatre', '万锦剧院 Markham Theatre', 'theatre'),
+    'Varley Art Gallery of Markham': ('gallery', 'Varley 美术馆 Gallery', 'gallery'),
+    'Markham Pan Am Centre': ('cc', 'Pan Yam Centre 游泳馆', 'panyam'),
+    'IBM Toronto Lab': ('office', 'IBN Lab', 'office'),
+}
+SCHOOL_SHORT = [(' High School', ' H.S.'), (' Secondary School', ' S.S.'), (' Public School', ' P.S.'),
+                (' Montessori School,', ' Montessori'), (' Montessori School', ' Montessori')]
+POI_LOOK = {   # category -> (wall colour or None to keep, height rule)
+    'gas': '#f8fafc', 'dealer': '#eef4f8', 'fast': '#d93b30', 'grocer': '#f3ead8', 'bigbox': '#e9e4da',
+    'plaza': '#f6e7cf', 'church': None, 'temple': '#f7e1b5', 'school': '#cf7a55', 'cc': '#e3f1ee',
+    'library': '#efe3c8', 'fire': '#d64541', 'police': '#dbe4f0', 'bank': '#eef2f7',
+}
+CHURCH_WALLS = ['#f5f0e6', '#c9765b', '#e6d7bd', '#f2e6d0']
+poirng = random.Random(9052)   # own RNG: POI tweaks never reshuffle the rest of the map
+
+art_grid = Grid(24.0)
+for e in edges:
+    if e[2] > 2:
+        continue
+    for (ax, az), (bx, bz) in zip(e[6], e[6][1:]):
+        hw = e[3] / 2
+        art_grid.add((min(ax, bx) - hw, min(az, bz) - hw, max(ax, bx) + hw, max(az, bz) + hw), (ax, az, bx, bz, hw))
+art_junctions = [jnodes[i] for i, cl in jcls.items() if len(cl) >= 3 and sum(1 for c in cl if c <= 2) >= 2]
+
+def nearest_art(x, z, R=45):
+    """like nearest_road, arterials (class <= 2) only"""
+    best = None
+    for (ax, az, bx, bz, hw) in art_grid.query((x - R, z - R, x + R, z + R)):
+        dx, dz = bx - ax, bz - az; L2 = dx * dx + dz * dz
+        t = 0 if L2 == 0 else max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L2))
+        px, pz = ax + dx * t, az + dz * t
+        d = math.hypot(x - px, z - pz) - hw
+        if best is None or d < best[0]:
+            L = math.sqrt(L2) or 1
+            best = (d, px, pz, dx / L, dz / L)
+    return best
+
+def poi_set(b, cat, name=None, style=None):
+    b['poi'] = cat
+    if name:
+        b['n'] = name
+    if style:
+        b['s'] = style
+    col = POI_LOOK.get(cat)
+    if col:
+        b['c'] = col
+    elif cat == 'church':
+        b['c'] = poirng.choice(CHURCH_WALLS)
+
+def poi_spot(x, z, sizes, rmax, road_pad=1.2, occ_pad=1.0):
+    """free footprint (facing the nearest road) as close as possible to the OSM spot"""
+    for (w, d) in sizes:
+        best = None
+        for r in [0] + list(range(3, rmax + 1, 3)):
+            n = 1 if r == 0 else max(8, int(2 * math.pi * r / 3.5))
+            for k in range(n):
+                a = 2 * math.pi * k / n
+                cx, cz = x + math.cos(a) * r, z + math.sin(a) * r
+                nr = nearest_road(cx, cz)
+                if nr is None:
+                    continue
+                score = r + max(0, nr[0] - d / 2 - 10) * 1.5 + (12 if in_park(cx, cz) else 0)
+                if best is not None and score >= best[0]:
+                    continue
+                poly = rect_poly(cx, cz, facing_road(cx, cz, nr), w, d)
+                if not spot_ok(poly, road_pad=road_pad, occ_pad=occ_pad):
+                    continue
+                if hidden_from_camera(cx, cz, 6):
+                    score += 25
+                if best is None or score < best[0]:
+                    best = (score, cx, cz, r2p(poly))
+            if best and r > best[0] + 6:
+                break
+        if best:
+            return best[3]
+    return None
+
+def front_row(b, n_max, size, wall_off=0.8):
+    """parked vehicles (dealer display cars, a school bus) along the walls facing the road (and the camera):
+    nose to the wall where there is room, else parallel to it. size = (width, length)"""
+    poly = b['p']; c = centroid(poly)
+    nr = nearest_art(c[0], c[1], 60) or nearest_road(c[0], c[1], 70)   # show them off to the main road
+    if not nr:
+        return []
+    tx, tz = nr[1] - c[0], nr[2] - c[1]; L = math.hypot(tx, tz) or 1; tx /= L; tz /= L
+    sgn = 1 if poly_area(poly) > 0 else -1
+    cand = []
+    for i in range(len(poly)):
+        (ax, az), (bx, bz) = poly[i], poly[(i + 1) % len(poly)]
+        el = math.hypot(bx - ax, bz - az)
+        if el < size[0] + 1:
+            continue
+        nx, nz = (bz - az) / el * sgn, -(bx - ax) / el * sgn   # outward normal
+        score = (nx * tx + nz * tz) + 0.6 * (nx * CAM_DIR[0] + nz * CAM_DIR[1])
+        cand.append((-score, i, ax, az, bx, bz, el, nx, nz))
+    cand.sort()
+    out = []
+    for sc, i, ax, az, bx, bz, el, nx, nz in cand:
+        if len(out) >= n_max or (sc > 0.3 and out):
+            break
+        ux, uz = (bx - ax) / el, (bz - az) / el
+        for along, depth, a in ((size[0], size[1], math.atan2(nx, nz)), (size[1], size[0], math.atan2(ux, uz))):
+            step = along + 0.75
+            k = min(n_max - len(out), int((el + 1.0) // step))
+            got = 0
+            for off in (wall_off, wall_off + 1.5, wall_off + 3.0):
+                for j in range(k):
+                    s = el / 2 + (j - (k - 1) / 2) * step
+                    x = ax + ux * s + nx * (off + depth / 2); z = az + uz * s + nz * (off + depth / 2)
+                    cp = rect_poly(x, z, a, size[0], size[1])
+                    if spot_ok(cp, road_pad=1.9, occ_pad=0.1, keep_off=0):
+                        reserve(cp); out.append([round(x, 2), round(z, 2), round(a, 3), poirng.randrange(8)]); got += 1
+                if got:
+                    break
+            if got:
+                break
+    return out[:n_max]
+
+poi_report = defaultdict(int)
+poi_items = [(b, t) for b, t in osm_placed if not b.get('lm')]
+
+# ---- gas stations: kiosk + canopy over pump islands + price pylon, at the corner toward the junction
+gas = []   # [brand, [(building or None, centroid)]]
+for b, t in poi_items:
+    if BRANDS.get(t.get('brand'), ('',))[0] == 'gas':
+        gas.append((t['brand'], b, centroid(b['p']), t))
+for t, gc in poi_rejected:
+    if BRANDS.get(t.get('brand'), ('',))[0] == 'gas':
+        gas.append((t['brand'], None, gc, t))
+groups = []
+for brand, b, gc, t in gas:
+    for gr in groups:
+        if gr[0] == brand and any(math.hypot(gc[0] - q[1][0], gc[1] - q[1][1]) < 32 for q in gr[1]):
+            gr[1].append((b, gc, t)); break
+    else:
+        groups.append([brand, [(b, gc, t)]])
+
+def crosses_road(a, b):
+    n = int(math.hypot(b[0] - a[0], b[1] - a[1]) / 1.5) + 1
+    return any(road_clear(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n, 0) < 0 for i in range(n + 1))
+
+def station_spot(kx, kz, same_side=True):
+    jn = min(art_junctions, key=lambda j: math.hypot(j[0] - kx, j[1] - kz), default=None)
+    if jn and math.hypot(jn[0] - kx, jn[1] - kz) > 90:
+        jn = None
+    for (W, D) in ((13.0, 9.6), (11.4, 8.8)):
+        best = None
+        for r in range(0, 26 if same_side else 42, 2):
+            n = 1 if r == 0 else max(8, int(2 * math.pi * r / 2.5))
+            for k in range(n):
+                a = 2 * math.pi * k / n
+                cx, cz = kx + math.cos(a) * r, kz + math.sin(a) * r
+                nr = nearest_art(cx, cz, 40)
+                if nr is None:
+                    continue
+                gap = nr[0] - D / 2   # canopy front edge -> curb
+                if gap < 3.2 or gap > 11:
+                    continue
+                score = abs(gap - 5.0) * 1.2 + r * 0.45 + (math.hypot(cx - jn[0], cz - jn[1]) * 0.25 if jn else 0)
+                if best is not None and score >= best[0]:
+                    continue
+                ang = facing_road(cx, cz, nr)
+                poly = rect_poly(cx, cz, ang, W, D)
+                if not spot_ok(poly, road_pad=2.6, occ_pad=1.4, allow_park=False):
+                    continue
+                if same_side and crosses_road((kx, kz), (cx, cz)):
+                    continue
+                if hidden_from_camera(cx, cz, 5.5):
+                    score += 20
+                if best is None or score < best[0]:
+                    best = (score, cx, cz, ang, W, D, gap, jn)
+        if best:
+            return best
+    # no room on the store's own corner (within ~25 m): the nearest free corner across the street
+    return station_spot(kx, kz, False) if same_side else None
+
+stations = 0
+for brand, members in groups:
+    cat, name, style = BRANDS[brand]
+    kx = sum(q[1][0] for q in members) / len(members); kz = sum(q[1][1] for q in members) / len(members)
+    kiosk = None
+    for b, gc, t in members:
+        if b is not None and t.get('amenity') != 'car_wash' and abs(poly_area(b['p'])) >= 12:
+            kiosk = b
+    sp = station_spot(*(centroid(kiosk['p']) if kiosk else (kx, kz)))
+    if not sp:
+        print('gas station FAILED', brand, round(kx), round(kz)); continue
+    _, cx, cz, ang, W, D, gap, jn = sp
+    across = lambda b: b is not None and crosses_road(centroid(b['p']), (cx, cz))
+    if across(kiosk):
+        kiosk = None   # the forecourt only fits across the street: the station gets a new shop beside it
+    members = [q for q in members if not across(q[0])]
+    fx, fz = math.sin(ang), math.cos(ang)       # toward the road
+    sx, sz = math.cos(ang), -math.sin(ang)      # along the road (local +x)
+    reserve(grow(rect_poly(cx, cz, ang, W, D), 0.8))
+    # price pylon: near the curb, on the side toward the junction
+    side = 1
+    if jn and (jn[0] - cx) * sx + (jn[1] - cz) * sz < 0:
+        side = -1
+    pylon = None
+    for sd in (side, -side):
+        for lat in (W / 2 + 2.2, W / 2 + 3.4, W / 2 + 1.2, W / 2 + 4.6):
+            for dep in (D / 2 + gap - 3.0, D / 2 + gap - 3.8, D / 2 + gap - 4.6):
+                px, pz = cx + sx * lat * sd + fx * dep, cz + sz * lat * sd + fz * dep
+                pp = rect_poly(px, pz, 0.55, 3.4, 0.9)    # board faces the camera (azimuth 0.55)
+                if road_clear(px, pz, 2.4) >= 0 and spot_ok(pp, road_pad=0.4, occ_pad=0.2, keep_off=0):
+                    pylon = (px, pz); break
+            if pylon: break
+        if pylon: break
+    if pylon:
+        reserve(rect_poly(pylon[0], pylon[1], 0.55, 3.4, 0.9))
+    back = D / 2 + 3.0
+    if not kiosk:
+        for (bx_, bz_) in [(-fx * (D / 2 + 2.2 + 2.9) + sx * o, -fz * (D / 2 + 2.2 + 2.9) + sz * o) for o in (0, 3, -3, 6, -6)] + \
+                         [(sx * (W / 2 + 2.4 + 4.0) * s - fx * dd, sz * (W / 2 + 2.4 + 4.0) * s - fz * dd) for s in (1, -1) for dd in (0, 2.5)]:
+            kp = rect_poly(cx + bx_, cz + bz_, ang, 8.0, 5.8)
+            if spot_ok(kp, road_pad=1.0, occ_pad=0.4, keep_off=1):
+                kiosk = place_building(r2p(kp), 4.2, '#f8fafc', 'retail')
+                back = max(back, -(bx_ * fx + bz_ * fz) + 2.9 + 1.0)
+                break
+    if not kiosk:   # no room for a shop: the biggest station building hosts the canopy
+        placed = [q[0] for q in members if q[0] is not None]
+        kiosk = max(placed, key=lambda b: abs(poly_area(b['p']))) if placed else None
+    if not kiosk:
+        print('gas station FAILED (no kiosk)', brand, round(kx), round(kz)); continue
+    for b, gc, t in members:
+        if b is not None and b is not kiosk:
+            poi_set(b, 'carwash', None, style); b['h'] = min(b['h'], 4.5)
+    poi_set(kiosk, 'gas', name, style); kiosk['h'] = 4.2
+    kiosk['st'] = [round(cx, 2), round(cz, 2), round(ang, 4), W, D, round(gap + D / 2, 2), round(back, 2)] + \
+        ([round(pylon[0], 2), round(pylon[1], 2)] if pylon else [])
+    # forecourt: canopy + margin, out to the curb (and back to the shop); trees / houses keep off it
+    reserve(r2p([(cx + sx * lx + fx * lz, cz + sz * lx + fz * lz) for lx, lz in
+                 ((-W / 2 - 3, -back), (W / 2 + 3, -back), (W / 2 + 3, gap + D / 2 - 2.2), (-W / 2 - 3, gap + D / 2 - 2.2))]))
+    stations += 1
+    poi_report['gas'] += 1
+    print('gas station', name, 'at', round(cx), round(cz), 'junction', jn and [round(v) for v in jn], 'pylon', bool(pylon))
+gas_out = 0
+for w in ways:
+    t = w['tags']
+    if BRANDS.get(t.get('brand'), ('',))[0] == 'gas' and 'building' in t:
+        if not all(inside(q) for q in rpts(w)):
+            gas_out += 1
+print('gas stations: %d placed, %d station buildings outside the map' % (stations, gas_out))
+
+# ---- brands, dealers and well-known places on the OSM buildings that made it into the game
+def dealer_name(t):
+    words = (t.get('brand', '') + ';' + t.get('name', ''))
+    puns = []
+    for real, pun in DEALERS.items():
+        if real in words and pun not in puns:
+            puns.append(pun)
+    if not puns:
+        return None
+    place = next((p for p in DEALER_PLACES if p in t.get('name', '')), '')
+    return (' '.join(puns[:2]) + (' ' + place if place else '')).strip()
+
+def classify(t, b=None):
+    """(category, sign text or None, style) for an OSM tag set, or None"""
+    brand, name = t.get('brand', ''), t.get('name', '')
+    if t.get('shop') == 'car' or (brand and any(k in brand for k in DEALERS)):
+        dn = dealer_name(t)
+        if dn:
+            return ('dealer', dn, dn.split()[0].lower())
+    if brand in BRANDS or name in BRANDS:
+        return BRANDS[brand if brand in BRANDS else name]
+    if name in NAMED:
+        return NAMED[name]
+    am = t.get('amenity')
+    if am == 'fire_station' or t.get('building') == 'fire_station':
+        num = ''.join(ch for ch in name if ch.isdigit())
+        return ('fire', '消防站 Fire Hall' + (' ' + num if num else ''), 'fire')
+    if am == 'police':
+        return ('police', '警察局 Police', 'police')
+    if am == 'library':
+        return ('library', (name.split(' - ')[-1].replace(' Branch', '') + ' 图书馆').strip(), 'library')
+    if am == 'place_of_worship' or t.get('building') in ('church', 'temple', 'mosque'):
+        rel = t.get('religion', 'christian' if t.get('building') == 'church' else '')
+        return ('church' if rel == 'christian' else 'temple', None, None)
+    if am == 'community_centre' or name.endswith('Community Centre'):
+        short = name.replace(' Memorial', '').replace(' Community Centre', '')
+        return ('cc', short + ' 社区中心' if short and short != name else None, 'cc')
+    if t.get('building') == 'school' or am == 'school':
+        return ('school', None, 'school')
+    if am == 'car_wash':
+        return ('carwash', None, 'carwash')
+    return None
+
+for b, t in poi_items:
+    if b.get('poi'):
+        continue
+    cl = classify(t, b)
+    if not cl:
+        continue
+    cat, nm, st = cl
+    if cat == 'gas':
+        continue
+    area = abs(poly_area(b['p']))
+    if cat == 'cc' and area < 120:
+        nm = None
+    poi_set(b, cat, nm, st)
+    if cat in ('church', 'temple'):
+        b['h'] = min(b['h'], 7.5)
+    elif cat == 'dealer':
+        b['h'] = max(6.5, min(b['h'], 8.0))
+    elif cat in ('fast', 'bank'):
+        b['h'] = min(b['h'], 6.0)
+    poi_report[cat] += 1
+
+# brand places whose building did not fit (or that are only a point): a compact building near the OSM spot
+extra_pts = []
+for t, gc in poi_rejected:
+    extra_pts.append((t, gc))
+for e in els:
+    t = e.get('tags', {})
+    if e['type'] == 'node' and (t.get('shop') == 'car' or t.get('amenity') in ('fire_station', 'police')):
+        p = osm_point(e)
+        if p and abs(p[0]) < HALF_W - 10 and abs(p[1]) < HALF_H - 10:
+            extra_pts.append((t, p))
+FALLBACK_SIZE = {'dealer': [(16.0, 11.0), (13.0, 9.5)], 'fast': [(11.0, 9.0), (9.0, 7.5)],
+                 'fire': [(13.0, 9.5), (11.0, 8.0)], 'police': [(14.0, 10.0)]}
+FALLBACK_H = {'dealer': 7.0, 'fast': 5.0, 'fire': 7.0, 'police': 9.0}
+for t, gc in extra_pts:
+    cl = classify(t)
+    if not cl or cl[0] not in FALLBACK_SIZE:
+        continue
+    if any(b.get('n') == cl[1] and math.hypot(*(centroid(b['p'])[i] - gc[i] for i in (0, 1))) < 60 for b in buildings):
+        continue
+    poly = poi_spot(gc[0], gc[1], FALLBACK_SIZE[cl[0]], 36)
+    if not poly:
+        print('poi FAILED', cl[1], [round(v) for v in gc]); continue
+    b = place_building(poly, FALLBACK_H[cl[0]], '#ffffff', 'retail')
+    poi_set(b, cl[0], cl[1], cl[2])
+    poi_report[cl[0] + ' (new)'] += 1
+    print('poi placed near the OSM spot:', cl[1], round(math.hypot(centroid(poly)[0] - gc[0], centroid(poly)[1] - gc[1])), 'm away')
+
+# schools and libraries are often only tagged on the grounds: name the biggest building on them
+for w in ways:
+    t = w['tags']
+    if 'building' in t or t.get('amenity') not in ('school', 'library'):
+        continue
+    gp = area_polys(w)
+    if not gp or not t.get('name'):
+        continue
+    bb = bbox_of(gp)
+    inside_b = [b for b in occ.query(bb) if 'k' in b and not b.get('lm') and b.get('poi') in (None, 'school', 'library')
+                and point_in_poly(*centroid(b['p']), gp)]
+    if not inside_b:
+        continue
+    host = max(inside_b, key=lambda b: abs(poly_area(b['p'])))
+    if t['amenity'] == 'school':
+        for b in inside_b:
+            if not b.get('poi'):
+                poi_set(b, 'school', None, 'school'); poi_report['school'] += 1
+        host['sname'] = t['name']
+    else:
+        cat, nm, st = classify(t)
+        poi_set(host, cat, nm, st); poi_report[cat] += 1
+# school signs: one per school name, on its biggest building
+named_schools = {}
+for b, t in poi_items:
+    if b.get('poi') == 'school' and t.get('name'):
+        b['sname'] = t['name']
+for b in buildings:
+    nm = b.pop('sname', None)
+    if nm and (nm not in named_schools or abs(poly_area(b['p'])) > abs(poly_area(named_schools[nm]['p']))):
+        named_schools[nm] = b
+for nm, b in named_schools.items():
+    short = nm
+    for a, c in SCHOOL_SHORT:
+        short = short.replace(a, c)
+    b['n'] = short.strip(' ,')
+# display cars in front of every dealer, a yellow school bus at each named school
+for b in buildings:
+    if b.get('poi') == 'dealer':
+        cars = front_row(b, 6, (2.3, 4.7))
+        if cars:
+            b['cars'] = cars; poi_report['dealer cars'] += len(cars)
+    elif b.get('poi') == 'school' and b.get('n'):
+        bus = front_row(b, 1, (2.8, 9.8), 1.5)
+        if bus:
+            b['bus'] = bus[0]; poi_report['school buses'] += 1
+poi_report['signs'] = sum(1 for b in buildings if b.get('n'))
+print('POIs:', dict(sorted(poi_report.items())))
 
 # ---------------------------------------------------------------- procedural houses
 HOUSE_WALLS = ['#f4e3b1', '#f7f2e7', '#cfe3b0', '#f6d5c3', '#dbe7f5', '#f3dcae', '#e7d9f2', '#fde2e4']
