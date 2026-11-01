@@ -23,6 +23,7 @@ const LAMP_OFF = [[0.32, 0.1, 0.1], [0.33, 0.26, 0.07], [0.07, 0.25, 0.13]];
 
 // Vehicle shapes. Every type reuses the sedan batches with scaled part matrices, so new
 // types cost no draw calls. Local frame: +z forward, y up.
+const BUS_EXTRA = 3.8; // a 12 m bus is ~3.8 m longer at each end than a car: added to following gaps
 const SHAPES = (() => {
   const T = M.T, S = M.S, C = M.chain;
   const wheels = (x, y, z, s) => [-1, 1].flatMap((sx) => [-1, 1].map((sz) => C(T(sx * x, y, sz * z), M.RZ(Math.PI / 2), S(s))));
@@ -140,7 +141,7 @@ export class Game {
   }
   makeCar(type, x, z, a, opts = {}) {
     const car = {
-      id: uid++, type, x, z, a, speed: 0, vx: 0, vz: 0, hp: CFG.car.hp, col: hexc(opts.col || (type === 'police' ? '#f8fafc' : type === 'taxi' ? '#fbbf24' : pick(type === 'suv' ? SUVCOL : type === 'van' ? VANCOL : CARCOL))),
+      id: uid++, type, x, z, a, speed: 0, vx: 0, vz: 0, hp: CFG.car.hp, bus: type === 'bus', col: hexc(opts.col || (type === 'bus' ? '#2563eb' : type === 'police' ? '#f8fafc' : type === 'taxi' ? '#fbbf24' : pick(type === 'suv' ? SUVCOL : type === 'van' ? VANCOL : CARCOL))),
       driver: opts.driver || null, ai: opts.ai || null, parked: !!opts.parked, stopT: 0, honkT: 0, smokeT: 0, dead: false, cops: opts.cops || 0, route: null, routeT: 0, stuckT: 0, revT: 0,
     };
     this.cars.push(car);
@@ -296,7 +297,7 @@ export class Game {
   // ------------------------------------------------------------------ cars
   nearestCar(x, z, maxD) {
     let best = null, bd = maxD;
-    for (const c of this.cars) { const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } }
+    for (const c of this.cars) { if (c.bus) continue; const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } } // no boarding buses (spec 2.3)
     return best;
   }
   enterCar(car) {
@@ -370,11 +371,12 @@ export class Game {
   startPath(e, s, dir) { return { e, s, dir }; }
   // random continuation {e, dir} at the far end of edge e travelled in direction dir
   // (preferArterial = traffic: likes arterials, never U-turns where a divided road splits)
-  pickNext(e, dir, allowOneway, preferArterial) {
+  pickNext(e, dir, allowOneway, preferArterial, stay = -1) {
     const node = dir > 0 ? e.b : e.a;
     let opts = this.w.adj[node].filter((a) => a.e !== e.i);
     if (!allowOneway) opts = opts.filter((a) => !this.w.edges[a.e].oneway || a.dir > 0);
     if (!opts.length) return { e: e.i, dir: -dir };
+    if (stay >= 0) { const on = opts.filter((a) => this.w.edges[a.e].name === stay); if (on.length) opts = on; } // buses keep to their road
     if (preferArterial && opts.length > 1) {
       // travel directions over ~10 m (carriageways splay out right at a split node)
       const W = this.w, n = W.nodes[node], q = W.edgePoint(e, e.len - Math.min(10, e.len), dir);
@@ -547,11 +549,22 @@ export class Game {
     const copTarget = this.chase.active ? PO.footChase : PO.footPatrol;
     if (cops < copTarget && !this.chase.active && this.policeCount() < PO.max) addWalker('cop');
     // traffic
-    const moving = this.cars.filter((c) => c.ai && c.type !== 'police').length;
+    const moving = this.cars.filter((c) => c.ai && c.type !== 'police' && !c.bus).length;
     const trTarget = this.isMobile ? TR.countMobile : TR.countDesktop;
     if (moving < trTarget) {
       const ne = ringPoint(TR.spawnMin, TR.spawnMax, 3);
       if (ne) this.addTraffic(ne, this.pickType());
+    }
+    // Viva buses in Hwy 7 traffic, so they show up around the spawn too (the rapidway is only out west)
+    if (this.cars.filter((c) => c.bus).length < CFG.bus.laneCount) {
+      if (!this.busRoad) { const nm = this.w.names.indexOf('Hwy 7'); this.busRoad = { nm, edges: this.w.edges.filter((e) => e.name === nm && e.len > 25) }; }
+      for (let i = 0; i < 8 && this.busRoad.edges.length; i++) {
+        const e = pick(this.busRoad.edges), mid = this.w.edgePoint(e, e.len / 2, 1);
+        const d = Math.hypot(mid.x - P.x, mid.z - P.z);
+        if (d < (initial ? 30 : TR.spawnMin) || d > TR.spawnMax + 60) continue;
+        const car = this.addTraffic({ e, k: Math.floor((e.pts.length - 2) / 2), t: 0.5 }, 'bus');
+        if (car) { car.ai.stay = this.busRoad.nm; break; }
+      }
     }
     const parked = this.cars.filter((c) => c.parked && !c.driver).length;
     if (parked < TR.parked) {
@@ -587,7 +600,7 @@ export class Game {
     const s = dir > 0 ? s0 : e.len - s0;
     const off = laneOff(e);
     const p = this.w.edgePoint(e, s, dir, off);
-    if (this.cars.some((c) => Math.hypot(c.x - p.x, c.z - p.z) < 10)) return null;
+    if (this.cars.some((c) => Math.hypot(c.x - p.x, c.z - p.z) < (type === 'bus' || c.bus ? 16 : 10))) return null;
     if (this.time > 0.5 && this.onScreen(p.x, p.z, CFG.peds.spawnMargin)) return null; // never pop into view
     const car = this.makeCar(type, p.x, p.z, Math.atan2(p.dx, p.dz), { ai: { path: this.startPath(e, s, dir), off }, driver: 'npc', cops: type === 'police' ? 2 : 0 });
     car.speed = CFG.traffic.speed[e.cls] * 0.8;
@@ -785,7 +798,8 @@ export class Game {
       const ai = car.ai, path = ai.path, e = path.e, TR = CFG.traffic, SG = CFG.signals;
       let target = TR.speed[e.cls] * (car.type === 'van' ? TR.vanSpeed : car.type === 'suv' ? TR.suvSpeed : 1);
       if (car.type === 'police') target *= 0.85;
-      if (!path.next) path.next = this.pickNext(e, path.dir, false, true);
+      if (!path.next) path.next = this.pickNext(e, path.dir, false, true, ai.stay ?? -1);
+      if (car.bus) target *= CFG.bus.laneSpeed;
       const calm = !(car.impatient > 0); // an impatient car (stuck too long) ignores lights, merges, crossing + parked cars
       // look ahead: the traffic car ahead on our own path (or merging into it) is followed with a
       // gap (smooth queues); other moving cars in the forward cone (crossing traffic, the player's
@@ -793,7 +807,15 @@ export class Game {
       const fx = Math.sin(car.a), fz = Math.cos(car.a), rem = e.len - path.s;
       let block = false, blockPlayer = false, cap = Infinity, lead = Infinity, leadV = 0;
       // forward cone: returns the distance ahead along our heading, or 0
-      const cone = (o, r, range) => { const dx = o.x - car.x, dz = o.z - car.z, d = Math.hypot(dx, dz), lon = dx * fx + dz * fz; return d < range && d > 0.1 && lon / d > 0.82 && Math.abs(dx * fz - dz * fx) < r ? lon : 0; };
+      const cone1 = (x, z, r, range) => { const dx = x - car.x, dz = z - car.z, d = Math.hypot(dx, dz), lon = dx * fx + dz * fz; return d < range && d > 0.1 && lon / d > 0.82 && Math.abs(dx * fz - dz * fx) < r ? lon : 0; };
+      // a 12 m bus is checked at its nose, middle and tail (crossing in front of us it can block the
+      // lane while its centre is well off to the side)
+      const cone = (o, r, range) => {
+        if (!o.bus) return cone1(o.x, o.z, r, range);
+        let best = 0;
+        for (const k of [-5, 0, 5]) { const l = cone1(o.x + Math.sin(o.a) * k, o.z + Math.cos(o.a) * k, r, range); if (l && (!best || l < best)) best = l; }
+        return best;
+      };
       // speed cap that keeps TR.gap (centre to centre, + headway at speed) behind something at
       // distance dist moving at v; closer than that it drops back below v
       const follow = (dist, v) => {
@@ -807,7 +829,7 @@ export class Game {
         if (o === car) continue;
         const op = o.ai && o.ai.path;
         // (short gaps along the path overestimate the real distance where lane offsets cut a corner)
-        const ahead = (g) => { if (g < 15) g = Math.min(g, Math.hypot(o.x - car.x, o.z - car.z)); if (g < lead) { lead = g; leadV = o.speed; } };
+        const ahead = (g) => { if (g < 15) g = Math.min(g, Math.hypot(o.x - car.x, o.z - car.z)); g -= o.bus ? BUS_EXTRA : 0; if (g < lead) { lead = g; leadV = o.speed; } };
         if (op && op.e === e && op.dir === path.dir) { if (op.s > path.s) ahead(op.s - path.s); continue; }
         if (op && op.e.i === nx.e && op.dir === nx.dir) { ahead(rem + op.s); continue; }
         // merging: another car heading into the same next edge from elsewhere; the one further
@@ -818,12 +840,14 @@ export class Game {
           continue;
         }
         if (!calm && o !== this.inCar || parkedCar(o)) continue; // parked cars: measured along the path below
-        const lon = cone(o, o === this.inCar ? 2.4 : 2.2, 14);
+        // (a bus looks ahead from its nose, and a bit wider)
+        const ext = car.bus ? BUS_EXTRA : 0;
+        const lon = cone(o, (o === this.inCar ? 2.4 : 2.2) + (car.bus ? 0.5 : 0), 14 + ext);
         if (!lon) continue;
-        cap = Math.min(cap, follow(lon, (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic
+        cap = Math.min(cap, follow(lon - ext - (o.bus ? BUS_EXTRA : 0), (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic
         if (o === this.inCar && lon < 10) blockPlayer = true;
       }
-      for (const o of this.chars) if (cone(o, 1.8, 10)) { block = true; if (o === this.player) blockPlayer = true; }
+      for (const o of this.chars) if (cone(o, car.bus ? 2.2 : 1.8, car.bus ? 10 + BUS_EXTRA : 10)) { block = true; if (o === this.player) blockPlayer = true; }
       // parked / abandoned cars are measured along our path (robust on bends): stop behind one in
       // our lane, or pull out around it; on a two-way road only while nothing comes the other way
       // in the space we need (back into the lane if something does, unless already alongside it)
@@ -845,13 +869,13 @@ export class Game {
           if (lon > 0 && lon < 30 && left > 0.8 && left < pass + 2.6 && Math.sin(o.a) * fx + Math.cos(o.a) * fz < -0.5) oncoming = true;
         }
       ai.swerve = lerp(sw, pass < 3 && (!oncoming || passS < 2) ? pass : 0, Math.min(1, (0.8 + 0.2 * car.speed) * dt));
-      if (lead < 40) cap = Math.min(cap, follow(lead, leadV)); // queue behind the car ahead on our path (always)
+      if (lead < 40) cap = Math.min(cap, follow(lead - (car.bus ? BUS_EXTRA : 0), leadV)); // queue behind the car ahead on our path (always)
       // traffic lights: stop at the line on red, and on yellow if a comfortable stop still fits
       const sg = calm ? this.signalAhead(path) : null;
       if (sg && sg.d > -0.5) {
         const st = this.w.signalState(sg.ap.sig, sg.ap.axis, this.time);
         if (st !== SIG_GREEN) {
-          const v = Math.max(0, car.speed), dd = Math.max(0, sg.d - 0.05);
+          const v = Math.max(0, car.speed), dd = Math.max(0, sg.d - 0.05 - (car.bus ? BUS_EXTRA : 0)); // a bus's nose is further ahead
           const comf = Math.sqrt(2 * SG.comfortDecel * dd), hard = Math.sqrt(2 * SG.maxDecel * dd);
           if (v <= (st === SIG_YELLOW ? comf : hard) + 0.3) cap = Math.min(cap, v <= comf + 0.3 ? comf : hard);
         }
@@ -1089,11 +1113,7 @@ export class Game {
     for (const c of this.chars) if (c !== this.player && !c.hidden && Math.abs(c.x - P.x) < R && Math.abs(c.z - P.z) < R) this.drawChar(c);
     for (const car of this.cars) if (car !== this.inCar && Math.abs(car.x - P.x) < R + 30 && Math.abs(car.z - P.z) < R + 30) this.drawCar(car);
     for (const b of this.buses) if (Math.abs(b.x - P.x) < R + 40 && Math.abs(b.z - P.z) < R + 40) {
-      const m = M.chain(M.T(b.x, 0, b.z), M.RY(b.a));
-      this.put(this.B.busBody, M.mul(m, M.T(0, 1.8, 0)), [0.15, 0.39, 0.92]);
-      this.put(this.B.busGlass, M.mul(m, M.T(0, 2.4, 0.2)));
-      this.put(this.B.busRoof, M.mul(m, M.T(0, 3.35, 0)));
-      for (const s of [-1, 1]) for (const zz of [-3.6, 3.6]) this.put(this.B.wheel, M.chain(m, M.T(s * 1.15, 0.5, zz), M.RZ(Math.PI / 2), M.S(1.2)));
+      this.drawBus(M.chain(M.T(b.x, 0, b.z), M.RY(b.a)));
     }
     for (const f of this.puffs) this.put(this.B.puff, M.chain(M.T(f.x, f.y, f.z), M.S(f.s)), f.c);
     this.drawSignals(P);
@@ -1138,9 +1158,17 @@ export class Game {
       }
     }
   }
+  // Viva bus (rapidway buses and the ones running in Hwy 7 traffic)
+  drawBus(m) {
+    this.put(this.B.busBody, M.mul(m, M.T(0, 1.8, 0)), [0.15, 0.39, 0.92]);
+    this.put(this.B.busGlass, M.mul(m, M.T(0, 2.4, 0.2)));
+    this.put(this.B.busRoof, M.mul(m, M.T(0, 3.35, 0)));
+    for (const s of [-1, 1]) for (const zz of [-3.6, 3.6]) this.put(this.B.wheel, M.chain(m, M.T(s * 1.15, 0.5, zz), M.RZ(Math.PI / 2), M.S(1.2)));
+  }
   drawCar(car) {
     const B = this.B;
     const m = M.chain(M.T(car.x, 0, car.z), M.RY(car.a));
+    if (car.bus) { this.drawBus(m); return; }
     const P = (batch, mm, col) => this.put(batch, M.mul(m, mm), col);
     const dark = car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
     const V = SHAPES[car.type] || SHAPES.sedan;
