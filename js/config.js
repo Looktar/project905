@@ -36,7 +36,7 @@ export const CFG = {
     footPatrol: 2, carPatrol: 1, footChase: 4, carChase: 3,
     sight: 25, alert: 60, giveUp: 10,
     runSpeed: 7.0, hp: 150, punchDmg: 9,
-    bustFoot: 1.5, bustCar: 2.0, reinforce: 6,
+    bustFoot: 1.5, bustCar: 2.0, reinforce: 6, respawn: [150, 300],
   },
   bus: { count: 2, speed: 9 },
   minimap: { pxPerM: 0.5, radiusM: 170 },

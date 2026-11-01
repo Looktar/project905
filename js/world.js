@@ -243,6 +243,16 @@ export class World {
       }
     return false;
   }
+  // on (or right next to) the railway ballast
+  onRail(x, z, pad = 1) {
+    for (const pts of this.map.rails)
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [ax, az] = pts[k], [bx, bz] = pts[k + 1];
+        if (Math.min(ax, bx) - 6 > x || Math.max(ax, bx) + 6 < x || Math.min(az, bz) - 6 > z || Math.max(az, bz) + 6 < z) continue;
+        if (segDist(x, z, ax, az, bx, bz).d < 1.6 + pad) return true;
+      }
+    return false;
+  }
   // line of sight between two points (blocked by buildings/houses)
   los(ax, az, bx, bz) {
     const ids = this.query(Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz));

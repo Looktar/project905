@@ -221,19 +221,27 @@ export class Game {
   }
   finishBust() {
     this.hud.busted(false);
-    // respawn 150-300 m away from the cops
-    const P = this.playerPos();
-    let best = null, bestScore = -1;
-    for (let i = 0; i < 40; i++) {
-      const a = rr(0, 6.28), d = rr(150, 300);
+    // respawn 150-300 m away (spec 2.5) on a sidewalk, as far from the police as possible,
+    // never in water or on the tracks; the distance is checked after snapping to the road
+    const P = this.playerPos(), [r0, r1] = CFG.police.respawn, mid = (r0 + r1) / 2;
+    const cops = [...this.chars.filter((c) => c.kind === 'cop'), ...this.cars.filter((c) => c.type === 'police' && c !== this.inCar)];
+    let best = null, bestScore = -1, alt = null;
+    for (let i = 0; i < 80 && bestScore < 1e9; i++) {
+      const a = rr(0, 6.28), d = rr(r0 + 10, r1 - 10);
       const ne = this.w.nearestEdge(P.x + Math.cos(a) * d, P.z + Math.sin(a) * d, 30);
       if (!ne) continue;
-      const p = this.w.edgePoint(ne.e, ne.e.cum[ne.k] + 1, 1, ne.e.w / 2 + 1.6);
-      if (this.w.inWater(p.x, p.z)) continue;
+      const s = ne.e.cum[ne.k] + ne.t * (ne.e.cum[ne.k + 1] - ne.e.cum[ne.k]);
+      const side = ne.e.oneway || Math.random() < 0.5 ? 1 : -1; // divided roads: outer curb only
+      const sp = this.w.edgePoint(ne.e, s, 1, side * (ne.e.w / 2 + 1.6));
+      const q = this.w.collide(sp.x, sp.z, CFG.player.radius);
+      if (this.w.inWater(q.x, q.z) || this.w.onRail(q.x, q.z)) continue;
+      const dd = Math.hypot(q.x - P.x, q.z - P.z);
+      if (dd < r0 || dd > r1) { if (!alt || Math.abs(dd - mid) < alt.miss) alt = { x: q.x, z: q.z, miss: Math.abs(dd - mid) }; continue; }
       let minCop = 1e9;
-      for (const c of this.chars) if (c.kind === 'cop') minCop = Math.min(minCop, Math.hypot(c.x - p.x, c.z - p.z));
-      if (minCop > bestScore) { bestScore = minCop; best = p; }
+      for (const c of cops) minCop = Math.min(minCop, Math.hypot(c.x - q.x, c.z - q.z));
+      if (minCop > bestScore) { bestScore = minCop; best = q; }
     }
+    best = best || alt;
     if (this.inCar) this.exitCar(true);
     const p = this.player;
     if (best) { p.x = best.x; p.z = best.z; }
@@ -248,7 +256,7 @@ export class Game {
   // ------------------------------------------------------------------ cars
   nearestCar(x, z, maxD) {
     let best = null, bd = maxD;
-    for (const c of this.cars) { if (c.dead && c.hp <= 0 && false) continue; const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } }
+    for (const c of this.cars) { const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } }
     return best;
   }
   enterCar(car) {

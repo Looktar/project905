@@ -265,8 +265,7 @@ describe('combat and police', () => {
     expect(p.invuln).toBeGreaterThan(0);
     const d = dist(p, before);
     expect(d).toBeGreaterThanOrEqual(150);
-    // spec 2.5 says 150-300 m; the current respawn often overshoots (see the KNOWN BUG test below)
-    expect(d).toBeLessThanOrEqual(300 + 250);
+    expect(d).toBeLessThanOrEqual(300 + 10); // spec 2.5: 150-300 m
     expect(sim.buildingAt(p.x, p.z)).toBeNull();
     expect(sim.world.inWater(p.x, p.z)).toBe(false);
   });
@@ -299,11 +298,9 @@ describe('respawn distance after a bust (spec 2.5: 150-300 m)', () => {
     expect(dists).toHaveLength(40);
   });
 
-  // KNOWN BUG (js/game.js finishBust): the candidate farthest from the cops is snapped
-  // to the START of the nearest road segment (not the nearest point) and the distance
-  // is never re-checked, so most respawns land at 300-340 m and some at ~450 m.
-  // Once that is fixed this test reports "expected to fail": then turn it.fails into it.
-  it.fails('KNOWN BUG: every respawn is within 150-300 m (+ sidewalk offset)', () => {
+  // finishBust used to snap to the START of the nearest road segment and never re-check the
+  // distance (respawns at 300-450 m); it now snaps to the nearest point and re-checks.
+  it('every respawn is within 150-300 m (+ sidewalk offset)', () => {
     expect(dists).toHaveLength(40);
     for (const d of dists) expect(d).toBeLessThanOrEqual(300 + 10);
   });
