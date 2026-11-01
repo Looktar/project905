@@ -12,8 +12,7 @@
 - 更多地标（Unionville 老街特色建筑、Toogood Pond 凉亭、Downtown Markham 影院等）
 - Kenney CC0 模型替换程序化建筑/车辆
 - 换装、手柄支持
-- Viva 公交也在 Hwy 7 普通车道上跑（出生点附近也能看到公交车；现实中快速公交道只在西边）
 - 公交车到站停靠几秒
-- 左转让对向直行；路人看红绿灯过马路
 - 停车场静态车加入 SUV / 面包车（每个区块会多 draw call）
-- 路口绿色路牌（概念图里有）
+- 补抓 OSM 数据（amenity=fuel、全部店铺、楼高），可能扩大地图到 McCowan 以东 / Steeles 以南（需要放开 overpass-api.de）
+- 用 Polyfork 模型替换车、树、街道道具（需要放开 polyfork.dev，D-42）
