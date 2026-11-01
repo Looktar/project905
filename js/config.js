@@ -34,7 +34,8 @@ export const CFG = {
     mix: { sedan: 50, suv: 25, van: 10, taxi: 15 },   // vehicle type weights (traffic + street parking)
     suvSpeed: 0.97, vanSpeed: 0.88, vanAccel: 0.8,     // handling multipliers (top speed / acceleration)
     gap: 6.8, headway: 0.5, followDecel: 6,            // queueing: stop gap (m, centre to centre), + s of speed, braking (m/s^2)
-    onewayLane: 1.6,                                   // m right of a one-way carriageway's centre (divided roads)
+    onewayLane: 2.2,                                   // m right of a one-way carriageway's centre (divided roads)
+    passGap: 2.35,                                     // m sideways clearance when pulling out around a parked car
   },
   police: {
     footPatrol: 2, carPatrol: 1, footChase: 4, carChase: 3,
@@ -50,7 +51,7 @@ export const CFG = {
   input: { rotateDir: 1 },
   // signals: traffic lights
   signals: {
-    green: 9, yellow: 2, allRed: 1.2,   // s; cycle: E-W green, yellow, all-red, N-S green, yellow, all-red
+    green: 9, yellow: 2, allRed: 2,     // s; cycle: E-W green, yellow, all-red, N-S green, yellow, all-red
     clusterRadius: 25,                  // m; junction nodes this close form one intersection (divided roads)
     stopGap: 0.6,                       // m between the crosswalk and the bumper of a car waiting at red
     comfortDecel: 4.5, maxDecel: 9,     // m/s^2; stop for yellow only if a comfortable stop fits, red uses max

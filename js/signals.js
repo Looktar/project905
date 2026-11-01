@@ -7,7 +7,7 @@
 //     its lanes and a signal head (baked into the chunk meshes; lamps are drawn by game.js).
 // The phase clock is a pure function of game time, so nothing needs updating per frame.
 import { M } from './math.js';
-import { box, cyl } from './geo.js';
+import { box, cyl, ribbon } from './geo.js';
 import { CFG } from './config.js';
 
 export const SIG_GREEN = 0, SIG_YELLOW = 1, SIG_RED = 2;
@@ -163,10 +163,14 @@ function spotFree(w, x, z, poles) {
   return true;
 }
 
-// static poles, arms and heads go into the chunk meshes (no extra draw calls)
+// static stop bars, poles, arms and heads go into the chunk meshes (no extra draw calls)
 export function bakeSignals(w) {
   for (const sig of w.signals)
     for (const ap of sig.approaches) {
+      // white stop bar across the approach lanes, just ahead of a waiting car's bumper
+      const e = w.edges[ap.e], c = pointBack(w, ap, ap.stop - CAR_HALF - 0.35);
+      const [l0, l1] = e.oneway ? [-e.w / 2 + 0.3, e.w / 2 - 0.3] : [0.25, e.w / 2 - 0.3];
+      ribbon(w.chunk(c.x, c.z).mb, [[c.x - c.dz * l0, c.z + c.dx * l0], [c.x - c.dz * l1, c.z + c.dx * l1]], 0.5, 0.09, '#f7f7f7', false);
       const P = ap.pole;
       if (!P) continue;
       const mb = w.chunk(P.x, P.z).mb;

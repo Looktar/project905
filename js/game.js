@@ -73,7 +73,7 @@ export class Game {
     const near = world.nearestEdge(sx, sz, 40);
     if (near) {
       const s = near.e.cum[near.k] + 4;
-      const p = world.edgePoint(near.e, s, 1, near.e.w / 2 - 1.3);
+      const p = world.edgePoint(near.e, s, 1, Math.max(near.e.w / 2 - 1.3, laneOff(near.e) + 2.4)); // clear of the traffic lane
       this.makeCar('sedan', p.x, p.z, Math.atan2(p.dx, p.dz), { parked: true });
     }
   }
@@ -574,7 +574,7 @@ export class Game {
     }
     if (c.state === 'down') {
       c.timer -= dt;
-      if (c.timer <= 0) { c.hp = Math.max(c.hp, c.maxhp * 0.5); if (c.kind === 'cop') c.state = this.chase.active ? 'chase' : 'patrol'; else this.flee(c, P.x, P.z, 6); }
+      if (c.timer <= 0) { c.hp = Math.max(c.hp, c.maxhp * 0.5); if (c.kind === 'cop') c.state = this.chase.active ? 'chase' : 'patrol'; else { c.state = 'wander'; this.flee(c, P.x, P.z, 6); } } // flee() ignores downed people
       return;
     }
     const moveTo = (tx, tz, speed) => {
@@ -649,10 +649,10 @@ export class Game {
       let target = TR.speed[e.cls] * (car.type === 'van' ? TR.vanSpeed : car.type === 'suv' ? TR.suvSpeed : 1);
       if (car.type === 'police') target *= 0.85;
       if (!path.next) path.next = this.pickNext(e, path.dir, false, true);
-      const calm = !(car.impatient > 0); // an impatient car (stuck too long) ignores lights + traffic
+      const calm = !(car.impatient > 0); // an impatient car (stuck too long) ignores lights, merges, crossing + parked cars
       // look ahead: the traffic car ahead on our own path (or merging into it) is followed with a
-      // gap (smooth queues); other cars in the forward cone (crossing traffic, parked cars, the
-      // player's car) cap our speed the same way; people in the cone make us stop
+      // gap (smooth queues); other moving cars in the forward cone (crossing traffic, the player's
+      // car) cap our speed the same way; people in the cone make us stop
       const fx = Math.sin(car.a), fz = Math.cos(car.a), rem = e.len - path.s;
       let block = false, blockPlayer = false, cap = Infinity, lead = Infinity, leadV = 0;
       // forward cone: returns the distance ahead along our heading, or 0
@@ -665,26 +665,50 @@ export class Game {
         return dist >= need ? v + Math.sqrt(2 * TR.followDecel * (dist - need)) : Math.max(0, v - 2 * (need - dist));
       };
       const nx = path.next;
+      const parkedCar = (o) => !o.ai && o !== this.inCar && !o.chasing && Math.abs(o.speed) < 0.5;
       for (const o of this.cars) {
         if (o === car) continue;
         const op = o.ai && o.ai.path;
-        if (op && op.e === e && op.dir === path.dir) { const g = op.s - path.s; if (g > 0 && g < lead) { lead = g; leadV = o.speed; } continue; }
-        if (op && op.e.i === nx.e && op.dir === nx.dir) { const g = rem + op.s; if (g < lead) { lead = g; leadV = o.speed; } continue; }
+        // (short gaps along the path overestimate the real distance where lane offsets cut a corner)
+        const ahead = (g) => { if (g < 15) g = Math.min(g, Math.hypot(o.x - car.x, o.z - car.z)); if (g < lead) { lead = g; leadV = o.speed; } };
+        if (op && op.e === e && op.dir === path.dir) { if (op.s > path.s) ahead(op.s - path.s); continue; }
+        if (op && op.e.i === nx.e && op.dir === nx.dir) { ahead(rem + op.s); continue; }
         // merging: another car heading into the same next edge from elsewhere; the one further
         // from the merge point treats the closer one as the car ahead
-        if (op && op.next && op.next.e === nx.e && op.next.dir === nx.dir && rem < 30) {
+        if (calm && op && op.next && op.next.e === nx.e && op.next.dir === nx.dir && rem < 15) {
           const ro = op.e.len - op.s;
-          if (ro < rem || (ro === rem && o.id < car.id)) { const g = rem - ro; if (g < lead) { lead = g; leadV = o.speed; } }
+          if (ro < rem || (ro === rem && o.id < car.id)) ahead(rem - ro);
           continue;
         }
-        if (!calm && o !== this.inCar) continue;
+        if (!calm && o !== this.inCar || parkedCar(o)) continue; // parked cars: measured along the path below
         const lon = cone(o, o === this.inCar ? 2.4 : 2.2, 14);
         if (!lon) continue;
-        cap = Math.min(cap, follow(lon, (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic, parked cars
+        cap = Math.min(cap, follow(lon, (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic
         if (o === this.inCar && lon < 10) blockPlayer = true;
       }
       for (const o of this.chars) if (cone(o, 1.8, 10)) { block = true; if (o === this.player) blockPlayer = true; }
-      if (calm && lead < 40) cap = Math.min(cap, follow(lead, leadV)); // queue behind the car ahead on our path
+      // parked / abandoned cars are measured along our path (robust on bends): stop behind one in
+      // our lane, or pull out around it; on a two-way road only while nothing comes the other way
+      // in the space we need (back into the lane if something does, unless already alongside it)
+      const lane = laneOff(e), sw = ai.swerve || 0, near = [];
+      let pass = 0, passS = 99, oncoming = false;
+      for (const o of this.cars) {
+        if (o === car || Math.abs(o.x - car.x) > 30 || Math.abs(o.z - car.z) > 30) continue;
+        if (!parkedCar(o)) { near.push(o); continue; }
+        let q = alongEdge(e, path.dir, o.x, o.z), ds = q.s - path.s;
+        if (q.d > 4) { const q2 = alongEdge(this.w.edges[nx.e], nx.dir, o.x, o.z); if (q2.d < q.d) { q = q2; ds = rem + q2.s; } }
+        const dl = q.lat - lane; // its offset from our lane line, + = to the right
+        if (q.d > 4 || ds < -4.6 || ds > 30 || dl < -0.6 || dl > TR.passGap) continue;
+        if (ds < 16) { pass = Math.max(pass, TR.passGap - dl); passS = Math.min(passS, ds); }
+        if (calm && ds > 0 && Math.abs(dl + sw) < 2.2) cap = Math.min(cap, follow(ds, 0));
+      }
+      if (pass && !e.oneway)
+        for (const o of near) {
+          const dx = o.x - car.x, dz = o.z - car.z, lon = dx * fx + dz * fz, left = dx * fz - dz * fx;
+          if (lon > 0 && lon < 30 && left > 0.8 && left < pass + 2.6 && Math.sin(o.a) * fx + Math.cos(o.a) * fz < -0.5) oncoming = true;
+        }
+      ai.swerve = lerp(sw, pass < 3 && (!oncoming || passS < 2) ? pass : 0, Math.min(1, (0.8 + 0.2 * car.speed) * dt));
+      if (lead < 40) cap = Math.min(cap, follow(lead, leadV)); // queue behind the car ahead on our path (always)
       // traffic lights: stop at the line on red, and on yellow if a comfortable stop still fits
       const sg = calm ? this.signalAhead(path) : null;
       if (sg && sg.d > -0.5) {
@@ -704,7 +728,7 @@ export class Game {
       else if (car.speed > 2) car.waitT = 0;
       if (blockPlayer) { car.honkT -= dt; if (car.honkT <= 0) { car.honkT = 2.5; if (Math.hypot(car.x - this.player.x, car.z - this.player.z) < 60) { sfx.horn(); this.bubble('honk', car, 3.2); } } }
       this.advancePath(path, car.speed * dt, false, true);
-      const p = this.w.edgePoint(path.e, path.s, path.dir, laneOff(path.e));
+      const p = this.w.edgePoint(path.e, path.s, path.dir, laneOff(path.e) - (ai.swerve || 0));
       const dx = p.x - car.x, dz = p.z - car.z;
       if (Math.hypot(dx, dz) > 8) { car.x = p.x; car.z = p.z; car.a = Math.atan2(p.dx, p.dz); }
       else {
@@ -974,4 +998,17 @@ export class Game {
   }
 }
 
+// point (x, z) relative to edge e travelled in direction dir: distance along it, lateral offset
+// (+ = right of travel) and distance from the centreline
+function alongEdge(e, dir, x, z) {
+  let d = 1e9, s = 0, lat = 0;
+  for (let k = 0; k < e.pts.length - 1; k++) {
+    const [ax, az] = e.pts[k], [bx, bz] = e.pts[k + 1], r = segDist(x, z, ax, az, bx, bz);
+    if (r.d >= d) continue;
+    const L = e.cum[k + 1] - e.cum[k] || 1;
+    d = r.d; s = e.cum[k] + r.t * L;
+    lat = ((z - r.cz) * (bx - ax) - (x - r.cx) * (bz - az)) / L; // right of a->b: (-dz, dx)
+  }
+  return dir > 0 ? { s, lat, d } : { s: e.len - s, lat: -lat, d };
+}
 function hexc(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255]; }
