@@ -1,13 +1,18 @@
 // Keyboard + touch input, and the "forced landscape" layout.
 // On phones held in portrait (including iPhone with rotation lock) the whole
 // #app container is rotated 90deg so the game is always shown in landscape.
+// The geometry (CSS transform, touch -> game coordinates, safe areas) lives in
+// orient.js (pure, unit-tested); this file only applies it to the DOM.
+import { CFG } from './config.js';
+import { orientMode, cssTransform, screenToGame, screenDeltaToGame, safeAreaVars } from './orient.js';
+
 export const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 export const input = {
   mx: 0, my: 0,            // movement vector in screen space (my>0 = screen up)
   run: false, handbrake: false,
   punch: false, enter: false, horn: false,   // edge-triggered, cleared each frame
-  rotated: false, W: 0, H: 0,
+  rotated: false, rotateDir: 1, W: 0, H: 0,  // forced-landscape state (see orient.js)
 };
 
 const keys = new Set();
@@ -24,24 +29,26 @@ let joy = null; // {id, cx, cy}
 let joyVec = [0, 0];
 const btnState = { run: false, punchHeld: false };
 
+// Orientation mode currently applied to #app. Touch coordinates are converted with
+// this same mode, so they always match the CSS transform on screen (even if a
+// resize event has not been handled yet).
+let mode = orientMode({ vw: innerWidth, vh: innerHeight, touch: false });
+
 export function layout(app) {
-  const w = innerWidth, h = innerHeight;
-  input.rotated = isTouch && h > w;
-  if (input.rotated) {
-    app.style.width = h + 'px'; app.style.height = w + 'px';
-    app.style.transform = 'rotate(90deg) translateY(-100%)';
-    input.W = h; input.H = w;
-  } else {
-    app.style.width = w + 'px'; app.style.height = h + 'px';
-    app.style.transform = 'none';
-    input.W = w; input.H = h;
-  }
+  mode = orientMode({ vw: innerWidth, vh: innerHeight, touch: isTouch, rotateDir: CFG.input.rotateDir });
+  input.rotated = mode.rotated; input.rotateDir = mode.dir;
+  input.W = mode.W; input.H = mode.H;
+  app.style.width = mode.W + 'px'; app.style.height = mode.H + 'px';
+  app.style.transform = cssTransform(mode);
+  // safe-area insets re-mapped to game sides: the HUD CSS uses var(--sa-l) etc.
+  const sa = safeAreaVars(mode);
+  for (const k in sa) app.style.setProperty(k, sa[k]);
   return [input.W, input.H];
 }
 
-// screen delta -> game delta (accounts for the rotation)
-function toGameDelta(dx, dy) { return input.rotated ? [dy, -dx] : [dx, dy]; }
-function toGamePoint(x, y) { return input.rotated ? [y, innerWidth - x] : [x, y]; }
+// screen -> game (accounts for the rotation)
+function toGameDelta(dx, dy) { return screenDeltaToGame(dx, dy, mode); }
+function toGamePoint(x, y) { return screenToGame(x, y, mode); }
 
 export function initTouch(app, joyEl, knobEl, buttons) {
   const R = 58;
