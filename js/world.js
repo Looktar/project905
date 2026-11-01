@@ -375,7 +375,6 @@ export class World {
       if (area < 300) continue;
       const xs = poly.map((q) => q[0]), zs = poly.map((q) => q[1]);
       const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
-      let n = 0;
       const fill = Math.min(0.5, 120 / (area / 22));
       for (let z = z0 + 4; z < z1 - 3; z += 7.5)
         for (let x = x0 + 3; x < x1 - 2; x += 3.0) {
@@ -387,7 +386,6 @@ export class World {
           if (rl() < fill) {
             const flip = rl() < 0.5 ? 0 : Math.PI;
             lotCars.push([x, z, flip + (rl() - 0.5) * 0.08, Math.floor(rl() * 12)]);
-            n++;
           }
         }
     }

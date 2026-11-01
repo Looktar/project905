@@ -257,9 +257,8 @@ function norm(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l
 function render(target, dist, dt) {
   const C = CFG.camera;
   const eye = [target[0] + Math.sin(C.azimuth) * Math.cos(C.elevation) * dist, Math.sin(C.elevation) * dist, target[2] + Math.cos(C.azimuth) * Math.cos(C.elevation) * dist];
-  // the visible ground is shifted away from the camera; centre culling there
+  // the visible ground is shifted away from the camera: centre the shadow map a bit ahead
   const fx = -Math.sin(C.azimuth), fz = -Math.cos(C.azimuth);
-  const vc = [target[0] + fx * dist * 0.35, target[2] + fz * dist * 0.35];
   const shR = Math.min(95, dist * 1.25);
   renderer.begin(eye, target, C.fov, [target[0] + fx * dist * 0.2, 0, target[2] + fz * dist * 0.2], shR);
   const vis = world.visibleRect(groundFootprint(eye, target, C.fov, W / H), 22);

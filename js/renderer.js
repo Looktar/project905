@@ -293,7 +293,6 @@ export class Renderer {
   // ---- frame ----
   resize(w, h) { this.canvas.width = w; this.canvas.height = h; }
   begin(camEye, camTarget, fov, focus, shadowRadius) {
-    const gl = this.gl;
     this.stats = { calls: 0 };
     const W = this.canvas.width, H = this.canvas.height;
     this.VP = M.mul(M.persp(fov, W / H, 2, 1200), M.look(camEye, camTarget, [0, 1, 0]));
