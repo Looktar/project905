@@ -194,6 +194,22 @@ describe('combat and police', () => {
     expect(sim.game.chase.active).toBe(false);
   });
 
+  it(`never more than ${CFG.police.max} officers (on foot + in cars) during a long chase (spec 6.4)`, async () => {
+    const sim = await newSim(43);
+    sim.step(1);
+    const g = sim.game;
+    let most = 0;
+    // keep the chase alive for 60 s (seen every frame) and let patrols, police cars and reinforcements pour in
+    for (let i = 0; i < Math.round(60 / DT); i++) {
+      g.startChase(sim.player.x, sim.player.z);
+      sim.step();
+      most = Math.max(most, g.policeCount());
+    }
+    expect(CFG.police.max).toBeLessThanOrEqual(8); // spec 6.4 default; uncapped this scenario reaches 9-10
+    expect(most).toBeGreaterThan(2);
+    expect(most).toBeLessThanOrEqual(CFG.police.max);
+  });
+
   it(`the chase ends after ${CFG.police.giveUp} s unseen, not before`, async () => {
     const sim = await newSim(41);
     sim.step(1).freezeSpawning(); // no new units arrive

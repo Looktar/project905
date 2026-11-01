@@ -426,6 +426,14 @@ export class Game {
     return true;
   }
 
+  // everyone in uniform: officers on foot + officers still sitting in police cars (spec 6.4: <= 8)
+  policeCount() {
+    let n = 0;
+    for (const c of this.chars) if (c.kind === 'cop') n++;
+    for (const car of this.cars) if (car.type === 'police') n += car.cops || 0;
+    return n;
+  }
+
   // ------------------------------------------------------------------ spawning
   spawnAround(initial = false) {
     const P = this.playerPos();
@@ -458,7 +466,7 @@ export class Game {
     };
     if (peds < target) for (let i = 0; i < Math.min(initial ? target : 3, target - peds); i++) addWalker('ped');
     const copTarget = this.chase.active ? PO.footChase : PO.footPatrol;
-    if (cops < copTarget && !this.chase.active) addWalker('cop');
+    if (cops < copTarget && !this.chase.active && this.policeCount() < PO.max) addWalker('cop');
     // traffic
     const moving = this.cars.filter((c) => c.ai && c.type !== 'police').length;
     const trTarget = this.isMobile ? TR.countMobile : TR.countDesktop;
@@ -477,7 +485,7 @@ export class Game {
     }
     const pcars = this.cars.filter((c) => c.type === 'police' && c !== this.inCar).length;
     const pcTarget = this.chase.active ? PO.carChase : PO.carPatrol;
-    if (pcars < pcTarget) {
+    if (pcars < pcTarget && this.policeCount() + 2 <= PO.max) {
       const ne = ringPoint(this.chase.active ? 70 : TR.spawnMin, this.chase.active ? 110 : TR.spawnMax, 2);
       if (ne) { const car = this.addTraffic(ne, 'police'); if (car && this.chase.active) { car.chasing = true; car.ai = null; } }
     }
@@ -928,7 +936,7 @@ export class Game {
     if (this.chase.reinforce <= 0) {
       this.chase.reinforce = PO.reinforce;
       const cops = this.chars.filter((c) => c.kind === 'cop' && c.state === 'chase').length;
-      if (cops < PO.footChase && !this.inCar) {
+      if (cops < PO.footChase && !this.inCar && this.policeCount() < PO.max) {
         const a = rr(0, 6.28);
         const ne = this.w.nearestEdge(P.x + Math.cos(a) * 45, P.z + Math.sin(a) * 45, 25);
         if (ne) { const p = this.w.edgePoint(ne.e, ne.e.cum[ne.k], 1, ne.e.w / 2 + 1.6); const c = this.makeChar2('cop', p.x, p.z); c.state = 'chase'; }
