@@ -1,9 +1,11 @@
 // World: loads the processed OSM map, builds chunked render meshes, collision
 // data, the road graph and the minimap image.
 import { M, hex, segDist, rnd } from './math.js';
-import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, disc, flatPoly, extrude } from './geo.js';
+import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
+import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
+import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -19,6 +21,9 @@ export class World {
     this.names = map.names;
     this.buildGraph();
     this.buildCollision();
+    // traffic signals: after collision (pole spots avoid buildings), before chunks (poles are baked in)
+    const sg = buildSignals(this);
+    this.signals = sg.list; this.sigAp = sg.byAp; this.sigPoles = sg.poles;
     this.buildChunks();
     this.buildSigns();
     this.buildMinimap();
@@ -98,6 +103,10 @@ export class World {
       }
     return best;
   }
+  // signal approach entry for travelling along edge e in direction dir: {sig, axis, stop} or undefined
+  sigApproach(e, dir) { return this.sigAp.get(e * 2 + (dir > 0 ? 1 : 0)); }
+  // 0 green / 1 yellow / 2 red for axis 0 (E-W) or 1 (N-S) of an intersection at game time t
+  signalState(sig, axis, t) { return signalState(sig, axis, t); }
   onRoad(x, z, pad = 0) {
     const n = this.nearestEdge(x, z, 4);
     return n && n.d < pad;
@@ -154,7 +163,7 @@ export class World {
     const C = 16; this.cc = C; this.cg = new Map();
     this.colliders = [];
     const addPoly = (poly, kind) => this.addCollider(poly, kind);
-    for (const b of this.map.buildings) addPoly(b.p, 'b');
+    this.map.buildings.forEach((b, i) => { this.colliders[addPoly(b.p, 'b')].bi = i; });
     for (const h of this.map.houses) {
       const [x, z, a, w, d] = h;
       const c = Math.cos(a), s = Math.sin(a), hw = w / 2, hd = d / 2;
@@ -170,18 +179,21 @@ export class World {
     for (const w of this.map.water) this.water.push(w.p);
     for (const lm of this.map.landmarks) if (lm.t === 'pool') this.water.push(lm.p);
     this.rivers = this.map.rivers.map(([big, pts]) => ({ w: big ? 9 : 3.5, pts }));
+    propColliders(this); // storefronts, stations, bus stops, gazebo + walkable dock decks
   }
   addCollider(poly, kind) {
     const C = this.cc;
     const xs = poly.map((p) => p[0]), zs = poly.map((p) => p[1]);
     const c = { poly, kind, x0: Math.min(...xs), z0: Math.min(...zs), x1: Math.max(...xs), z1: Math.max(...zs) };
     const id = this.colliders.push(c) - 1;
+    c.id = id;
     for (let i = Math.floor(c.x0 / C); i <= Math.floor(c.x1 / C); i++)
       for (let j = Math.floor(c.z0 / C); j <= Math.floor(c.z1 / C); j++) {
         const k = i + ',' + j;
         if (!this.cg.has(k)) this.cg.set(k, []);
         this.cg.get(k).push(id);
       }
+    return id;
   }
   query(x0, z0, x1, z1) {
     const C = this.cc, out = new Set();
@@ -225,6 +237,7 @@ export class World {
     return { x, z, hit, nx: hx, nz: hz };
   }
   inWater(x, z) {
+    for (const d of this.decks) if (propPip(x, z, d)) return false; // lookout dock over the pond
     for (const p of this.water) {
       let inside = false;
       for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -238,6 +251,16 @@ export class World {
         const [ax, az] = rv.pts[k], [bx, bz] = rv.pts[k + 1];
         if (Math.abs(ax - x) > 60 && Math.abs(bx - x) > 60) continue;
         if (segDist(x, z, ax, az, bx, bz).d < rv.w / 2) return !this.onRoad(x, z, 1.5);
+      }
+    return false;
+  }
+  // on (or right next to) the railway ballast
+  onRail(x, z, pad = 1) {
+    for (const pts of this.map.rails)
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [ax, az] = pts[k], [bx, bz] = pts[k + 1];
+        if (Math.min(ax, bx) - 6 > x || Math.max(ax, bx) + 6 < x || Math.min(az, bz) - 6 > z || Math.max(az, bz) + 6 < z) continue;
+        if (segDist(x, z, ax, az, bx, bz).d < 1.6 + pad) return true;
       }
     return false;
   }
@@ -344,22 +367,28 @@ export class World {
         }
       }
     // OSM buildings
+    this.bRange = [];
+    this.fade = new Map(); // building index -> current alpha (occlusion fade)
     for (const b of m.buildings) {
       const c = this.chunk(...centroid(b.p));
+      const v0 = c.mb.count;
       const wc = hex(b.c);
       const rc = [wc[0] * 0.82 + 0.1, wc[1] * 0.82 + 0.1, wc[2] * 0.82 + 0.12];
       extrude(c.mb, b.p, b.t, b.h, wc, rc);
       // a darker base stripe and window band
       if (b.lm !== 'tims' && b.h > 5) this.windowBands(c.mb, b);
+      buildingDetail(c.mb, b); // Tim Hortz trim, cinema marquee, tower roofs
       // rooftop boxes on large roofs
       const area = Math.abs(polyArea(b.p));
       if (area > 500 && !b.lm) {
         const [cx, cz] = centroid(b.p);
         for (let i = 0; i < 3; i++) c.mb.add(rbox(2.4, 1.2, 2.4, 0.2), M.T(cx + (i - 1) * 4, b.h + 0.6, cz + (i % 2) * 3), '#c9ced8');
       }
+      this.bRange.push([c, v0, c.mb.count]);
     }
     // landmarks
     for (const lm of m.landmarks) this.buildLandmark(lm);
+    this.heritageVerts = buildHeritage(this); // Unionville Main St storefronts
     // parking lots: painted stalls + parked cars (static, solid)
     const lotCars = [];
     let seedL = 1;
@@ -369,19 +398,18 @@ export class World {
       if (area < 300) continue;
       const xs = poly.map((q) => q[0]), zs = poly.map((q) => q[1]);
       const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
-      let n = 0;
       const fill = Math.min(0.5, 120 / (area / 22));
       for (let z = z0 + 4; z < z1 - 3; z += 7.5)
         for (let x = x0 + 3; x < x1 - 2; x += 3.0) {
           if (!pip(x, z, poly)) continue;
           if (this.collide(x, z, 2.9).hit) continue;
           if (this.nearestEdge(x, z, 6)) continue;
+          if (buswayDist(m, x, z) < 6.5) continue; // no stalls / parked cars on the bus lanes
           const ch = this.chunk(x, z);
           ribbon(ch.mb, [[x - 1.5, z - 2.6], [x - 1.5, z + 2.6]], 0.14, 0.02, '#ffffff', false);
           if (rl() < fill) {
             const flip = rl() < 0.5 ? 0 : Math.PI;
             lotCars.push([x, z, flip + (rl() - 0.5) * 0.08, Math.floor(rl() * 12)]);
-            n++;
           }
         }
     }
@@ -400,9 +428,13 @@ export class World {
       for (let s = 15; s < e.len - 10; s += 34)
         for (const side of e.oneway ? [1] : [1, -1]) {
           const p = this.edgePoint(e, s, side, e.w / 2 + 1.4);
+          if (buswayDist(m, p.x, p.z) < 3.6) continue; // keep the bus lanes clear
+          if (nearPole(this.sigPoles, p.x, p.z, 3.5)) continue; // a signal pole stands here
           this.chunk(p.x, p.z).lamps.push([p.x, p.z, Math.atan2(p.dz, -p.dx)]);
         }
     }
+    // hydrants, manhole covers, bus stops (baked into the chunk meshes; needs the lamp positions)
+    this.propStats = buildStreetProps(this);
     // shared unit meshes
     const houseMB = new MeshBuilder();
     houseMB.add(box(1, 1, 1), M.T(0, 0.5, 0), '#ffffff', MAT_A);
@@ -427,6 +459,7 @@ export class World {
     const carCols = ['#38bdf8', '#fb7185', '#34d399', '#a78bfa', '#f97316', '#e5e7eb', '#94a3b8', '#fde68a', '#ef4444', '#2563eb', '#10b981', '#f8fafc'].map(hex);
     const walls = m.houseWalls.map(hex), roofs = m.houseRoofs.map(hex);
     const tg = ['#a6cf3f', '#b9da4c', '#93c13a', '#8fc24a', '#a9d14f'].map(hex);
+    bakeSignals(this);
     for (const c of this.chunks.values()) {
       c.static = this.r.mesh(c.mb); c.mb = null;
       if (c.houses.length) {
@@ -460,6 +493,8 @@ export class World {
         c.lotCars.forEach((l, i) => { writeTRS(d, i * INST_FLOATS, l[0], 0, l[1], l[2], 1, 1, 1); d.set(carCols[l[3]], i * INST_FLOATS + 16); d.set(carCols[l[3]], i * INST_FLOATS + 19); });
         c.carInst = this.r.instanced(carMB, 0, d);
       }
+      // every per-chunk instanced mesh goes into c.inst (drawn in both passes by main.js)
+      c.inst = [c.houseInst, c.treeInst, c.lampInst, c.carInst].filter(Boolean);
       c.houses = c.trees = c.lamps = c.lotCars = null;
     }
     // ground plane tiles (large flat quads, one per chunk area incl. outside border)
@@ -497,7 +532,8 @@ export class World {
     const c = this.chunk(lm.x, lm.z);
     const mb = c.mb, y = lm.h;
     if (lm.t === 'tims') {
-      const T = M.chain(M.T(lm.x, y + 2.2, lm.z), M.RX(0.5));
+      const k = Math.min(1.5, Math.max(1, (lm.r || 3) / 5)); // bigger donut on bigger stores
+      const T = M.chain(M.T(lm.x, y + 2.2 * k, lm.z), M.RX(0.5), M.S(k));
       mb.add(torus(2.2, 1.0, 30, 12), T, '#d89b5a');
       mb.add(torus(2.2, 0.88, 30, 12), M.chain(T, M.T(0, 0.34, 0), M.S(1, 0.72, 1)), '#f58fb6');
       for (let i = 0; i < 36; i++) {
@@ -521,7 +557,7 @@ export class World {
       mb.add(sphere(3.2, 14), M.chain(M.T(x, y + 3, z), M.S(1, 0.6, 1)), '#9fb8cf');
       mb.add(cyl(0.1, 0.1, 6, 6), M.T(x + 5, y + 3, z), '#cccccc');
       mb.add(box(1.8, 1.0, 0.05), M.T(x + 5.9, y + 5.5, z), '#e53935');
-    }
+    } else buildPropLandmark(this, lm); // gazebo, dock, cinema popcorn, Viva stations, Unionville / Downtown signs
   }
   // camera-facing signs (camera azimuth is fixed so they are always readable)
   buildSigns() {
@@ -530,10 +566,12 @@ export class World {
     const rx = Math.cos(az), rz = -Math.sin(az);  // camera right
     const specs = [];
     for (const lm of this.map.landmarks) {
-      if (lm.t === 'tims') specs.push({ text: 'Tim Hortz', bg: '#c0392b', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.2, w: 7, h: 1.5, push: 5 });
+      if (lm.t === 'tims') specs.push({ text: 'Tim Hortz', bg: '#c0392b', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.2, w: 7, h: 1.5, push: Math.max(5, (lm.r || 3) * 1.05) });
       if (lm.t === 'pacific') specs.push({ text: '大古广场 Pacifick Mall', bg: '#e74c3c', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 1, w: 22, h: 2.6, push: lm.r * 0.9 });
       if (lm.t === 'markville') specs.push({ text: 'Markvile Mall', bg: '#7c3aed', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 1, w: 16, h: 2.4, push: lm.r * 0.8 });
       if (lm.t === 'civic') specs.push({ text: '万锦市政厅 Civic Centre', bg: '#1e3a8a', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.6, w: 20, h: 2.4, push: lm.r * 0.8 });
+      const ps = propSign(lm);
+      if (ps) specs.push(ps);
     }
     if (!specs.length) return;
     const cv = document.createElement('canvas');
@@ -556,6 +594,48 @@ export class World {
     });
     this.signs = this.r.signMesh({ p: P, u: U }, cv);
   }
+  // ---------------------------------------------------------------- occlusion fade
+  // Buildings standing between the camera and the player fade out (spec 4).
+  // Returns indices of buildings whose prism cuts the segment from (x, y, z) to the eye for any y in ys.
+  occluders(eye, x, z, ys) {
+    const out = new Set(), maxH = CFG.occlusion.maxH;
+    for (const y0 of ys) {
+      const dy = eye[1] - y0;
+      if (dy <= 0) continue;
+      // past tMax the ray is above every roof, so only that stretch of the ground projection matters
+      const tMax = Math.min(1, (maxH - y0) / dy);
+      const ex = x + (eye[0] - x) * tMax, ez = z + (eye[2] - z) * tMax;
+      for (const id of this.query(Math.min(x, ex), Math.min(z, ez), Math.max(x, ex), Math.max(z, ez))) {
+        const c = this.colliders[id];
+        if (c.bi === undefined || out.has(c.bi)) continue;
+        const t = segPolyEntry(x, z, ex, ez, c.poly);
+        if (t >= 0 && y0 + dy * tMax * t < this.map.buildings[c.bi].h) out.add(c.bi);
+      }
+    }
+    return out;
+  }
+  // animate fade alphas; returns { skip: Map(chunk -> sorted [[s, e]]), list: [{ m, s, e, a }] }
+  updateFade(eye, P, dt) {
+    const O = CFG.occlusion;
+    const hit = this.occluders(eye, P.x, P.z, O.sampleY);
+    for (const bi of hit) if (!this.fade.has(bi)) this.fade.set(bi, 1);
+    const k = 1 - Math.exp(-O.speed * dt);
+    const skip = new Map(), list = [];
+    for (const [bi, a] of this.fade) {
+      const want = hit.has(bi) ? O.alpha : 1;
+      const na = a + (want - a) * k;
+      if (want === 1 && na > 0.98) { this.fade.delete(bi); continue; }
+      this.fade.set(bi, na);
+      const [c, s, e] = this.bRange[bi];
+      if (!c.static) continue;
+      if (!skip.has(c)) skip.set(c, []);
+      skip.get(c).push([s, e]);
+      list.push({ m: c.static, s, e, a: na });
+    }
+    for (const r of skip.values()) r.sort((p, q) => p[0] - q[0]);
+    return { skip, list };
+  }
+
   // ---------------------------------------------------------------- minimap image
   buildMinimap() {
     const S = CFG.minimap.pxPerM;
@@ -582,6 +662,7 @@ export class World {
     for (const pts of this.map.busways) { g.beginPath(); pts.forEach((p, i) => { const [x, y] = T(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
     const icon = { tims: '#c0392b', pacific: '#e74c3c', markville: '#7c3aed', civic: '#1e3a8a' };
     for (const lm of this.map.landmarks) if (icon[lm.t]) { const [x, y] = T(lm.x, lm.z); g.fillStyle = icon[lm.t]; g.beginPath(); g.arc(x, y, lm.t === 'tims' ? 4 : 7, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
+    propIcons(g, T, this.map.landmarks);
     this.minimap = cv;
   }
 
@@ -614,6 +695,20 @@ function pip(x, z, p) {
     if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi + 1e-12) + xi) inside = !inside;
   }
   return inside;
+}
+// parameter t in [0,1] where segment a->b first enters polygon (0 if a is inside), -1 if it never does
+function segPolyEntry(ax, az, bx, bz, poly) {
+  if (pip(ax, az, poly)) return 0;
+  const rx = bx - ax, rz = bz - az;
+  let best = -1;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [cx, cz] = poly[j], [dx, dz] = poly[i];
+    const sx = dx - cx, sz = dz - cz, den = rx * sz - rz * sx;
+    if (Math.abs(den) < 1e-9) continue;
+    const t = ((cx - ax) * sz - (cz - az) * sx) / den, u = ((cx - ax) * rz - (cz - az) * rx) / den;
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && (best < 0 || t < best)) best = t;
+  }
+  return best;
 }
 function centroid(p) { let x = 0, z = 0; for (const q of p) { x += q[0]; z += q[1]; } return [x / p.length, z / p.length]; }
 function polyArea(p) { let s = 0; for (let i = 0; i < p.length; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % p.length]; s += x1 * z2 - x2 * z1; } return s / 2; }

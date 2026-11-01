@@ -19,7 +19,7 @@ void main(){
 const FS = `#version 300 es
 precision highp float; precision highp sampler2DShadow;
 in vec3 vN; in vec3 vCol; in float vEm; in vec4 vL; in vec3 vW;
-uniform sampler2DShadow uSh; uniform vec3 uL, uE, uFog; uniform float uShOn, uTexel, uFogNear, uFogFar;
+uniform sampler2DShadow uSh; uniform vec3 uL, uE, uFog; uniform float uShOn, uTexel, uFogNear, uFogFar, uAlpha; uniform vec4 uSil;
 out vec4 o;
 float sh(){
   if(uShOn<0.5) return 1.0;
@@ -31,6 +31,7 @@ float sh(){
 }
 void main(){
   vec3 n = normalize(vN); vec3 v = normalize(uE-vW); if(dot(n,v)<0.0) n=-n;
+  if(uSil.a>0.0){ float r=1.0-max(dot(n,v),0.0); o=vec4(uSil.rgb, uSil.a*(0.45+0.55*r)); return; }
   vec3 b = vCol; float s = sh(); float d = max(dot(n,uL),0.0);
   vec3 amb = mix(vec3(0.62,0.58,0.70), vec3(0.86,0.90,1.0), n.y*0.5+0.5);
   vec3 h = normalize(uL+v); float sp = pow(max(dot(n,h),0.0),40.0)*0.18*s;
@@ -39,7 +40,7 @@ void main(){
   col = mix(col, b*1.15, clamp(vEm,0.0,1.0));
   float dist = length(vW-uE);
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist)*0.85);
-  o = vec4(col,1.0);
+  o = vec4(col,uAlpha);
 }`;
 const DVS = `#version 300 es
 layout(location=0) in vec3 aP;
@@ -56,19 +57,40 @@ const TFS = `#version 300 es
 precision highp float; in vec2 vU; uniform sampler2D uT; uniform vec3 uE; out vec4 o;
 void main(){ vec4 c=texture(uT,vU); if(c.a<0.4) discard; o=vec4(c.rgb,1.0); }`;
 
+// tilt-shift "miniature" depth of field (spec 4): sharp band around the player, blur toward top/bottom
+const PVS = `#version 300 es
+out vec2 vU;
+void main(){ vec2 p = vec2((gl_VertexID<<1)&2, gl_VertexID&2); vU = p; gl_Position = vec4(p*2.0-1.0, 0.0, 1.0); }`;
+const PFS = `#version 300 es
+precision highp float; in vec2 vU; uniform sampler2D uT; uniform vec2 uPx; uniform float uFocus, uBand, uMaxR; out vec4 o;
+void main(){
+  vec3 c = texture(uT, vU).rgb;
+  float k = smoothstep(uBand, uBand + 0.32, abs(vU.y - uFocus));
+  if (k < 0.02) { o = vec4(c, 1.0); return; }
+  vec3 acc = c; float r = k * uMaxR;
+  for (int i = 0; i < 16; i++) {
+    float f = float(i) + 0.5, a = f * 2.39996;
+    acc += texture(uT, vU + vec2(cos(a), sin(a)) * sqrt(f / 16.0) * r * uPx).rgb;
+  }
+  o = vec4(acc / 17.0, 1.0);
+}`;
+
 export const INST_FLOATS = 22;
 
 export class Renderer {
   constructor(canvas) {
-    const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
+    const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, stencil: true, powerPreference: 'high-performance' });
     if (!gl) throw new Error('WebGL2 not supported');
     this.gl = gl; this.canvas = canvas;
     this.pMain = this.prog(VS, FS);
     this.pDepth = this.prog(DVS, DFS);
     this.pSign = this.prog(TVS, TFS);
+    this.pPost = this.prog(PVS, PFS);
+    this.post = null;      // offscreen MSAA target while tilt-shift is on
+    this.tiltShift = false;
     this.u = {};
-    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']]])
-      for (const n of names) this.u[p === this.pMain ? n : (p === this.pDepth ? 'd' : 's') + n] = gl.getUniformLocation(p, n);
+    for (const [p, names] of [[this.pMain, ['uVP', 'uLVP', 'uSh', 'uL', 'uE', 'uFog', 'uShOn', 'uTexel', 'uFogNear', 'uFogFar', 'uAlpha', 'uSil']], [this.pDepth, ['uLVP']], [this.pSign, ['uVP', 'uT']], [this.pPost, ['uT', 'uPx', 'uFocus', 'uBand', 'uMaxR']]])
+      for (const n of names) this.u[p === this.pMain ? n : (p === this.pDepth ? 'd' : p === this.pSign ? 's' : 'p') + n] = gl.getUniformLocation(p, n);
     this.shadowSize = 2048;
     this.initShadow(this.shadowSize);
     this.lightDir = (() => { const v = [0.62, 1.0, -0.5]; const l = Math.hypot(...v); return v.map((x) => x / l); })();
@@ -147,12 +169,59 @@ export class Renderer {
     gl.vertexAttrib3f(7, 1, 1, 1); gl.vertexAttrib3f(8, 1, 1, 1);
   }
   draw(m) {
-    if (!m) return;
+    if (!m || (!m.static && !m.n)) return;
     const gl = this.gl;
     gl.bindVertexArray(m.vao);
     if (m.static) { this._staticAttribs(); gl.drawArrays(gl.TRIANGLES, 0, m.count); }
     else if (m.n > 0) gl.drawArraysInstanced(gl.TRIANGLES, 0, m.count, m.n);
     this.stats.calls++;
+  }
+  // only the first k instances of an instanced mesh
+  drawFirst(m, k) {
+    if (!m || !k) return;
+    const gl = this.gl;
+    gl.bindVertexArray(m.vao);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, m.count, Math.min(k, m.n));
+    this.stats.calls++;
+  }
+  // static mesh, but leave out the vertex ranges in skip ([[start, end], ...] sorted)
+  drawSkipping(m, skip) {
+    if (!m) return;
+    const gl = this.gl;
+    gl.bindVertexArray(m.vao); this._staticAttribs();
+    let at = 0;
+    for (const [s, e] of skip) { if (s > at) { gl.drawArrays(gl.TRIANGLES, at, s - at); this.stats.calls++; } at = Math.max(at, e); }
+    if (at < m.count) { gl.drawArrays(gl.TRIANGLES, at, m.count - at); this.stats.calls++; }
+  }
+  // x-ray silhouette: draws only where the geometry is hidden behind what is already in the depth buffer.
+  // Call before drawing the same geometry normally (so it cannot hide itself); stencil keeps one layer.
+  silhouette(drawFn, col) {
+    const gl = this.gl;
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false); gl.depthFunc(gl.GREATER);
+    gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.EQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
+    gl.uniform4fv(this.u.uSil, col);
+    drawFn();
+    gl.uniform4f(this.u.uSil, 0, 0, 0, 0);
+    gl.disable(gl.STENCIL_TEST); gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND);
+  }
+  // semi-transparent static ranges: depth pre-pass, then blend only the front-most surface
+  fadePass(list) {
+    if (!list.length) return;
+    const gl = this.gl;
+    for (const f of list) {
+      const m = f.m; gl.bindVertexArray(m.vao); this._staticAttribs();
+      gl.colorMask(false, false, false, false);
+      gl.drawArrays(gl.TRIANGLES, f.s, f.e - f.s);
+      gl.colorMask(true, true, true, true);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false); gl.depthFunc(gl.LEQUAL);
+      gl.uniform1f(this.u.uAlpha, f.a);
+      gl.drawArrays(gl.TRIANGLES, f.s, f.e - f.s);
+      gl.uniform1f(this.u.uAlpha, 1);
+      gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND);
+      this.stats.calls += 2;
+    }
   }
   // ---- signs (billboard textured quads) ----
   signMesh(quads, canvasTex) {
@@ -170,10 +239,60 @@ export class Renderer {
     gl.bindVertexArray(null);
     return { vao, tex, count: quads.p.length / 3 };
   }
+  // ---- post (tilt-shift) ----
+  _postTargets() {
+    const gl = this.gl, W = this.canvas.width, H = this.canvas.height;
+    if (this.post && this.post.w === W && this.post.h === H) return this.post;
+    this._freePost();
+    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES));
+    const ms = gl.createFramebuffer(), col = gl.createRenderbuffer(), dep = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, col); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, W, H);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, dep); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.DEPTH24_STENCIL8, W, H);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ms);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, col);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, dep);
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const res = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, res);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.post = { w: W, h: H, ms, col, dep, tex, res };
+    if (!ok) { this._freePost(); this.tiltShift = false; }
+    return this.post;
+  }
+  _freePost() {
+    const gl = this.gl, p = this.post;
+    if (!p) return;
+    gl.deleteFramebuffer(p.ms); gl.deleteFramebuffer(p.res); gl.deleteRenderbuffer(p.col); gl.deleteRenderbuffer(p.dep); gl.deleteTexture(p.tex);
+    this.post = null;
+  }
+  // resolve the MSAA scene and draw it to the screen with the tilt-shift blur; focus = screen y (0 top .. 1 bottom)
+  endFrame(focus, opts) {
+    if (!this.tiltShift || !this.post) return;
+    const gl = this.gl, p = this.post;
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, p.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, p.res);
+    gl.blitFramebuffer(0, 0, p.w, p.h, 0, 0, p.w, p.h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, p.w, p.h);
+    gl.disable(gl.DEPTH_TEST);
+    gl.useProgram(this.pPost);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, p.tex);
+    gl.uniform1i(this.u.puT, 2);
+    gl.uniform2f(this.u.puPx, 1 / p.w, 1 / p.h);
+    gl.uniform1f(this.u.puFocus, 1 - focus);
+    gl.uniform1f(this.u.puBand, opts.band);
+    gl.uniform1f(this.u.puMaxR, opts.maxR * (p.h / 900));
+    gl.bindVertexArray(null);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.enable(gl.DEPTH_TEST);
+    this.stats.calls++;
+  }
   // ---- frame ----
   resize(w, h) { this.canvas.width = w; this.canvas.height = h; }
   begin(camEye, camTarget, fov, focus, shadowRadius) {
-    const gl = this.gl;
     this.stats = { calls: 0 };
     const W = this.canvas.width, H = this.canvas.height;
     this.VP = M.mul(M.persp(fov, W / H, 2, 1200), M.look(camEye, camTarget, [0, 1, 0]));
@@ -204,10 +323,14 @@ export class Renderer {
   }
   mainPass(drawFn, fogNear, fogFar) {
     const gl = this.gl;
+    if (this.tiltShift) this._postTargets(); else if (this.post) this._freePost();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tiltShift && this.post ? this.post.ms : null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(this.fog[0], this.fog[1], this.fog[2], 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clearStencil(0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     gl.useProgram(this.pMain);
+    gl.uniform1f(this.u.uAlpha, 1); gl.uniform4f(this.u.uSil, 0, 0, 0, 0);
     gl.uniformMatrix4fv(this.u.uVP, false, this.VP);
     gl.uniformMatrix4fv(this.u.uLVP, false, this.LVP);
     gl.uniform3fv(this.u.uL, this.lightDir);

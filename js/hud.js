@@ -7,13 +7,14 @@ export class HUD {
     this.app = app;
     this.el = (id) => document.getElementById(id);
     this.mini = this.el('mini'); this.mctx = this.mini.getContext('2d');
-    this.street = this.el('street'); this.hp = this.el('hp'); this.hpFill = this.el('hpfill');
+    this.street = this.el('street'); this.streetName = this.el('streetName'); this.hp = this.el('hp'); this.hpFill = this.el('hpfill');
     this.bubbles = []; this.layer = this.el('bubbles');
     this.bannerEl = this.el('banner'); this.bustEl = this.el('bust'); this.meter = this.el('meter');
     this.lastStreet = '';
     this.miniOpen = true;
-    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.miniOpen = !this.miniOpen; this.mini.classList.toggle('small', !this.miniOpen); });
+    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.setMiniOpen(!this.miniOpen); if (this.onMiniToggle) this.onMiniToggle(this.miniOpen); });
   }
+  setMiniOpen(open) { this.miniOpen = open; this.mini.classList.toggle('small', !open); }
   setWorld(world) { this.world = world; }
   bubble(text, pos, cls = '') {
     const d = document.createElement('div');
@@ -53,7 +54,7 @@ export class HUD {
     if (!this._st || nowMs - this._st > 350) {
       this._st = nowMs;
       const s = this.world.streetName(P.x, P.z);
-      if (s && s !== this.lastStreet) { this.street.textContent = s; this.street.classList.add('show'); this.lastStreet = s; }
+      if (s && s !== this.lastStreet) { this.streetName.textContent = s; this.street.classList.add('show'); this.lastStreet = s; }
       if (!s) this.street.classList.remove('show');
     }
     // health (only when hurt)

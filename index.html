@@ -18,26 +18,26 @@ body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei","Hiragino Sans G
 #hudwrap{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s}
 #hudwrap.on{opacity:1}
 #hudwrap .ui,#hudwrap .btn,#hudwrap #mini,#joy{pointer-events:auto}
-#mini{position:absolute;left:calc(14px + env(safe-area-inset-left));top:14px;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 0 rgba(30,40,70,.25);background:#9fd067;transition:transform .2s}
+#mini{position:absolute;left:calc(14px + var(--sa-l, 0px));top:calc(14px + var(--sa-t, 0px));border-radius:50%;border:4px solid #fff;box-shadow:0 4px 0 rgba(30,40,70,.25);background:#9fd067;transition:transform .2s}
 #mini.small{transform:scale(.62);transform-origin:0 0}
-#street{position:absolute;left:50%;top:14px;transform:translateX(-50%) translateY(-8px);background:#fff;color:#2d3a55;border-radius:999px;padding:6px 20px 7px;font-size:clamp(14px,2.3vw,21px);font-weight:800;box-shadow:0 4px 0 rgba(30,40,70,.22);white-space:nowrap;opacity:0;transition:all .3s}
+#street{position:absolute;left:50%;top:calc(14px + var(--sa-t, 0px));transform:translateX(-50%) translateY(-8px);background:#fff;color:#2d3a55;border-radius:999px;padding:6px 20px 7px;font-size:clamp(14px,2.3vw,21px);font-weight:800;box-shadow:0 4px 0 rgba(30,40,70,.22);white-space:nowrap;opacity:0;transition:all .3s}
 #street.show{opacity:1;transform:translateX(-50%)}
-#hp{position:absolute;right:calc(16px + env(safe-area-inset-right));top:16px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.94);border-radius:999px;padding:6px 14px;box-shadow:0 4px 0 rgba(30,40,70,.22);opacity:0;transition:opacity .3s}
+#hp{position:absolute;right:calc(16px + var(--sa-r, 0px));top:calc(16px + var(--sa-t, 0px));display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.94);border-radius:999px;padding:6px 14px;box-shadow:0 4px 0 rgba(30,40,70,.22);opacity:0;transition:opacity .3s}
 #hp.show{opacity:1}
 #hp .bar{width:min(150px,18vw);height:12px;border-radius:6px;background:#e3e6ee;overflow:hidden}
 #hpfill{display:block;height:100%;width:100%;background:#ff5a6a;border-radius:6px;transition:width .2s}
 #hp span{color:#ff5a6a;font-size:18px;font-weight:800}
-#topright{position:absolute;right:calc(16px + env(safe-area-inset-right));top:60px;display:flex;gap:8px}
+#topright{position:absolute;right:calc(16px + var(--sa-r, 0px));top:calc(60px + var(--sa-t, 0px));display:flex;gap:8px}
 .ui{background:rgba(255,255,255,.9);color:#2d3a55;border:none;border-radius:999px;padding:6px 12px;font:700 14px inherit;font-family:inherit;box-shadow:0 3px 0 rgba(30,40,70,.2);cursor:pointer}
-#joy{position:absolute;left:calc(46px + env(safe-area-inset-left));bottom:36px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.22);border:4px solid rgba(255,255,255,.75);display:none}
+#joy{position:absolute;left:calc(46px + var(--sa-l, 0px));bottom:calc(36px + var(--sa-b, 0px));width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.22);border:4px solid rgba(255,255,255,.75);display:none}
 #knob{position:absolute;left:44px;top:44px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 4px 0 rgba(30,40,70,.25)}
 body.touch #joy{display:block}
 .btn{position:absolute;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:900;color:#fff;box-shadow:0 5px 0 rgba(30,40,70,.28);border:4px solid #fff;font-family:inherit;transition:transform .05s}
 .btn.on{transform:scale(.92)}
 body.touch .btn{display:flex}
-#bA{right:calc(44px + env(safe-area-inset-right));bottom:44px;width:100px;height:100px;background:#ff6b4a;font-size:28px}
-#bB{right:calc(162px + env(safe-area-inset-right));bottom:30px;width:74px;height:74px;background:#3fa7ff;font-size:18px}
-#bC{right:calc(70px + env(safe-area-inset-right));bottom:164px;width:74px;height:74px;background:#56c26b;font-size:18px}
+#bA{right:calc(44px + var(--sa-r, 0px));bottom:calc(44px + var(--sa-b, 0px));width:100px;height:100px;background:#ff6b4a;font-size:28px}
+#bB{right:calc(162px + var(--sa-r, 0px));bottom:calc(30px + var(--sa-b, 0px));width:74px;height:74px;background:#3fa7ff;font-size:18px}
+#bC{right:calc(70px + var(--sa-r, 0px));bottom:calc(164px + var(--sa-b, 0px));width:74px;height:74px;background:#56c26b;font-size:18px}
 #bubbles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bub{position:absolute;transform:translate(-50%,-100%);background:#fff;color:#2d3a55;font-weight:900;font-size:clamp(13px,1.9vw,19px);padding:4px 12px 5px;border-radius:12px;border:3px solid #2d3a55;white-space:nowrap}
 .bub:after{content:'';position:absolute;left:50%;bottom:-10px;margin-left:-7px;border:7px solid transparent;border-top-color:#2d3a55;border-bottom:0}
@@ -63,6 +63,22 @@ body.touch .btn{display:flex}
 #loading{color:#2d3a55;font-weight:700}
 #langBtn{position:absolute;top:14px;right:14px}
 #dbg{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);color:#fff;font:12px monospace;text-shadow:0 1px 2px #000;z-index:30}
+#street small{margin-left:10px;font-size:.62em;font-weight:700;opacity:.65}
+#banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
+.modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
+.modal.show{display:flex}
+.card{background:#fff;color:#2d3a55;border-radius:22px;box-shadow:0 6px 0 rgba(30,40,70,.3);padding:12px 18px 14px;width:min(460px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.card h2{margin:0 0 8px;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card .x{background:#eef1f6;color:#2d3a55;border:none;border-radius:999px;width:34px;height:34px;font:900 16px inherit;font-family:inherit;cursor:pointer;flex:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-top:2px solid #eef1f6;font-weight:800;font-size:15px}
+.seg{display:flex;background:#eef1f6;border-radius:999px;padding:3px;gap:2px;flex:none}
+.seg button{border:none;background:none;color:#5b6782;font:800 14px inherit;font-family:inherit;padding:5px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:#ff6b4a;color:#fff;box-shadow:0 2px 0 rgba(30,40,70,.2)}
+.card .wide{display:block;width:100%;margin-top:8px;text-align:center}
+.credits p{margin:6px 0;font-size:14px;line-height:1.45;font-weight:600}
+.credits b{font-weight:900}
+.credits a{color:#2563eb}
+#titleCredits{position:absolute;top:14px;left:14px}
 </style>
 </head>
 <body>
@@ -70,9 +86,9 @@ body.touch .btn{display:flex}
   <canvas id="c"></canvas>
   <div id="hudwrap">
     <canvas id="mini" width="180" height="180"></canvas>
-    <div id="street"></div>
+    <div id="street"><span id="streetName"></span><small>万锦 Markham</small></div>
     <div id="hp"><span>♥</span><div class="bar"><i id="hpfill"></i></div></div>
-    <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="qBtn" class="ui"></button></div>
+    <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="setBtn" class="ui">⚙</button></div>
     <div id="banner"></div>
     <div id="meter"><i></i></div>
     <div id="bubbles"></div>
@@ -82,6 +98,7 @@ body.touch .btn{display:flex}
   </div>
   <div id="title">
     <button id="langBtn" class="ui"></button>
+    <button id="titleCredits" class="ui" data-t="credits"></button>
     <h1>Project 905</h1>
     <div id="subtitle"></div>
     <div id="tagline"></div>
@@ -89,6 +106,36 @@ body.touch .btn{display:flex}
     <div id="loading"></div>
     <div id="controls"></div>
     <div id="credit"></div>
+  </div>
+  <div id="settings" class="modal">
+    <div class="card">
+      <h2><span data-t="settings"></span><button class="x" data-close="settings">✕</button></h2>
+      <div class="row"><span data-t="language"></span><div class="seg" data-key="lang"><button data-v="zh">中文</button><button data-v="en">English</button></div></div>
+      <div class="row"><span data-t="sound"></span><div class="seg" data-key="sound"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
+      <div class="row"><span data-t="minimap"></span><div class="seg" data-key="mini"><button data-v="open" data-t="expanded"></button><button data-v="small" data-t="collapsed"></button></div></div>
+      <div class="row"><span data-t="shadows"></span><div class="seg" data-key="shadows"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
+      <div class="row"><span data-t="tilt"></span><div class="seg" data-key="tilt"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
+      <div class="row"><span data-t="resolution"></span><div class="seg" data-key="res"><button data-v="low" data-t="resLow"></button><button data-v="mid" data-t="resMid"></button><button data-v="high" data-t="resHigh"></button></div></div>
+      <button class="ui wide" id="openCredits" data-t="credits"></button>
+    </div>
+  </div>
+  <div id="credits" class="modal">
+    <div class="card credits">
+      <h2><span>Project 905 · <span data-t="subtitle"></span></span><button class="x" data-close="credits">✕</button></h2>
+      <p><b data-t="cProducer"></b> looktar</p>
+      <p><b data-t="cDev"></b> <span data-t="cDevText"></span></p>
+      <p><b data-t="cMap"></b> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <span data-t="cMapText"></span></p>
+      <p><b data-t="cArt"></b> <span data-t="cArtText"></span></p>
+      <p data-t="cDisclaimer"></p>
+      <p style="opacity:.6">v0.1</p>
+    </div>
+  </div>
+  <div id="benchRes" class="modal">
+    <div class="card">
+      <h2><span>基准测试 Benchmark</span><button class="x" data-close="benchRes">✕</button></h2>
+      <pre id="benchOut" style="white-space:pre-wrap;font:700 14px/1.5 ui-monospace,monospace;margin:0"></pre>
+      <p style="font-size:13px;margin:8px 0 0">截图发给项目经理 · Screenshot this and send it over</p>
+    </div>
   </div>
   <div id="dbg"></div>
 </div>
