@@ -6,19 +6,23 @@
 网页 + 手机浏览器都能玩的 3D 卡通“玩具城”开放世界小游戏，地图基于真实万锦（OpenStreetMap）。溜达、打路人、抢车，街上有巡逻警察。轻松休闲，给自己和朋友玩。
 试玩：https://looktar.github.io/project905/ （推到 `main` 后 GitHub Pages 自动发布，约 1 分钟）
 
-## 当前状态：v0 可玩原型（由 Claude 项目经理直接完成）
-- **无依赖、无构建**：原生 WebGL2 + ES Modules，直接静态托管。原因：v0 制作环境连不上 npm。
-- 规格原定 Three.js + Vite + TypeScript + Rapier2D。是否迁移由下一阶段评估（见 docs/DECISIONS.md D-01），**不要在没和总决策确认前做大重构**。
+## 当前状态：v0.1 打磨（2026-11-01）
+- **游戏本身零依赖、零构建**：原生 WebGL2 + ES Modules，直接静态托管。
+- **D-08 已定**：不迁移到规格原定的 Three.js + Vite + TypeScript + Rapier2D；npm 只用于开发工具（ESLint、Vitest、Playwright）。**不要在没和总决策确认前做大重构。**
+- 进度和已知问题见 `docs/PROGRESS.md`；以后的想法在 `docs/BACKLOG.md`。
 
 ## 目录
 ```
 index.html            页面 + HUD + 样式
-js/main.js            启动、主循环、镜头、渲染调度、画质设置、强制横屏入口
-js/renderer.js        WebGL2：一个带阴影的实例化着色器 + 阴影贴图 + 招牌着色器
+js/main.js            启动、主循环、镜头、渲染调度、设置/制作人员面板、自动画质、基准测试
+js/renderer.js        WebGL2：带阴影的实例化着色器 + 阴影贴图 + 招牌 + 遮挡淡出/X 光轮廓 + 微缩景深后处理
 js/geo.js             几何体（圆角盒、球、二十面体、圆柱、圆环、屋顶、星星、路面条带、多边形挤出）
-js/world.js           地图加载：分块网格、碰撞网格、路网图(A*)、路名、小地图、地标、停车场
-js/game.js            玩法：主角、路人(随机属性/性格)、警察、车流、公交、战斗、追捕、被抓
+js/world.js           地图加载：分块网格、碰撞网格、路网图(A*)、路名、小地图、地标、停车场、遮挡查询
+js/signals.js         红绿灯：从路网找信号路口、相位时钟、灯柱/停止线几何
+js/props.js           地标与街道道具：老街店面、凉亭、塔楼、影城、Viva 车站、消防栓、井盖
+js/game.js            玩法：主角、路人(随机属性/性格/过马路)、警察、车流(等红灯)、公交、战斗、追捕、被抓
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
+js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
 js/hud.js             小地图、路名、血条、气泡、横幅、被抓画面
 js/audio.js           WebAudio 合成音效（无音频文件）
 js/config.js          所有可调数值
@@ -26,29 +30,40 @@ js/i18n.js            中英文案
 tools/build_map.py    OSM 原始数据 → maps/markham.json（纯 Python 标准库）
 data/raw/markham_osm.json.gz   Overpass 导出的原始数据（已提交，构建不需联网）
 maps/markham.json     游戏地图（构建产物，已提交）
-docs/                 规格、概念图、进度、决策
+docs/                 规格、概念图、进度、决策；docs/screenshots/ 每个里程碑的截图
+tests/unit/           Vitest：坐标换算、数学、地图数据、无头玩法模拟（tests/helpers/headless.js）
+tests/e2e/smoke.mjs   Playwright 冒烟：桌面 / 手机横屏 / 手机竖屏，截图到 test-results/smoke/
+.github/workflows/ci.yml   PR 和 main 上自动跑 lint、测试、地图可复现、冒烟（不部署）
 ```
 
 ## 常用命令
 ```
-python3 -m http.server 8905          # 本地运行，打开 http://localhost:8905/?debug=1
-python3 tools/build_map.py           # 重新生成地图（改了 build_map.py 后必须跑并提交 maps/markham.json）
+npm ci                               # 装开发工具（只第一次）
+npm run serve                        # 本地运行，打开 http://localhost:8905/?debug=1
+npm run lint && npm test             # ESLint + 单元测试（约 10 秒；SIM_SEED=7 npm test 换随机种子）
+npm run smoke                        # 三种画面的冒烟测试 + 截图（约 1 分钟）
+npm run map                          # 重新生成地图（改了 build_map.py 后必须跑并提交 maps/markham.json）
+npm run check:map                    # 确认提交的地图和 build_map.py 一致
 ```
-`?debug=1` 显示帧率、CPU 耗时、draw call、实体数。
+- 网址参数：`?debug=1` 显示帧率、CPU、draw call、实体数；`?bench=1` 在出生点跑 20 秒基准测试；`?noauto=1` 关掉自动降画质（截图、测试用）。
+- 云端环境里 Playwright 浏览器已预装（1.63.0），**不要**运行 `playwright install`。
 
 ## 关键约定
 - 坐标：x 向东、z 向南、y 向上，单位米（游戏尺度，真实距离 ×0.4）。“地图北” = -z（路网已转正 15.8°）。
 - 镜头方位角固定（config.camera.azimuth），所以招牌是朝向镜头的平面，永远可读。
 - 着色：顶点色 alpha 编码材质（0=实例色A，1=实例色B，2=顶点色，小数部分×10=自发光）。
 - 静态物体按 160m 分块；房子、树、路灯、停车场车辆是每块一个实例化网格。
-- 角色/车辆每帧把部件矩阵写入实例缓冲（game.js `fillBatches`）。
+- 角色/车辆每帧把部件矩阵写入实例缓冲（game.js `fillBatches`）。主角（或主角开的车）永远先写进每个批次，`b.pk` 记住它占了前几个实例：X 光轮廓只画这部分。
+- 每个区块的实例化网格都放进 `c.inst` 列表（main.js 统一画）；小道具直接烘焙进区块静态网格，不增加 draw call。
+- 每栋 OSM 建筑在区块网格里的顶点范围记在 `world.bRange`，遮挡淡出靠它把这栋楼单独画成半透明。
+- 已知但还没修的 bug 先写成 `it.fails` 测试（D-15）。
 
 ## 工作规则（与规格第 10 节一致）
 - 只做当前里程碑；新想法写进 `docs/BACKLOG.md`。
 - 数值放 `js/config.js`。
 - 小事自己定并记 `docs/DECISIONS.md`；玩法方向/范围/花钱/红线拿不准才问总决策（给选项和推荐）。
 - 每完成一项更新 `docs/PROGRESS.md`。
-- 合并前：本地跑一遍，桌面 + 手机横屏(844×390) + 手机竖屏(390×844，应自动旋转) 截图看一遍，控制台无报错。
+- 合并前：`npm run lint && npm test && npm run smoke` 全绿。冒烟测试会自动截桌面、手机横屏(844×390)、手机竖屏(390×844，应自动旋转)三张图，并检查控制台无报错；三张截图要亲自看一遍。
 - 代码英文，文档和玩家文字中文 + 英文翻译。
 
 ## 内容红线
