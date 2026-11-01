@@ -23,6 +23,7 @@ js/props.js           地标与街道道具：老街店面、凉亭、塔楼、�
 js/game.js            玩法：主角、路人(随机属性/性格/过马路)、警察、车流(等红灯)、公交、战斗、追捕、被抓
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
+js/glb.js             最小 GLB 加载器：模型转成顶点色三角形，交给 MeshBuilder.addTriangles 烘焙
 js/hud.js             小地图、路名、血条、气泡、横幅、被抓画面
 js/audio.js           WebAudio 合成音效（无音频文件）
 js/config.js          所有可调数值
@@ -67,4 +68,5 @@ npm run check:map                    # 确认提交的地图和 build_map.py 一
 - 代码英文，文档和玩家文字中文 + 英文翻译。
 
 ## 内容红线
-卡通暴力（不出血、无死亡、倒地冒星星）；真实品牌一律谐音（Tim Hortz、大古广场 Pacifick Mall、Markvile Mall）；游戏内不出现 “GTA”；保留 “© OpenStreetMap contributors”；只用自制或 CC0 素材。
+卡通暴力（不出血、无死亡、倒地冒星星）；真实品牌一律谐音（Tim Hortz、大古广场 Pacifick Mall、Markvile Mall）；游戏内不出现 “GTA”；保留 “© OpenStreetMap contributors”。
+素材：自制、CC0，或 Polyfork（polyfork.dev）免费模型。Polyfork 由总决策 2026-11-01 授权使用，不受 CC0 限制（D-42）；每个外来素材的来源和许可要登记在 `CREDITS.md`。

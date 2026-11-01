@@ -25,7 +25,8 @@ function limits() {
     police: policeCars,
     cops: PO.footPatrol + PO.footChase + 2 * policeCars, // patrol + reinforcements + 2 officers per police car
     buses: CFG.bus.count,
-    cars: CFG.traffic.countDesktop + policeCars + CFG.traffic.parked + 2, // + the car parked at spawn + one the player left
+    laneBuses: CFG.bus.laneCount,
+    cars: CFG.traffic.countDesktop + policeCars + CFG.traffic.parked + CFG.bus.laneCount + 2, // + the car parked at spawn + one the player left
   };
 }
 function invariantProblems(sim) {
@@ -403,5 +404,45 @@ describe('pedestrians and the player', () => {
       expect(Math.hypot(ped.x - p.x, ped.z - p.z)).toBeGreaterThan(2);
       if (ped.state === 'walk') expect((ped.x - p.x) * fx + (ped.z - p.z) * fz).toBeGreaterThan(2);
     }
+  });
+});
+
+describe('Viva buses in Hwy 7 traffic', () => {
+  it('buses appear around the spawn, keep to Hwy 7 and cannot be boarded (spec 2.3)', async () => {
+    const sim = await newSim(91);
+    const g = sim.game, hwy7 = g.w.names.indexOf('Hwy 7');
+    let seen = null, offRoad = 0;
+    sim.seconds(40, DT, () => {
+      for (const b of g.cars) if (b.bus) { seen = seen || b; if (b.ai.path.e.name !== hwy7) offRoad++; }
+    });
+    expect(seen, 'a Viva bus in Hwy 7 traffic within 40 s').toBeTruthy();
+    expect(offRoad).toBe(0);
+    // stand next to the bus and press enter: nothing happens
+    const b = g.cars.find((c) => c.bus);
+    Object.assign(g.player, { x: b.x + Math.cos(b.a) * 2, z: b.z - Math.sin(b.a) * 2 });
+    b.speed = 0; b.stopT = 5;
+    sim.press('enter').step();
+    expect(g.inCar === b).toBe(false);
+  });
+});
+
+describe('pedestrians and traffic lights', () => {
+  it('at signalised junctions pedestrians start crossing on their green', async () => {
+    const sim = await newSim(95);
+    const g = sim.game, sigs = g.w.signals;
+    let starts = 0, onRed = 0;
+    sim.seconds(120, DT, () => {
+      for (const c of g.chars) {
+        if (c._waiting && c.state === 'cross' && c.crossWait <= 0 && c.crossSig) {
+          starts++;
+          if (g.w.signalState(c.crossSig, c.crossAxis, g.time) !== 0) onRed++;
+        }
+        c._waiting = c.state === 'cross' && c.crossWait > 0;
+      }
+    });
+    expect(sigs.length).toBeGreaterThan(50);
+    expect(starts).toBeGreaterThan(5);
+    // only someone who gave up waiting (CFG.peds.crossSignalWait) may go on red; before this ~1 in 6 did
+    expect(onRed / starts).toBeLessThan(0.05);
   });
 });

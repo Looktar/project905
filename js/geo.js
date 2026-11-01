@@ -29,6 +29,19 @@ export class MeshBuilder {
       C.push(c[0], c[1], c[2], mat + em * 0.1); // emissive packed: mat + em*0.1 (em<=0.9)
     }
   }
+  // triangles from glb.js (p, n, c flat arrays; per-vertex colours) baked through matrix m
+  addTriangles(t, m, mat = MAT_V, em = 0) {
+    const nm = nmat(m), P = this.P, N = this.N, C = this.C;
+    for (let i = 0; i < t.p.length; i += 3) {
+      const x = t.p[i], y = t.p[i + 1], z = t.p[i + 2];
+      P.push(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
+      const a = t.n[i], b = t.n[i + 1], d = t.n[i + 2];
+      const nx = nm[0] * a + nm[1] * b + nm[2] * d, ny = nm[3] * a + nm[4] * b + nm[5] * d, nz = nm[6] * a + nm[7] * b + nm[8] * d;
+      const l = Math.hypot(nx, ny, nz) || 1;
+      N.push(nx / l, ny / l, nz / l);
+      C.push(t.c[i], t.c[i + 1], t.c[i + 2], mat + em * 0.1);
+    }
+  }
   // raw triangles with one normal (for flat ground pieces)
   tri(ax, ay, az, bx, by, bz, cx, cy, cz, col, nx = 0, ny = 1, nz = 0, mat = MAT_V) {
     const c = hex(col);

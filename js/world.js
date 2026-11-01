@@ -6,6 +6,7 @@ import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
 import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
+import { poiColliders, poiGround, poiDetail, poiWindows, poiSigns, poiIcons, inApron } from './poi.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -180,6 +181,7 @@ export class World {
     for (const lm of this.map.landmarks) if (lm.t === 'pool') this.water.push(lm.p);
     this.rivers = this.map.rivers.map(([big, pts]) => ({ w: big ? 9 : 3.5, pts }));
     propColliders(this); // storefronts, stations, bus stops, gazebo + walkable dock decks
+    poiColliders(this);  // gas pump islands + pylons, display cars; gas canopies only as (non-solid) occluders
   }
   addCollider(poly, kind) {
     const C = this.cc;
@@ -210,7 +212,7 @@ export class World {
     for (let iter = 0; iter < 2; iter++) {
       for (const id of this.query(x - r, z - r, x + r, z + r)) {
         const c = this.colliders[id];
-        if (x + r < c.x0 || x - r > c.x1 || z + r < c.z0 || z - r > c.z1) continue;
+        if (c.kind === 'o' || x + r < c.x0 || x - r > c.x1 || z + r < c.z0 || z - r > c.z1) continue; // 'o': occluder only
         const poly = c.poly, n = poly.length;
         let inside = false, bd = 1e9, bx = 0, bz = 0;
         for (let i = 0, j = n - 1; i < n; j = i++) {
@@ -269,7 +271,7 @@ export class World {
     const ids = this.query(Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz));
     for (const id of ids) {
       const c = this.colliders[id];
-      if (c.kind === 't') continue;
+      if (c.kind === 't' || c.kind === 'o') continue;
       const p = c.poly;
       for (let i = 0, j = p.length - 1; i < p.length; j = i++)
         if (segInter(ax, az, bx, bz, p[j][0], p[j][1], p[i][0], p[i][1])) return false;
@@ -371,16 +373,18 @@ export class World {
     this.fade = new Map(); // building index -> current alpha (occlusion fade)
     for (const b of m.buildings) {
       const c = this.chunk(...centroid(b.p));
+      poiGround(this, b); // gas station forecourt (ground, outside the fade range)
       const v0 = c.mb.count;
       const wc = hex(b.c);
       const rc = [wc[0] * 0.82 + 0.1, wc[1] * 0.82 + 0.1, wc[2] * 0.82 + 0.12];
       extrude(c.mb, b.p, b.t, b.h, wc, rc);
       // a darker base stripe and window band
-      if (b.lm !== 'tims' && b.h > 5) this.windowBands(c.mb, b);
+      if (b.lm !== 'tims' && b.h > 5 && poiWindows(b)) this.windowBands(c.mb, b);
       buildingDetail(c.mb, b); // Tim Hortz trim, cinema marquee, tower roofs
+      poiDetail(this, c.mb, b); // gas station canopy, display cars, steeples, lanterns ... (v0.2 POIs)
       // rooftop boxes on large roofs
       const area = Math.abs(polyArea(b.p));
-      if (area > 500 && !b.lm) {
+      if (area > 500 && !b.lm && !b.poi) {
         const [cx, cz] = centroid(b.p);
         for (let i = 0; i < 3; i++) c.mb.add(rbox(2.4, 1.2, 2.4, 0.2), M.T(cx + (i - 1) * 4, b.h + 0.6, cz + (i % 2) * 3), '#c9ced8');
       }
@@ -405,6 +409,7 @@ export class World {
           if (this.collide(x, z, 2.9).hit) continue;
           if (this.nearestEdge(x, z, 6)) continue;
           if (buswayDist(m, x, z) < 6.5) continue; // no stalls / parked cars on the bus lanes
+          if (inApron(this, x, z)) continue;       // gas station forecourts stay clear
           const ch = this.chunk(x, z);
           ribbon(ch.mb, [[x - 1.5, z - 2.6], [x - 1.5, z + 2.6]], 0.14, 0.02, '#ffffff', false);
           if (rl() < fill) {
@@ -434,6 +439,7 @@ export class World {
         }
     }
     // hydrants, manhole covers, bus stops (baked into the chunk meshes; needs the lamp positions)
+    this.buildStreetSigns();
     this.propStats = buildStreetProps(this);
     // shared unit meshes
     const houseMB = new MeshBuilder();
@@ -573,26 +579,64 @@ export class World {
       const ps = propSign(lm);
       if (ps) specs.push(ps);
     }
+    for (const b of this.map.buildings) specs.push(...poiSigns(b)); // brands, plazas, schools ... (v0.2)
+    specs.push(...(this.streetSigns || []));
     if (!specs.length) return;
-    const cv = document.createElement('canvas');
-    const rowH = 128; cv.width = 1024; cv.height = rowH * specs.length;
-    const g = cv.getContext('2d');
-    const P = [], U = [];
-    specs.forEach((s, i) => {
-      const y0 = i * rowH;
-      g.fillStyle = s.bg; roundRect(g, 4, y0 + 4, cv.width - 8, rowH - 8, 22); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 8; roundRect(g, 12, y0 + 12, cv.width - 24, rowH - 24, 16); g.stroke();
-      g.fillStyle = s.fg; g.textAlign = 'center'; g.textBaseline = 'middle';
-      let fs = 78; g.font = `800 ${fs}px "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif`;
-      while (g.measureText(s.text).width > cv.width * 0.86 && fs > 30) { fs -= 4; g.font = `800 ${fs}px "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif`; }
-      g.fillText(s.text, cv.width / 2, y0 + rowH / 2 + 4);
-      const cx = s.x + fx * s.push, cz = s.z + fz * s.push, hw = s.w / 2;
-      const v0 = y0 / cv.height, v1 = (y0 + rowH) / cv.height;
-      const A = [cx - rx * hw, s.y, cz - rz * hw], B = [cx + rx * hw, s.y, cz + rz * hw], C = [cx + rx * hw, s.y + s.h, cz + rz * hw], D = [cx - rx * hw, s.y + s.h, cz - rz * hw];
-      P.push(...A, ...B, ...C, ...A, ...C, ...D);
-      U.push(0, v1, 1, v1, 1, v0, 0, v1, 1, v0, 0, v0);
+    // multi-page shelf-packed atlas: every sign gets a cell with its own aspect ratio (text never stretched)
+    const pages = packSigns(specs);
+    const meshes = pages.map((pg) => {
+      const cv = document.createElement('canvas');
+      cv.width = pg.w; cv.height = pg.h;
+      const g = cv.getContext('2d');
+      const P = [], U = [];
+      for (const s of pg.items) {
+        drawSign(g, s);
+        const cx = s.x + fx * s.push, cz = s.z + fz * s.push, hw = s.w / 2;
+        const u0 = s.ax / pg.w, u1 = (s.ax + s.cw) / pg.w, v0 = s.ay / pg.h, v1 = (s.ay + s.ch) / pg.h;
+        const A = [cx - rx * hw, s.y, cz - rz * hw], B = [cx + rx * hw, s.y, cz + rz * hw], C = [cx + rx * hw, s.y + s.h, cz + rz * hw], D = [cx - rx * hw, s.y + s.h, cz - rz * hw];
+        P.push(...A, ...B, ...C, ...A, ...C, ...D);
+        U.push(u0, v1, u1, v1, u1, v0, u0, v1, u1, v0, u0, v0);
+      }
+      return this.r.signMesh({ p: P, u: U }, cv);
     });
-    this.signs = this.r.signMesh({ p: P, u: U }, cv);
+    this.signStats = { count: specs.length, pages: pages.map((p) => [p.w, p.h]) };
+    this.signs = meshes.length === 1 ? meshes[0] : meshes;
+  }
+  // green street-name signs at signalised intersections, like the concept art: a pole on the
+  // sidewalk corner that faces the camera (so the sign is never behind the junction), sign on top.
+  // Poles are baked into the chunk mesh; the signs join the camera-facing sign atlas.
+  buildStreetSigns() {
+    const S = CFG.streetSigns, camX = Math.sin(CFG.camera.azimuth), camZ = Math.cos(CFG.camera.azimuth);
+    this.streetSigns = [];
+    for (const sg of this.signals || []) {
+      const byAxis = [[], []];
+      for (const ap of sg.approaches) { const nm = this.names[this.edges[ap.e].name]; if (nm && !byAxis[ap.axis].includes(nm)) byAxis[ap.axis].push(nm); }
+      if (!byAxis[0].length || !byAxis[1].length) continue;
+      const text = byAxis[0][0] + ' · ' + byAxis[1][0]; // E-W road first, as the HUD pill reads
+      const maxW = Math.max(...sg.approaches.map((ap) => this.edges[ap.e].w));
+      const d = maxW / 2 + S.cornerGap;
+      // corners ordered by how much they face the camera
+      const corners = [[1, 1], [1, -1], [-1, 1], [-1, -1]].sort((a, b) => (b[0] * camX + b[1] * camZ) - (a[0] * camX + a[1] * camZ));
+      // walk out along each corner diagonal to the first free sidewalk spot (divided roads put the
+      // junction centre in the median, so the corner is further out than half a road width)
+      let spot = null;
+      for (const [sx, sz] of corners) {
+        for (let k = d; k < d + 16 && !spot; k += 0.75) {
+          const x = sg.x + sx * k * Math.SQRT1_2 * 1.2, z = sg.z + sz * k * Math.SQRT1_2 * 1.2;
+          const ne = this.nearestEdge(x, z, 8);
+          if (ne && ne.d < 0.5) continue;                   // on the road
+          if (!ne || ne.d > 4) break;                       // past the sidewalk
+          if (this.collide(x, z, 0.5).hit) break;           // a building / tree / car: try another corner
+          if (this.inWater(x, z) || nearPole(this.sigPoles, x, z, 1.6)) continue;
+          spot = [x, z];
+        }
+        if (spot) break;
+      }
+      if (!spot) continue;
+      const [x, z] = spot;
+      this.chunk(x, z).mb.add(cyl(0.1, 0.11, S.y, 6), M.T(x, S.y / 2, z), '#3f4659');
+      this.streetSigns.push({ text, bg: '#13784a', fg: '#ffffff', x, z, y: S.y, h: S.h, push: 0.15, res: S.res });
+    }
   }
   // ---------------------------------------------------------------- occlusion fade
   // Buildings standing between the camera and the player fade out (spec 4).
@@ -609,7 +653,7 @@ export class World {
         const c = this.colliders[id];
         if (c.bi === undefined || out.has(c.bi)) continue;
         const t = segPolyEntry(x, z, ex, ez, c.poly);
-        if (t >= 0 && y0 + dy * tMax * t < this.map.buildings[c.bi].h) out.add(c.bi);
+        if (t >= 0 && y0 + dy * tMax * t < (c.h ?? this.map.buildings[c.bi].h)) out.add(c.bi);
       }
     }
     return out;
@@ -663,6 +707,7 @@ export class World {
     const icon = { tims: '#c0392b', pacific: '#e74c3c', markville: '#7c3aed', civic: '#1e3a8a' };
     for (const lm of this.map.landmarks) if (icon[lm.t]) { const [x, y] = T(lm.x, lm.z); g.fillStyle = icon[lm.t]; g.beginPath(); g.arc(x, y, lm.t === 'tims' ? 4 : 7, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
     propIcons(g, T, this.map.landmarks);
+    poiIcons(g, T, this.map.buildings); // gas stations + big brands
     this.minimap = cv;
   }
 
@@ -712,6 +757,59 @@ function segPolyEntry(ax, az, bx, bz, poly) {
 }
 function centroid(p) { let x = 0, z = 0; for (const q of p) { x += q[0]; z += q[1]; } return [x / p.length, z / p.length]; }
 function polyArea(p) { let s = 0; for (let i = 0; i < p.length; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % p.length]; s += x1 * z2 - x2 * z1; } return s / 2; }
+// ---------------------------------------------------------------- sign atlas
+const SIGN_ROWS = [128, 112, 96, 80], SIGN_PAGE = 2048;
+const signFont = (fs, w = 800) => `${w} ${fs}px "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif`;
+// Every sign gets an atlas cell with its own world aspect ratio (text is never stretched; the width
+// follows the text when s.w is not given). Cells are shelf-packed into SIGN_PAGE x SIGN_PAGE pages,
+// one draw call each: the row height drops from 128 px until everything fits on one page (two at most
+// in practice: 80 px rows hold ~150 signs per page).
+function packSigns(specs) {
+  const m = document.createElement('canvas').getContext('2d');
+  m.font = signFont(76);
+  for (const s of specs) {
+    if (!s.w) s.w = Math.min((s.h * (m.measureText(s.text).width + 64)) / 128, s.maxW || 1e9);
+  }
+  let pages;
+  for (const row of SIGN_ROWS) {
+    for (const s of specs) {
+      const r = Math.max(24, Math.round(row * (s.res || 1))); // res < 1: small on screen, so fewer texels
+      s.row = r; s.ch = s.sub ? r * 2 : r;
+      s.cw = Math.min(SIGN_PAGE, Math.max(48, Math.ceil((s.ch * s.w) / s.h / 4) * 4));
+    }
+    const order = [...specs].sort((a, b) => b.ch - a.ch || b.cw - a.cw);
+    pages = [];
+    let pg = null, x = 0, y = 0, shelf = 0;
+    for (const s of order) {
+      if (pg && x + s.cw > SIGN_PAGE) { x = 0; y += shelf; shelf = 0; }
+      if (!pg || y + s.ch > SIGN_PAGE) { pg = { items: [], w: 0, h: 0 }; pages.push(pg); x = y = shelf = 0; }
+      s.ax = x; s.ay = y; pg.items.push(s);
+      x += s.cw; shelf = Math.max(shelf, s.ch);
+      pg.w = Math.max(pg.w, x); pg.h = Math.max(pg.h, y + s.ch);
+    }
+    if (pages.length === 1) break;
+  }
+  return pages;
+}
+function drawSign(g, s) {
+  const x0 = s.ax, y0 = s.ay, W = s.cw, H = s.ch, R = s.row, k = R / 128;
+  const fit = (text, fs, maxW, w = 800) => { g.font = signFont(fs, w); while (g.measureText(text).width > maxW && fs > 14) { fs -= 2; g.font = signFont(fs, w); } };
+  g.fillStyle = s.bg; roundRect(g, x0 + 3, y0 + 3, W - 6, H - 6, 22 * k); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 8 * k; roundRect(g, x0 + 10 * k, y0 + 10 * k, W - 20 * k, H - 20 * k, 16 * k); g.stroke();
+  g.fillStyle = s.fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (!s.sub) {
+    fit(s.text, 78 * k, W - 50 * k);
+    g.fillText(s.text, x0 + W / 2, y0 + H / 2 + 4 * k);
+    return;
+  }
+  // two rows: name on top, LED price board below
+  fit(s.text, 62 * k, W - 40 * k);
+  g.fillText(s.text, x0 + W / 2, y0 + R * 0.55);
+  g.fillStyle = '#111827'; roundRect(g, x0 + 20 * k, y0 + R * 1.02, W - 40 * k, R * 0.86, 12 * k); g.fill();
+  g.fillStyle = '#ffb020';
+  fit(s.sub, 96 * k, W - 64 * k, 700);
+  g.fillText(s.sub, x0 + W / 2, y0 + R * 1.47);
+}
 function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 function segInter(ax, az, bx, bz, cx, cz, dx, dz) {
   const d1 = (dx - cx) * (az - cz) - (dz - cz) * (ax - cx);

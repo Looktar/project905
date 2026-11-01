@@ -25,7 +25,7 @@ export const CFG = {
     walk: 2.2, flee: 7.2, radius: 0.5,
     hp: [30, 120], power: [0.5, 2.0],
     temper: { timid: 0.5, normal: 0.35, angry: 0.13, master: 0.02 },
-    downTime: [8, 12], witness: 15, crossRate: 0.015, crossSpeed: 1.25, crossMaxWait: 12,
+    downTime: [8, 12], witness: 15, crossRate: 0.015, crossSpeed: 1.25, crossMaxWait: 12, crossSignalWait: 30, signalReach: 28,
     keepUp: 1.2, catchUp: 1.2, spawnMargin: 0.25, avoidPlayer: 3.2,
   },
   traffic: {
@@ -44,7 +44,8 @@ export const CFG = {
     runSpeed: 8.0, hp: 150, punchDmg: 9,
     bustFoot: 1.5, bustCar: 2.0, reinforce: 6, respawn: [150, 300], max: 8,
   },
-  bus: { count: 2, speed: 9 },
+  streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
+  bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },
   world: { viewRadius: 210, fogNear: 150, fogFar: 300 },
   // ---- v0.1 work-package sections (one block each, kept apart to ease merges)
