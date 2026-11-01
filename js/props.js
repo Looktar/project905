@@ -2,7 +2,7 @@
 // street props (fire hydrants, manhole covers, bus stops). Everything is baked into the per-chunk
 // static meshes, so none of it costs an extra draw call.
 import { M, segDist } from './math.js';
-import { MAT_V, box, cyl, sphere, ico, torus, roof, disc } from './geo.js';
+import { MAT_V, box, cyl, ico, torus, roof, disc } from './geo.js';
 import { CFG } from './config.js';
 
 const COL = {
@@ -89,7 +89,7 @@ export function propColliders(w) {
   const m = w.map;
   w.decks = [];
   for (const h of m.heritage || []) w.addCollider(rectPoly(h[0], h[1], h[2], h[3], h[4]), 'h');
-  for (const s of m.stops || []) w.addCollider(rectPoly(s[0], s[1], s[2], s[3] === 2 ? 6.0 : s[3] === 1 ? 4.2 : 2.4, s[3] ? 1.8 : 0.8), 't');
+  for (const s of m.stops || []) w.addCollider(rectPoly(s[0], s[1], s[2], s[3] === 2 ? 6.6 : s[3] === 1 ? 5.0 : 3.4, s[3] ? 1.8 : 0.8), 't');
   for (const lm of m.landmarks) {
     if (lm.t === 'viva') w.addCollider(rectPoly(lm.x, lm.z, lm.a, 0.7, lm.L), 't');
     if (lm.t === 'gazebo') {
@@ -110,7 +110,7 @@ export function buildPropLandmark(w, lm) {
   if (lm.t === 'viva') vivaStation(mb, lm);
   else if (lm.t === 'gazebo') gazebo(mb, lm);
   else if (lm.t === 'dock') dock(mb, lm);
-  else if (lm.t === 'cinema') popcorn(mb, lm, w);
+  else if (lm.t === 'cinema') popcorn(mb, lm);
   else if (lm.t === 'unionville') signPosts(mb, lm.x, lm.z, lm.h - 0.2, lm.h + 2.35, 2.4, 0.09, '#2f2a24');
   else if (lm.t === 'downtown') downtownSign(w, lm);
 }
@@ -128,13 +128,14 @@ function vivaStation(mb, lm) {
   put(mb, F, box(0.3, 2.4, 0.3), at(0, 1.42, L / 2 - 0.5), COL.viva, 0.1);
   put(mb, F, box(0.32, 0.5, 0.32), at(0, 2.4, L / 2 - 0.5), COL.white, 0.4);
   put(mb, F, box(0.34, 0.08, 1.8), at(0, 0.58, -1.2), COL.bench);
+  for (const z of [-1.9, -0.5]) put(mb, F, box(0.26, 0.36, 0.08), at(0, 0.4, z), COL.post);
 }
 
 // white octagonal gazebo with a pointed roof
 function gazebo(mb, lm) {
   const F = frame(lm.x, lm.z, Math.PI / 8), R = 3.0;
   put(mb, F, cyl(R + 0.35, R + 0.45, 0.4, 8), at(0, 0.2, 0), '#ecebe6');
-  put(mb, F, box(1.6, 0.2, 0.9), M.chain(M.RY(Math.PI / 8 + 0.55), at(0, 0.1, R + 0.7)), '#ecebe6');
+  put(mb, F, box(1.6, 0.2, 0.9), at(0, 0.1, R + 0.75), '#ecebe6'); // step at the entrance gap (local +z)
   for (let i = 0; i < 8; i++) {
     const a0 = ((i + 0.5) / 8) * Math.PI * 2, a1 = ((i + 1.5) / 8) * Math.PI * 2;
     const x0 = Math.cos(a0) * R, z0 = Math.sin(a0) * R, x1 = Math.cos(a1) * R, z1 = Math.sin(a1) * R;
@@ -161,7 +162,7 @@ function dock(mb, lm) {
 }
 
 // giant striped popcorn bucket on the cinema roof
-function popcorn(mb, lm, w) {
+function popcorn(mb, lm) {
   const az = CFG.camera.azimuth, fx = Math.sin(az), fz = Math.cos(az);
   const x = lm.x - fx * lm.r * 0.25, z = lm.z - fz * lm.r * 0.25, y = lm.h;
   const H = 7.4, rb = 2.8, rt = 3.9, base = M.T(x, y + H / 2, z);
