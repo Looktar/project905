@@ -758,7 +758,7 @@ export class Game {
       const tgt = this.player;
       const d = this.dist(c, tgt);
       if (this.inCar || c.timer <= 0 || d > 22 || tgt.state === 'ko') { this.flee(c, tgt.x, tgt.z, 4); return; }
-      if (d > 1.25) moveTo(tgt.x, tgt.z, c.temper === 'master' ? 6.5 : 5.2);
+      if (d > 1.25) moveTo(tgt.x, tgt.z, c.temper === 'master' ? 7.4 : 6.0);
       else { c.speed = 0; c.face = Math.atan2(tgt.x - c.x, tgt.z - c.z); if (c.cd <= 0) { c.cd = rr(0.8, 1.3) / (c.temper === 'master' ? 1.5 : 1); c.punchT = 0.22; this.hit(tgt, 5 * c.power, c); } }
       return;
     }
