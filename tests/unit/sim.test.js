@@ -376,3 +376,32 @@ describe('NPCs move like people (no gliding, no popping into view)', () => {
     }
   });
 });
+
+describe('pedestrians and the player', () => {
+  it('a pedestrian walks smoothly around the player standing in its way (no shaking, no getting stuck)', async () => {
+    for (const seed of [81, 82, 83]) {
+      const sim = await newSim(seed);
+      sim.step(30);
+      const g = sim.game, p = g.player;
+      const ped = g.chars.find((c) => c.kind === 'ped' && c.state === 'walk' && c.path && c.path.e.len - c.path.s > 25);
+      expect(ped, 'a walking pedestrian with room ahead').toBeTruthy();
+      for (const c of g.chars) if (c !== p && c !== ped) c.x += 1000; // just the two of them
+      g.cars.length = 0;
+      sim.freezeSpawning();
+      const off = (ped.path.e.oneway ? ped.path.dir : 1) * (ped.path.e.w / 2 + 1.7);
+      const spot = g.w.edgePoint(ped.path.e, ped.path.s + 5, ped.path.dir, off);
+      Object.assign(p, { x: spot.x, z: spot.z });
+      const fx = spot.dx, fz = spot.dz; // walking direction at the player
+      let reversals = 0, prev = null, x = ped.x, z = ped.z;
+      sim.seconds(8, DT, () => {
+        const d = [ped.x - x, ped.z - z]; x = ped.x; z = ped.z;
+        if (prev && Math.hypot(...d) > 0.004 && Math.hypot(...prev) > 0.004 && d[0] * prev[0] + d[1] * prev[1] < 0) reversals++;
+        prev = d;
+      });
+      expect(reversals).toBeLessThanOrEqual(2);
+      // not stuck at the player: walked on (around them, or crossed the street)
+      expect(Math.hypot(ped.x - p.x, ped.z - p.z)).toBeGreaterThan(2);
+      if (ped.state === 'walk') expect((ped.x - p.x) * fx + (ped.z - p.z) * fz).toBeGreaterThan(2);
+    }
+  });
+});
