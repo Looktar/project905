@@ -65,7 +65,7 @@ export const poiStyle = (b) => STYLE[b.s] || STYLE[b.poi] || DEF;
 const band = (b) => { const s = poiStyle(b); return s.band || s.bg; };
 const CAR_COLS = ['#ef4444', '#f8fafc', '#1f2937', '#2563eb', '#cbd5e1', '#f59e0b', '#10b981', '#a78bfa'];
 // sign size per category (height in m; width follows the text)
-const SIGN_H = { gas: 2.3, dealer: 2.2, plaza: 2.5, bigbox: 2.5, grocer: 2.4, hotel: 2.2, school: 2.0, fire: 1.9, fast: 1.9 };
+const SIGN_H = { gas: 2.3, dealer: 2.2, plaza: 2.5, bigbox: 2.5, grocer: 2.4, hotel: 2.2, school: 2.1, fire: 2.1, fast: 2.2 };
 const BRAND_DOTS = new Set(['gas', 'dealer', 'fast', 'grocer', 'bigbox', 'plaza', 'bank', 'shop', 'hotel']);
 
 const put = (mb, base, g, m, col, em = 0) => mb.add(g, M.mul(base, m), col, MAT_V, em);
@@ -357,7 +357,7 @@ export function poiSigns(b) {
     const [cx, cz] = centroid(b.p);
     return [{ text: b.n, bg: st.bg, fg: st.fg, x: cx, z: cz, y: b.h + 0.3, h: SIGN_H[b.poi] || 1.8, push: frontExtent(b.p, [cx, cz], fx, fz), maxW: 24 }];
   }
-  return [{ text: b.n, bg: st.bg, fg: st.fg, x: e.mx, z: e.mz, y: b.h + 0.3, h: SIGN_H[b.poi] || 1.8, push: 0.4, maxW: Math.max(10, e.L * 1.3) }];
+  return [{ text: b.n, bg: st.bg, fg: st.fg, x: e.mx, z: e.mz, y: b.h + 0.3, h: SIGN_H[b.poi] || 2.0, push: 0.4, maxW: Math.max(10, e.L * 1.3) }];
 }
 
 // ---------------------------------------------------------------- minimap dots

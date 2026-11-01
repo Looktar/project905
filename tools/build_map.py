@@ -1110,7 +1110,7 @@ BRANDS = {
     'Esso': ('gas', 'Ezzo', 'ezzo'),
     'Shell': ('gas', 'Shel', 'shel'),
     "McDonald's": ('fast', "McDanold's", 'mcd'),
-    'Boston Pizza': ('fast', 'Boston Pizzaz', 'bpizza'),
+    'Boston Pizza': ('fast', 'Bostin Pizza', 'bpizza'),
     'Swiss Chalet': ('fast', 'Swiss Chalay', 'chalay'),
     'No Frills': ('grocer', 'No Thrills', 'nothrills'),
     'Loblaws': ('grocer', 'Loblawz', 'loblawz'),
@@ -1136,7 +1136,7 @@ BRANDS = {
     'Hilton': ('hotel', 'Hiltun Suites', 'hiltun'),
     'Courtyard': ('hotel', 'Courtyerd', 'hotel'),
     'Monte Carlo Inn': ('hotel', 'Monte Carla Inn', 'hotel'),
-    'YMCA': ('cc', 'YMCAy', 'ymca'),
+    'YMCA': ('cc', 'YNCA', 'ymca'),
 }
 DEALERS = {   # word in the dealer's brand / name -> pun
     'Toyota': 'Toyoda', 'Honda': 'Hondo', 'Kia': 'Kio', 'Mazda': 'Mazba', 'Mercedes-Benz': 'Mercedez',
