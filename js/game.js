@@ -6,6 +6,7 @@ import { CFG } from './config.js';
 import { input } from './input.js';
 import * as sfx from './audio.js';
 import { t } from './i18n.js';
+import { SIG_GREEN, SIG_YELLOW, laneOff } from './signals.js';
 
 const CS = 1.3; // character scale (chibi proportions)
 const SKIN = ['#f3c9a2', '#e2ad84', '#c68b62', '#f6d5b8', '#a8714d'];
@@ -13,6 +14,35 @@ const SHIRT = ['#ef4444', '#f59e0b', '#22c3a6', '#a78bfa', '#60a5fa', '#f472b6',
 const PANTS = ['#2f3b59', '#5b4a8a', '#3b4a6b', '#334155', '#475569', '#1e3a8a', '#374151', '#6b4f3a'];
 const HAIR = ['#2b2320', '#6b4429', '#d9a441', '#1f1f1f', '#5b3a29', '#111111', '#9ca3af'];
 const CARCOL = ['#38bdf8', '#fb7185', '#34d399', '#a78bfa', '#f97316', '#e5e7eb', '#94a3b8', '#fde68a', '#ef4444', '#2563eb', '#10b981', '#f8fafc'];
+const SUVCOL = ['#2563eb', '#ef4444', '#10b981', '#f8fafc', '#475569', '#0ea5e9', '#84cc16', '#f59e0b'];
+const VANCOL = ['#f8fafc', '#e5e7eb', '#fde68a', '#93c5fd', '#fca5a5', '#86efac', '#c4b5fd'];
+const VAN_ROOF = [0.97, 0.97, 0.98], RAIL = [0.22, 0.24, 0.3];
+// traffic-light lamps [red, yellow, green]: lit / unlit colours (the lamp batch is emissive)
+const LAMP_ON = [[1, 0.22, 0.2], [1, 0.78, 0.15], [0.25, 1, 0.45]];
+const LAMP_OFF = [[0.32, 0.1, 0.1], [0.33, 0.26, 0.07], [0.07, 0.25, 0.13]];
+
+// Vehicle shapes. Every type reuses the sedan batches with scaled part matrices, so new
+// types cost no draw calls. Local frame: +z forward, y up.
+const SHAPES = (() => {
+  const T = M.T, S = M.S, C = M.chain;
+  const wheels = (x, y, z, s) => [-1, 1].flatMap((sx) => [-1, 1].map((sz) => C(T(sx * x, y, sz * z), M.RZ(Math.PI / 2), S(s))));
+  const pair = (x, y, z) => [T(-x, y, z), T(x, y, z)];
+  const sedan = { body: T(0, 0.72, 0), cabin: T(0, 1.47, -0.25), roof: T(0, 2.2, -0.25), wheels: wheels(1.0, 0.42, 1.4, 1), head: pair(0.62, 0.8, 2.18), tail: pair(0.62, 0.8, -2.18) };
+  return {
+    sedan, taxi: sedan, police: sedan,
+    // SUV: taller boxy body, high ground clearance, big wheels, long cabin, roof rails, spare wheel
+    suv: {
+      body: C(T(0, 0.99, 0), S(1.06, 1.22, 1.03)), cabin: C(T(0, 1.86, -0.32), S(1.1, 1.08, 1.4)), roof: C(T(0, 2.34, -0.32), S(1.1, 1, 1.55)),
+      wheels: wheels(1.02, 0.5, 1.5, 1.2), head: pair(0.66, 1.12, 2.27), tail: pair(0.72, 1.18, -2.27),
+      rails: [-0.86, 0.86].map((x) => C(T(x, 2.47, -0.32), S(0.07, 0.9, 1.45))), spare: C(T(0, 1.12, -2.42), M.RX(Math.PI / 2), S(1.05, 0.9, 1.05)),
+    },
+    // van (minivan, 面包车): tall one-box body with a window band all round and a white roof
+    van: {
+      body: C(T(0, 1.3, 0), S(1.05, 2.2, 1.07)), cabin: C(T(0, 1.78, 0.02), S(1.24, 0.8, 2.08)), roof: C(T(0, 2.27, -0.05), S(1.08, 1, 2.15)),
+      wheels: wheels(1.02, 0.44, 1.6, 1.05), head: pair(0.7, 0.86, 2.36), tail: pair(0.76, 1.0, -2.36),
+    },
+  };
+})();
 
 let uid = 1;
 
@@ -64,6 +94,8 @@ export class Game {
       taxi: mk(rbox(0.8, 0.3, 0.4, 0.08), MAT_V, '#fff7d6', 0.3, 40),
       busBody: mk(rbox(2.5, 2.9, 12, 0.4), MAT_A, '#ffffff', 0, 8), busGlass: mk(rbox(2.56, 1.0, 10.6, 0.2), MAT_V, '#bfe6ff', 0, 8), busRoof: mk(rbox(2.2, 0.25, 10, 0.1), MAT_V, '#e8eef8', 0, 8),
       puff: mk(ico(0.55), MAT_A, '#ffffff', 0, 200),
+      // traffic-light lamps: a short emissive cylinder through the head, lens on both faces
+      sigLamp: mk(cyl(0.25, 0.25, 0.52, 12), MAT_A, '#ffffff', 0.9, 900),
     };
     this.tmp = new Float32Array(16);
   }
@@ -107,11 +139,18 @@ export class Game {
   }
   makeCar(type, x, z, a, opts = {}) {
     const car = {
-      id: uid++, type, x, z, a, speed: 0, vx: 0, vz: 0, hp: CFG.car.hp, col: hexc(opts.col || (type === 'police' ? '#f8fafc' : type === 'taxi' ? '#fbbf24' : pick(CARCOL))),
+      id: uid++, type, x, z, a, speed: 0, vx: 0, vz: 0, hp: CFG.car.hp, col: hexc(opts.col || (type === 'police' ? '#f8fafc' : type === 'taxi' ? '#fbbf24' : pick(type === 'suv' ? SUVCOL : type === 'van' ? VANCOL : CARCOL))),
       driver: opts.driver || null, ai: opts.ai || null, parked: !!opts.parked, stopT: 0, honkT: 0, smokeT: 0, dead: false, cops: opts.cops || 0, route: null, routeT: 0, stuckT: 0, revT: 0,
     };
     this.cars.push(car);
     return car;
+  }
+  // random civilian vehicle type by the weights in CFG.traffic.mix
+  pickType() {
+    const mix = CFG.traffic.mix;
+    let r = Math.random() * Object.values(mix).reduce((a, b) => a + b, 0);
+    for (const k in mix) { r -= mix[k]; if (r < 0) return k; }
+    return 'sedan';
   }
 
   // ------------------------------------------------------------------ helpers
@@ -284,8 +323,10 @@ export class Game {
   carPhysics(car, throttle, steer, handbrake, dt) {
     const C = CFG.car;
     if (car.hp <= 0) { throttle = 0; steer *= 0.3; }
-    const max = car.type === 'police' ? C.maxSpeed * 1.05 : C.maxSpeed;
-    if (throttle > 0) { car.speed += (car.speed < 0 ? C.brake : C.accel) * throttle * dt; }
+    const TR = CFG.traffic, ty = car.type;
+    const max = C.maxSpeed * (ty === 'police' ? 1.05 : ty === 'van' ? TR.vanSpeed : ty === 'suv' ? TR.suvSpeed : 1);
+    const acc = C.accel * (ty === 'van' ? TR.vanAccel : 1);
+    if (throttle > 0) { car.speed += (car.speed < 0 ? C.brake : acc) * throttle * dt; }
     else if (throttle < 0) { car.speed += (car.speed > 0.5 ? -C.brake : -C.reverse) * -throttle * dt; }
     car.speed -= car.speed * C.drag * dt + Math.sign(car.speed) * 0.8 * dt * (throttle === 0 ? 1 : 0);
     if (Math.abs(car.speed) < 0.05 && throttle === 0) car.speed = 0;
@@ -318,19 +359,48 @@ export class Game {
 
   // ------------------------------------------------------------------ path following (peds & traffic)
   startPath(e, s, dir) { return { e, s, dir }; }
+  // random continuation {e, dir} at the far end of edge e travelled in direction dir
+  // (preferArterial = traffic: likes arterials, never U-turns where a divided road splits)
+  pickNext(e, dir, allowOneway, preferArterial) {
+    const node = dir > 0 ? e.b : e.a;
+    let opts = this.w.adj[node].filter((a) => a.e !== e.i);
+    if (!allowOneway) opts = opts.filter((a) => !this.w.edges[a.e].oneway || a.dir > 0);
+    if (!opts.length) return { e: e.i, dir: -dir };
+    if (preferArterial && opts.length > 1) {
+      // travel directions over ~10 m (carriageways splay out right at a split node)
+      const W = this.w, n = W.nodes[node], q = W.edgePoint(e, e.len - Math.min(10, e.len), dir);
+      let hx = n[0] - q.x, hz = n[1] - q.z;
+      const L = Math.hypot(hx, hz) || 1; hx /= L; hz /= L;
+      const fwd = opts.filter((a) => {
+        const o = W.edges[a.e], r = W.edgePoint(o, Math.min(10, o.len), a.dir), sx = r.x - n[0], sz = r.z - n[1];
+        return hx * sx + hz * sz > -0.7 * (Math.hypot(sx, sz) || 1);
+      });
+      if (fwd.length) opts = fwd;
+    }
+    let ch = pick(opts);
+    if (preferArterial && Math.random() < 0.6) { const art = opts.filter((a) => this.w.edges[a.e].cls <= 2); if (art.length) ch = pick(art); }
+    return ch;
+  }
+  // path.next (set ahead of time by traffic, see signalAhead) is the committed next edge
   advancePath(path, ds, allowOneway, preferArterial = false) {
     path.s += ds;
     let guard = 0;
     while (path.s >= path.e.len && guard++ < 4) {
       path.s -= path.e.len;
-      const node = path.dir > 0 ? path.e.b : path.e.a;
-      let opts = this.w.adj[node].filter((a) => a.e !== path.e.i);
-      if (!allowOneway) opts = opts.filter((a) => !this.w.edges[a.e].oneway || a.dir > 0);
-      if (!opts.length) { opts = [{ e: path.e.i, dir: -path.dir }]; }
-      let ch = pick(opts);
-      if (preferArterial && Math.random() < 0.6) { const art = opts.filter((a) => this.w.edges[a.e].cls <= 2); if (art.length) ch = pick(art); }
-      path.e = this.w.edges[ch.e]; path.dir = ch.dir;
+      const ch = path.next || this.pickNext(path.e, path.dir, allowOneway, preferArterial);
+      path.e = this.w.edges[ch.e]; path.dir = ch.dir; path.next = null;
     }
+  }
+  // next traffic-light stop line ahead of a traffic car: {ap, d} with d = path distance to it
+  // (negative once passed), looking at the current edge and the committed next edge
+  signalAhead(path) {
+    const W = this.w, rem = path.e.len - path.s;
+    let ap = W.sigApproach(path.e.i, path.dir);
+    if (ap && rem - ap.stop > -0.5) return { ap, d: rem - ap.stop };
+    const nx = path.next;
+    ap = nx && W.sigApproach(nx.e, nx.dir);
+    if (ap) return { ap, d: rem + W.edges[nx.e].len - ap.stop };
+    return null;
   }
 
   // ------------------------------------------------------------------ spawning
@@ -371,7 +441,7 @@ export class Game {
     const trTarget = this.isMobile ? TR.countMobile : TR.countDesktop;
     if (moving < trTarget) {
       const ne = ringPoint(TR.spawnMin, TR.spawnMax, 3);
-      if (ne) this.addTraffic(ne, Math.random() < 0.15 ? 'taxi' : 'sedan');
+      if (ne) this.addTraffic(ne, this.pickType());
     }
     const parked = this.cars.filter((c) => c.parked && !c.driver).length;
     if (parked < TR.parked) {
@@ -379,7 +449,7 @@ export class Game {
       if (ne && ne.e.cls === 3) {
         const s = ne.e.cum[ne.k] + ne.t * (ne.e.cum[ne.k + 1] - ne.e.cum[ne.k]);
         const p = this.w.edgePoint(ne.e, s, 1, ne.e.w / 2 - 1.2);
-        if (!this.cars.some((c) => Math.hypot(c.x - p.x, c.z - p.z) < 6)) this.makeCar(Math.random() < 0.2 ? 'taxi' : 'sedan', p.x, p.z, Math.atan2(p.dx, p.dz), { parked: true });
+        if (!this.cars.some((c) => Math.hypot(c.x - p.x, c.z - p.z) < 6)) this.makeCar(this.pickType(), p.x, p.z, Math.atan2(p.dx, p.dz), { parked: true });
       }
     }
     const pcars = this.cars.filter((c) => c.type === 'police' && c !== this.inCar).length;
@@ -405,7 +475,7 @@ export class Game {
     if (e.oneway) dir = 1;
     const s0 = e.cum[ne.k] + ne.t * (e.cum[ne.k + 1] - e.cum[ne.k]);
     const s = dir > 0 ? s0 : e.len - s0;
-    const off = e.oneway ? 0 : e.w / 4;
+    const off = laneOff(e);
     const p = this.w.edgePoint(e, s, dir, off);
     if (this.cars.some((c) => Math.hypot(c.x - p.x, c.z - p.z) < 10)) return null;
     const car = this.makeCar(type, p.x, p.z, Math.atan2(p.dx, p.dz), { ai: { path: this.startPath(e, s, dir), off }, driver: 'npc', cops: type === 'police' ? 2 : 0 });
@@ -575,21 +645,66 @@ export class Game {
     if (car === this.inCar) return;
     if (car.chasing) { this.policeDrive(car, dt); return; }
     if (car.ai) {
-      const ai = car.ai, path = ai.path, e = path.e;
-      let target = CFG.traffic.speed[e.cls];
+      const ai = car.ai, path = ai.path, e = path.e, TR = CFG.traffic, SG = CFG.signals;
+      let target = TR.speed[e.cls] * (car.type === 'van' ? TR.vanSpeed : car.type === 'suv' ? TR.suvSpeed : 1);
       if (car.type === 'police') target *= 0.85;
-      // look ahead for obstacles
-      const fx = Math.sin(car.a), fz = Math.cos(car.a);
-      let block = false, blockPlayer = false;
-      const check = (o, r) => { const dx = o.x - car.x, dz = o.z - car.z, d = Math.hypot(dx, dz); if (d < 10 && d > 0.1 && (dx * fx + dz * fz) / d > 0.82 && Math.abs(dx * fz - dz * fx) < r) { block = true; return true; } return false; };
-      for (const o of this.cars) if (o !== car) check(o, 2.2);
-      for (const o of this.chars) if (o.state !== 'down' || true) if (check(o, 1.8) && (o === this.player)) blockPlayer = true;
-      if (this.inCar && check(this.inCar, 2.4)) blockPlayer = true;
+      if (!path.next) path.next = this.pickNext(e, path.dir, false, true);
+      const calm = !(car.impatient > 0); // an impatient car (stuck too long) ignores lights + traffic
+      // look ahead: the traffic car ahead on our own path (or merging into it) is followed with a
+      // gap (smooth queues); other cars in the forward cone (crossing traffic, parked cars, the
+      // player's car) cap our speed the same way; people in the cone make us stop
+      const fx = Math.sin(car.a), fz = Math.cos(car.a), rem = e.len - path.s;
+      let block = false, blockPlayer = false, cap = Infinity, lead = Infinity, leadV = 0;
+      // forward cone: returns the distance ahead along our heading, or 0
+      const cone = (o, r, range) => { const dx = o.x - car.x, dz = o.z - car.z, d = Math.hypot(dx, dz), lon = dx * fx + dz * fz; return d < range && d > 0.1 && lon / d > 0.82 && Math.abs(dx * fz - dz * fx) < r ? lon : 0; };
+      // speed cap that keeps TR.gap (centre to centre, + headway at speed) behind something at
+      // distance dist moving at v; closer than that it drops back below v
+      const follow = (dist, v) => {
+        v = Math.max(0, v);
+        const need = TR.gap + TR.headway * v;
+        return dist >= need ? v + Math.sqrt(2 * TR.followDecel * (dist - need)) : Math.max(0, v - 2 * (need - dist));
+      };
+      const nx = path.next;
+      for (const o of this.cars) {
+        if (o === car) continue;
+        const op = o.ai && o.ai.path;
+        if (op && op.e === e && op.dir === path.dir) { const g = op.s - path.s; if (g > 0 && g < lead) { lead = g; leadV = o.speed; } continue; }
+        if (op && op.e.i === nx.e && op.dir === nx.dir) { const g = rem + op.s; if (g < lead) { lead = g; leadV = o.speed; } continue; }
+        // merging: another car heading into the same next edge from elsewhere; the one further
+        // from the merge point treats the closer one as the car ahead
+        if (op && op.next && op.next.e === nx.e && op.next.dir === nx.dir && rem < 30) {
+          const ro = op.e.len - op.s;
+          if (ro < rem || (ro === rem && o.id < car.id)) { const g = rem - ro; if (g < lead) { lead = g; leadV = o.speed; } }
+          continue;
+        }
+        if (!calm && o !== this.inCar) continue;
+        const lon = cone(o, o === this.inCar ? 2.4 : 2.2, 14);
+        if (!lon) continue;
+        cap = Math.min(cap, follow(lon, (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic, parked cars
+        if (o === this.inCar && lon < 10) blockPlayer = true;
+      }
+      for (const o of this.chars) if (cone(o, 1.8, 10)) { block = true; if (o === this.player) blockPlayer = true; }
+      if (calm && lead < 40) cap = Math.min(cap, follow(lead, leadV)); // queue behind the car ahead on our path
+      // traffic lights: stop at the line on red, and on yellow if a comfortable stop still fits
+      const sg = calm ? this.signalAhead(path) : null;
+      if (sg && sg.d > -0.5) {
+        const st = this.w.signalState(sg.ap.sig, sg.ap.axis, this.time);
+        if (st !== SIG_GREEN) {
+          const v = Math.max(0, car.speed), dd = Math.max(0, sg.d - 0.05);
+          const comf = Math.sqrt(2 * SG.comfortDecel * dd), hard = Math.sqrt(2 * SG.maxDecel * dd);
+          if (v <= (st === SIG_YELLOW ? comf : hard) + 0.3) cap = Math.min(cap, v <= comf + 0.3 ? comf : hard);
+        }
+      }
       if (car.stopT > 0) { car.stopT -= dt; block = true; }
-      car.speed = lerp(car.speed, block ? 0 : target, 1 - Math.exp(-(block ? 6 : 1.2) * dt));
+      car.speed = lerp(car.speed, block ? 0 : Math.min(target, cap), 1 - Math.exp(-(block ? 6 : 1.2) * dt));
+      if (car.speed > cap) car.speed = cap;
+      // deadlock guard: a car that has not moved for SG.maxWait s (any reason) goes for a while
+      if (car.impatient > 0) car.impatient -= dt;
+      if (car.speed < 0.5) { car.waitT = (car.waitT || 0) + dt; if (car.waitT > SG.maxWait) { car.waitT = 0; car.impatient = SG.impatient; } }
+      else if (car.speed > 2) car.waitT = 0;
       if (blockPlayer) { car.honkT -= dt; if (car.honkT <= 0) { car.honkT = 2.5; if (Math.hypot(car.x - this.player.x, car.z - this.player.z) < 60) { sfx.horn(); this.bubble('honk', car, 3.2); } } }
       this.advancePath(path, car.speed * dt, false, true);
-      const p = this.w.edgePoint(path.e, path.s, path.dir, path.e.oneway ? 0 : path.e.w / 4);
+      const p = this.w.edgePoint(path.e, path.s, path.dir, laneOff(path.e));
       const dx = p.x - car.x, dz = p.z - car.z;
       if (Math.hypot(dx, dz) > 8) { car.x = p.x; car.z = p.z; car.a = Math.atan2(p.dx, p.dz); }
       else {
@@ -793,7 +908,17 @@ export class Game {
       for (const s of [-1, 1]) for (const zz of [-3.6, 3.6]) this.put(this.B.wheel, M.chain(m, M.T(s * 1.15, 0.5, zz), M.RZ(Math.PI / 2), M.S(1.2)));
     }
     for (const f of this.puffs) this.put(this.B.puff, M.chain(M.T(f.x, f.y, f.z), M.S(f.s)), f.c);
+    this.drawSignals(P);
     for (const b of Object.values(this.B)) if (b.n) this.r.upload(b);
+  }
+  // traffic-light lamps near the player (poles and heads are static chunk geometry)
+  drawSignals(P) {
+    const SR = CFG.signals.drawRadius;
+    for (const sg of this.w.signals) {
+      if (Math.abs(sg.x - P.x) > SR || Math.abs(sg.z - P.z) > SR) continue;
+      const lit = [2 - this.w.signalState(sg, 0, this.time), 2 - this.w.signalState(sg, 1, this.time)]; // lamp 0 red, 1 yellow, 2 green
+      for (const ap of sg.approaches) if (ap.lamps) for (let k = 0; k < 3; k++) this.put(this.B.sigLamp, ap.lamps[k], k === lit[ap.axis] ? LAMP_ON[k] : LAMP_OFF[k]);
+    }
   }
   drawChar(c) {
     const B = this.B;
@@ -830,11 +955,15 @@ export class Game {
     const m = M.chain(M.T(car.x, 0, car.z), M.RY(car.a));
     const P = (batch, mm, col) => this.put(batch, M.mul(m, mm), col);
     const dark = car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
-    P(B.carBody, M.T(0, 0.72, 0), dark);
-    P(B.carCabin, M.T(0, 1.47, -0.25));
-    P(B.carRoof, M.T(0, 2.2, -0.25), dark);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) P(B.wheel, M.chain(M.T(sx * 1.0, 0.42, sz * 1.4), M.RZ(Math.PI / 2)));
-    for (const sx of [-1, 1]) { P(B.headl, M.T(sx * 0.62, 0.8, 2.18)); P(B.taill, M.T(sx * 0.62, 0.8, -2.18)); }
+    const V = SHAPES[car.type] || SHAPES.sedan;
+    P(B.carBody, V.body, dark);
+    P(B.carCabin, V.cabin);
+    P(B.carRoof, V.roof, car.type === 'van' && car.hp > 0 ? VAN_ROOF : dark);
+    for (const w of V.wheels) P(B.wheel, w);
+    for (const h of V.head) P(B.headl, h);
+    for (const h of V.tail) P(B.taill, h);
+    if (V.rails) for (const r of V.rails) P(B.carRoof, r, RAIL);
+    if (V.spare) P(B.wheel, V.spare);
     if (car.type === 'police') {
       P(B.stripe, M.T(0, 0.85, 0));
       const blink = car.chasing ? (Math.floor(this.time * 6) % 2) : 0;
