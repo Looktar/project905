@@ -47,7 +47,15 @@ export const CFG = {
   // signals: traffic lights
   signals: {},
   // props: street furniture + landmarks
-  props: {},
+  props: {
+    hydrantFirst: 18,        // m from the junction to the first hydrant along an arterial
+    hydrantSpacing: 70,      // m between hydrants on one side of an arterial (collectors: x1.6, one side)
+    hydrantGap: 28,          // min distance between any two hydrants
+    hydrantOffset: 0.8,      // m outside the curb, on the sidewalk
+    manholeSpacing: [60, 115], // m between manhole covers along a road (random in range)
+    manholeGap: 24,          // min distance between manhole covers
+    manholeResidential: 0.45, // share of residential streets that get manhole covers
+  },
   // occlusion: buildings fade when they hide the player
   occlusion: {},
 };

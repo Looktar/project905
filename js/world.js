@@ -4,6 +4,7 @@ import { M, hex, segDist, rnd } from './math.js';
 import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, disc, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
+import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip } from './props.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -170,6 +171,7 @@ export class World {
     for (const w of this.map.water) this.water.push(w.p);
     for (const lm of this.map.landmarks) if (lm.t === 'pool') this.water.push(lm.p);
     this.rivers = this.map.rivers.map(([big, pts]) => ({ w: big ? 9 : 3.5, pts }));
+    propColliders(this); // storefronts, stations, bus stops, gazebo + walkable dock decks
   }
   addCollider(poly, kind) {
     const C = this.cc;
@@ -225,6 +227,7 @@ export class World {
     return { x, z, hit, nx: hx, nz: hz };
   }
   inWater(x, z) {
+    for (const d of this.decks) if (propPip(x, z, d)) return false; // lookout dock over the pond
     for (const p of this.water) {
       let inside = false;
       for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -351,6 +354,7 @@ export class World {
       extrude(c.mb, b.p, b.t, b.h, wc, rc);
       // a darker base stripe and window band
       if (b.lm !== 'tims' && b.h > 5) this.windowBands(c.mb, b);
+      buildingDetail(c.mb, b); // Tim Hortz trim, cinema marquee, tower roofs
       // rooftop boxes on large roofs
       const area = Math.abs(polyArea(b.p));
       if (area > 500 && !b.lm) {
@@ -360,6 +364,7 @@ export class World {
     }
     // landmarks
     for (const lm of m.landmarks) this.buildLandmark(lm);
+    this.heritageVerts = buildHeritage(this); // Unionville Main St storefronts
     // parking lots: painted stalls + parked cars (static, solid)
     const lotCars = [];
     let seedL = 1;
@@ -403,6 +408,8 @@ export class World {
           this.chunk(p.x, p.z).lamps.push([p.x, p.z, Math.atan2(p.dz, -p.dx)]);
         }
     }
+    // hydrants, manhole covers, bus stops (baked into the chunk meshes; needs the lamp positions)
+    this.propStats = buildStreetProps(this);
     // shared unit meshes
     const houseMB = new MeshBuilder();
     houseMB.add(box(1, 1, 1), M.T(0, 0.5, 0), '#ffffff', MAT_A);
@@ -523,7 +530,7 @@ export class World {
       mb.add(sphere(3.2, 14), M.chain(M.T(x, y + 3, z), M.S(1, 0.6, 1)), '#9fb8cf');
       mb.add(cyl(0.1, 0.1, 6, 6), M.T(x + 5, y + 3, z), '#cccccc');
       mb.add(box(1.8, 1.0, 0.05), M.T(x + 5.9, y + 5.5, z), '#e53935');
-    }
+    } else buildPropLandmark(this, lm); // gazebo, dock, cinema popcorn, Viva stations, Unionville / Downtown signs
   }
   // camera-facing signs (camera azimuth is fixed so they are always readable)
   buildSigns() {
@@ -532,10 +539,12 @@ export class World {
     const rx = Math.cos(az), rz = -Math.sin(az);  // camera right
     const specs = [];
     for (const lm of this.map.landmarks) {
-      if (lm.t === 'tims') specs.push({ text: 'Tim Hortz', bg: '#c0392b', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.2, w: 7, h: 1.5, push: 5 });
+      if (lm.t === 'tims') specs.push({ text: 'Tim Hortz', bg: '#c0392b', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.2, w: 7, h: 1.5, push: Math.max(5, (lm.r || 3) * 1.05) });
       if (lm.t === 'pacific') specs.push({ text: '大古广场 Pacifick Mall', bg: '#e74c3c', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 1, w: 22, h: 2.6, push: lm.r * 0.9 });
       if (lm.t === 'markville') specs.push({ text: 'Markvile Mall', bg: '#7c3aed', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 1, w: 16, h: 2.4, push: lm.r * 0.8 });
       if (lm.t === 'civic') specs.push({ text: '万锦市政厅 Civic Centre', bg: '#1e3a8a', fg: '#ffffff', x: lm.x, z: lm.z, y: lm.h + 0.6, w: 20, h: 2.4, push: lm.r * 0.8 });
+      const ps = propSign(lm);
+      if (ps) specs.push(ps);
     }
     if (!specs.length) return;
     const cv = document.createElement('canvas');
@@ -584,6 +593,7 @@ export class World {
     for (const pts of this.map.busways) { g.beginPath(); pts.forEach((p, i) => { const [x, y] = T(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
     const icon = { tims: '#c0392b', pacific: '#e74c3c', markville: '#7c3aed', civic: '#1e3a8a' };
     for (const lm of this.map.landmarks) if (icon[lm.t]) { const [x, y] = T(lm.x, lm.z); g.fillStyle = icon[lm.t]; g.beginPath(); g.arc(x, y, lm.t === 'tims' ? 4 : 7, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
+    propIcons(g, T, this.map.landmarks);
     this.minimap = cv;
   }
 
