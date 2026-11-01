@@ -442,7 +442,7 @@ describe('pedestrians and traffic lights', () => {
     });
     expect(sigs.length).toBeGreaterThan(50);
     expect(starts).toBeGreaterThan(5);
-    // only someone who gave up waiting (CFG.peds.crossSignalWait) may go on red; before this ~1 in 6 did
-    expect(onRed / starts).toBeLessThan(0.05);
+    // before signals were respected ~1 in 6 started on red
+    expect(onRed).toBe(0);
   });
 });
