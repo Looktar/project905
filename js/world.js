@@ -5,6 +5,7 @@ import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, r
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
+import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -20,6 +21,9 @@ export class World {
     this.names = map.names;
     this.buildGraph();
     this.buildCollision();
+    // traffic signals: after collision (pole spots avoid buildings), before chunks (poles are baked in)
+    const sg = buildSignals(this);
+    this.signals = sg.list; this.sigAp = sg.byAp; this.sigPoles = sg.poles;
     this.buildChunks();
     this.buildSigns();
     this.buildMinimap();
@@ -99,6 +103,10 @@ export class World {
       }
     return best;
   }
+  // signal approach entry for travelling along edge e in direction dir: {sig, axis, stop} or undefined
+  sigApproach(e, dir) { return this.sigAp.get(e * 2 + (dir > 0 ? 1 : 0)); }
+  // 0 green / 1 yellow / 2 red for axis 0 (E-W) or 1 (N-S) of an intersection at game time t
+  signalState(sig, axis, t) { return signalState(sig, axis, t); }
   onRoad(x, z, pad = 0) {
     const n = this.nearestEdge(x, z, 4);
     return n && n.d < pad;
@@ -421,6 +429,7 @@ export class World {
         for (const side of e.oneway ? [1] : [1, -1]) {
           const p = this.edgePoint(e, s, side, e.w / 2 + 1.4);
           if (buswayDist(m, p.x, p.z) < 3.6) continue; // keep the bus lanes clear
+          if (nearPole(this.sigPoles, p.x, p.z, 3.5)) continue; // a signal pole stands here
           this.chunk(p.x, p.z).lamps.push([p.x, p.z, Math.atan2(p.dz, -p.dx)]);
         }
     }
@@ -450,6 +459,7 @@ export class World {
     const carCols = ['#38bdf8', '#fb7185', '#34d399', '#a78bfa', '#f97316', '#e5e7eb', '#94a3b8', '#fde68a', '#ef4444', '#2563eb', '#10b981', '#f8fafc'].map(hex);
     const walls = m.houseWalls.map(hex), roofs = m.houseRoofs.map(hex);
     const tg = ['#a6cf3f', '#b9da4c', '#93c13a', '#8fc24a', '#a9d14f'].map(hex);
+    bakeSignals(this);
     for (const c of this.chunks.values()) {
       c.static = this.r.mesh(c.mb); c.mb = null;
       if (c.houses.length) {
