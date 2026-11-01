@@ -376,6 +376,9 @@ def area_polys(w):
     return gp
 
 water, parks, lots, plazas = [], [], [], []
+# historic districts are tagged landuse=commercial but are not parking lots (no stalls / parked cars)
+HERITAGE_AREAS = {'Historic Main Street Unionville'}
+heritage_areas = []
 for w in ways:
     t = w['tags']
     if t.get('natural') == 'water':
@@ -386,7 +389,8 @@ for w in ways:
         if gp: parks.append(gp)
     elif t.get('landuse') in ('commercial', 'retail'):
         gp = area_polys(w)
-        if gp: lots.append(gp)
+        if gp:
+            (heritage_areas if t.get('name') in HERITAGE_AREAS else lots).append(gp)
     elif t.get('landuse') in ('grass', 'forest', 'meadow', 'cemetery'):
         gp = area_polys(w)
         if gp: parks.append(gp)
@@ -462,6 +466,14 @@ def fits(poly, pad=1.5):
         return False
     return True
 
+HERITAGE_MARGIN = 22.0   # game metres around a historic district that get storefronts
+def in_heritage_zone(x, z):
+    for p in heritage_areas:
+        xs = [q[0] for q in p]; zs = [q[1] for q in p]
+        if min(xs) - HERITAGE_MARGIN <= x <= max(xs) + HERITAGE_MARGIN and min(zs) - HERITAGE_MARGIN <= z <= max(zs) + HERITAGE_MARGIN:
+            return True
+    return False
+
 TIMS_FALLBACK = []
 blds = []
 for w in ways:
@@ -527,21 +539,235 @@ for w, p in blds:
         lc = centroid(gp)
         landmarks.append({'t': 'tims', 'x': round(lc[0], 1), 'z': round(lc[1], 1), 'h': h, 'r': 3})
         tims_done.append(lc)
+    elif (not lm and btype in ('retail', 'commercial', 'yes') and abs(poly_area(gp)) < 130
+          and in_heritage_zone(*centroid(gp))):
+        continue  # tiny shop boxes on a historic main street are replaced by procedural storefronts
     place_building(gp, h, color, btype, extra)
 
-# Tim Hortons nodes without a building: small store near the node
-cands = [g(rot(proj(nd['lat'], nd['lon']))) for nd in nodes_pt
-         if nd.get('tags', {}).get('brand') == 'Tim Hortons' and inside(rot(proj(nd['lat'], nd['lon'])))]
-for (x, z) in cands + TIMS_FALLBACK:
+# ---------------------------------------------------------------- v0.1 landmark / prop placement helpers
+prng = random.Random(9050)   # own RNG so landmark/prop tweaks do not reshuffle the rest of the map
+
+def bbox_of(poly):
+    xs = [q[0] for q in poly]; zs = [q[1] for q in poly]
+    return (min(xs), min(zs), max(xs), max(zs))
+
+def rect_poly(cx, cz, ang, w, d):
+    """oriented rectangle; same convention as houses: local +z is the front, which faces (sin ang, cos ang)"""
+    c, s = math.cos(ang), math.sin(ang)
+    return [(cx + c * lx + s * lz, cz - s * lx + c * lz)
+            for lx, lz in ((-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2))]
+
+def r2p(poly):
+    return [(round(x, 2), round(z, 2)) for x, z in poly]
+
+def segs_cross(a, b, c, d):
+    o = lambda p, q, r: (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    return o(c, d, a) * o(c, d, b) < 0 and o(a, b, c) * o(a, b, d) < 0
+
+def polys_overlap(P, Q):
+    for i in range(len(P)):
+        a, b = P[i], P[(i + 1) % len(P)]
+        for j in range(len(Q)):
+            if segs_cross(a, b, Q[j], Q[(j + 1) % len(Q)]):
+                return True
+    return point_in_poly(P[0][0], P[0][1], Q) or point_in_poly(Q[0][0], Q[0][1], P)
+
+def grow(poly, pad):
+    """push the corners of a convex footprint outwards by ~pad metres"""
+    c = centroid(poly); out = []
+    for x, z in poly:
+        dx, dz = x - c[0], z - c[1]; L = math.hypot(dx, dz) or 1
+        out.append((x + dx / L * pad * 1.42, z + dz / L * pad * 1.42))
+    return out
+
+def occ_free(poly, pad=0.0):
+    pp = grow(poly, pad) if pad else poly
+    for o in occ.query(bbox_of(pp)):
+        if polys_overlap(pp, o['p']):
+            return False
+    return True
+
+def reserve(poly):
+    """mark a footprint as taken so later buildings / houses / trees / props avoid it"""
+    rec = {'p': [list(q) for q in poly]}
+    occ.add(bbox_of(poly), rec)
+    return rec
+
+def line_dist(x, z, lines, reach=60):
+    best = 1e9
+    for pts in lines:
+        for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+            if min(ax, bx) - reach < x < max(ax, bx) + reach and min(az, bz) - reach < z < max(az, bz) + reach:
+                best = min(best, seg_dist(x, z, ax, az, bx, bz))
+    return best
+
+river_grid = Grid(30.0)
+for big, pts in rivers:
+    for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+        river_grid.add((min(ax, bx) - 5, min(az, bz) - 5, max(ax, bx) + 5, max(az, bz) + 5), (ax, az, bx, bz, 4.5 if big else 1.75))
+
+def river_clear(x, z):
+    """distance to the nearest river / stream bank (rivers are drawn as ribbons)"""
+    best = 1e9
+    for (ax, az, bx, bz, hw) in river_grid.query((x - 12, z - 12, x + 12, z + 12)):
+        best = min(best, seg_dist(x, z, ax, az, bx, bz) - hw)
+    return best
+
+def water_dist(x, z, reach=80, seg=False):
+    """distance to the nearest lake/pond shoreline (negative inside water) and that shore point
+    (+ the shoreline direction when seg=True)"""
+    best, bp, bd = 1e9, None, None
+    for p in water_grid.query((x - reach, z - reach, x + reach, z + reach)):
+        for i in range(len(p)):
+            (ax, az), (bx, bz) = p[i], p[(i + 1) % len(p)]
+            d = seg_dist(x, z, ax, az, bx, bz)
+            if d < best:
+                dx, dz = bx - ax, bz - az; L2 = dx * dx + dz * dz or 1e-9
+                t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L2))
+                best, bp, bd = d, (ax + dx * t, az + dz * t), (dx / math.sqrt(L2), dz / math.sqrt(L2))
+    wd = -best if in_water(x, z) else best
+    return (wd, bp, bd) if seg else (wd, bp)
+
+def spot_ok(poly, road_pad=1.0, occ_pad=0.6, allow_park=True, keep_off=4.0):
+    """footprint is on dry land inside the map, off roads / busways / rails / overpass and free of buildings"""
+    c = centroid(poly)
+    samples = list(poly) + [c] + [((poly[i][0] + poly[(i + 1) % len(poly)][0]) / 2,
+                                   (poly[i][1] + poly[(i + 1) % len(poly)][1]) / 2) for i in range(len(poly))]
+    for (x, z) in samples:
+        if abs(x) > HALF_W - 8 or abs(z) > HALF_H - 8:
+            return False
+        if road_clear(x, z, road_pad) < 0 or in_water(x, z, 2) or river_clear(x, z) < 1.0:
+            return False
+        if not allow_park and in_park(x, z):
+            return False
+    rad = max(math.hypot(x - c[0], z - c[1]) for x, z in poly)
+    if line_dist(c[0], c[1], busways) < rad + 3.25 + keep_off * 0.25 or line_dist(c[0], c[1], rails) < rad + 3 \
+            or line_dist(c[0], c[1], overpass) < rad + 6:
+        return False
+    return occ_free(poly, occ_pad)
+
+def nearest_road(x, z, R=45):
+    """(distance to road surface, closest centreline point, segment direction) of the nearest drivable road"""
+    best = None
+    for (ax, az, bx, bz, hw) in road_grid.query((x - R, z - R, x + R, z + R)):
+        dx, dz = bx - ax, bz - az; L2 = dx * dx + dz * dz
+        t = 0 if L2 == 0 else max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L2))
+        px, pz = ax + dx * t, az + dz * t
+        d = math.hypot(x - px, z - pz) - hw
+        if best is None or d < best[0]:
+            L = math.sqrt(L2) or 1
+            best = (d, px, pz, dx / L, dz / L)
+    return best
+
+def facing_road(x, z, nr):
+    """house-style angle whose front (local +z) faces the road nr, squared to the road direction"""
+    _, px, pz, ux, uz = nr
+    nx, nz = -uz, ux
+    if nx * (px - x) + nz * (pz - z) < 0:
+        nx, nz = -nx, -nz
+    return math.atan2(nx, nz)
+
+# ---------------------------------------------------------------- Tim Hortz: one per real Tim Hortons
+def tims_host(x, z, max_area, near=2.5):
+    """a small ordinary building that contains (or touches) the store's OSM point"""
+    best = None
+    for b in occ.query((x - near, z - near, x + near, z + near)):
+        if 'k' not in b or b.get('lm') or b['k'] in ('church', 'school', 'house', 'apartments', 'hotel', 'bridge'):
+            continue
+        p = b['p']
+        dist = 0 if point_in_poly(x, z, p) else min(
+            seg_dist(x, z, p[i][0], p[i][1], p[(i + 1) % len(p)][0], p[(i + 1) % len(p)][1]) for i in range(len(p)))
+        if dist <= near and abs(poly_area(p)) <= max_area and (best is None or dist < best[0]):
+            best = (dist, b)
+    return best[1] if best else None
+
+# the camera always looks from the same direction (js/config.js camera.azimuth / elevation)
+CAM_DIR = (math.sin(0.55), math.cos(0.55))
+CAM_SLOPE = 0.85  # flatter than tan(elevation): rays to the upper part of the screen are flatter
+
+def hidden_from_camera(x, z, top):
+    """is a rooftop prop at height `top` hidden behind a taller building on the camera side?"""
+    for d in range(2, 42, 2):
+        px, pz = x + CAM_DIR[0] * d, z + CAM_DIR[1] * d
+        for b in occ.query((px, pz, px, pz)):
+            if b.get('h', 0) > top + d * CAM_SLOPE and point_in_poly(px, pz, b['p']):
+                return True
+    return False
+
+def tims_spot(x, z, rmax):
+    """search rings around the OSM point for a free store footprint facing the nearest road"""
+    best = None
+    for (w, d) in ((10.0, 8.0), (9.0, 7.0), (8.0, 6.5)):
+        first = None
+        for r in [0] + list(range(3, rmax + 1, 3)):
+            if first is not None and r > first + 9:
+                break
+            n = 1 if r == 0 else max(8, int(2 * math.pi * r / 3.5))
+            for k in range(n):
+                a = 2 * math.pi * k / n
+                cx, cz = x + math.cos(a) * r, z + math.sin(a) * r
+                nr = nearest_road(cx, cz)
+                if nr is None:
+                    continue
+                poly = rect_poly(cx, cz, facing_road(cx, cz, nr), w, d)
+                if not spot_ok(poly, road_pad=1.2, occ_pad=1.0):
+                    continue
+                # close to the real store, with street frontage, not in a park, visible from the camera
+                score = r + max(0, nr[0] - d / 2 - 12) * 1.5 + (12 if in_park(cx, cz) else 0) \
+                    + (25 if hidden_from_camera(cx, cz, 7) else 0)
+                if best is None or score < best[0]:
+                    best = (score, cx, cz, poly)
+                if first is None:
+                    first = r
+        if best:
+            return best
+    return None
+
+def add_tims_landmark(poly, h=5):
+    lc = centroid(poly)
+    landmarks.append({'t': 'tims', 'x': round(lc[0], 1), 'z': round(lc[1], 1), 'h': h,
+                      'r': round(max(3.0, math.sqrt(abs(poly_area(poly))) * 0.5), 1)})
+    tims_done.append(lc)
+
+tims_pts = []
+for e in els:
+    t = e.get('tags', {})
+    if t.get('brand') != 'Tim Hortons' or 'building' in t:
+        continue   # buildings tagged with the brand were handled in the building loop
+    if e['type'] == 'node':
+        rp = rot(proj(e['lat'], e['lon']))
+    elif e['type'] == 'way' and e.get('geometry'):
+        q = [rot(proj(gm['lat'], gm['lon'])) for gm in e['geometry']]
+        rp = (sum(a for a, _ in q) / len(q), sum(b for _, b in q) / len(q))
+    else:
+        continue
+    if inside(rp):
+        tims_pts.append(g(rp))
+tims_report = []
+for (x, z) in tims_pts + TIMS_FALLBACK:
     if any(math.hypot(x - a, z - b) < 30 for a, b in tims_done):
         continue
-    for attempt in range(30):
-        ox = x + random.uniform(-14, 14); oz = z + random.uniform(-14, 14)
-        sq = [(ox - 5, oz - 4), (ox + 5, oz - 4), (ox + 5, oz + 4), (ox - 5, oz + 4)]
-        if fits(sq, 1.0):
-            place_building(sq, 5, '#c0392b', 'retail', {'lm': 'tims'})
-            landmarks.append({'t': 'tims', 'x': round(ox, 1), 'z': round(oz, 1), 'h': 5, 'r': 3})
-            tims_done.append((ox, oz)); break
+    # the store's own building (or the small plaza it sits in) is the most faithful spot
+    host = tims_host(x, z, 450)
+    spot = None if host else tims_spot(x, z, 32)
+    if not host:
+        # a bigger building at the point beats a free lot spot that the camera cannot see
+        big = tims_host(x, z, 700, near=6)
+        if big and (not spot or (hidden_from_camera(spot[1], spot[2], 7)
+                                 and not hidden_from_camera(*centroid(big['p']), 7))):
+            host, spot = big, None
+    if not host and not spot:
+        spot = tims_spot(x, z, 75)
+    if host:
+        host['lm'] = 'tims'; host['c'] = '#c0392b'; host['h'] = 5
+        add_tims_landmark(host['p']); tims_report.append(('host', round(x), round(z)))
+    elif spot:
+        poly = r2p(spot[3])
+        place_building(poly, 5, '#c0392b', 'retail', {'lm': 'tims'})
+        add_tims_landmark(poly); tims_report.append(('store %.0fm away' % math.hypot(spot[1] - x, spot[2] - z), round(x), round(z)))
+    else:
+        tims_report.append(('FAILED', round(x), round(z)))
+print('tim hortz:', len(tims_done), tims_report)
 
 # Civic centre reflecting pool / rink
 for w in ways:
@@ -551,6 +777,325 @@ for w in ways:
             c = centroid(gp)
             gp = [(c[0] + (q[0] - c[0]) * 1.4, c[1] + (q[1] - c[1]) * 1.4) for q in gp]
             landmarks.append({'t': 'pool', 'p': [[round(a, 2), round(b, 2)] for a, b in gp]})
+
+def osm_point(e):
+    if e['type'] == 'node':
+        return g(rot(proj(e['lat'], e['lon'])))
+    if e.get('geometry'):
+        q = [g(rot(proj(gm['lat'], gm['lon']))) for gm in e['geometry']]
+        return (sum(a for a, _ in q) / len(q), sum(b for _, b in q) / len(q))
+    return None
+
+def named(name):
+    for e in els:
+        if e.get('tags', {}).get('name') == name:
+            p = osm_point(e)
+            if p and abs(p[0]) < HALF_W and abs(p[1]) < HALF_H:
+                return p
+    return None
+
+# busway corridors are kept free of trees / houses / props
+for pts in busways:
+    for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+        L = math.hypot(bx - ax, bz - az)
+        if L > 0.5:
+            reserve(rect_poly((ax + bx) / 2, (az + bz) / 2, math.atan2(bx - ax, bz - az), 6.6, L + 1.0))
+
+# ---------------------------------------------------------------- Unionville Main St: heritage storefront row
+HERITAGE_WALLS = ['#c0533a', '#e8b84a', '#9cc59a', '#8ec5e6', '#f4e3b1', '#f2a7b8', '#f7f2e7', '#5fb3a8', '#d98c5f', '#b9a3e3']
+HERITAGE_AWNINGS = ['#e11d48', '#2f6b4f', '#1e3a8a', '#f59e0b', '#7c2d12', '#0e7490']
+shops = []   # [x, z, ang, w, d, h, wall, awning, style(0 gable / 1 false front)]
+HERITAGE_EDGE_NAMES = {'Main St Unionville'}
+for e in edges:
+    if names[e[5]] not in HERITAGE_EDGE_NAMES:
+        continue
+    pts, width = e[6], e[3]
+    for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+        L = math.hypot(bx - ax, bz - az)
+        if L < 8:
+            continue
+        ux, uz = (bx - ax) / L, (bz - az) / L
+        nx, nz = -uz, ux
+        for side in (1, -1):
+            k, last = 1.5, -1
+            while k < L - 6:
+                w = prng.uniform(6.2, 7.8); d = prng.uniform(7.0, 8.4)
+                if k + w > L - 1:
+                    break
+                fx, fz = ax + ux * (k + w / 2), az + uz * (k + w / 2)
+                if not in_heritage_zone(fx, fz):
+                    k += 3; continue
+                off = width / 2 + 1.9 + 0.6 + d / 2
+                cx, cz = fx + nx * off * side, fz + nz * off * side
+                ang = math.atan2(-nx * side, -nz * side)
+                poly = rect_poly(cx, cz, ang, w, d)
+                if not spot_ok(poly, road_pad=0.4, occ_pad=0.15, allow_park=False):
+                    k += 2.0; continue
+                wall = prng.choice([i for i in range(len(HERITAGE_WALLS)) if i != last])
+                last = wall
+                style = 1 if prng.random() < 0.4 else 0
+                h = prng.uniform(6.0, 7.2) if style else prng.uniform(4.8, 5.6)
+                shops.append([round(cx, 2), round(cz, 2), round(ang, 3), round(w, 1), round(d, 1), round(h, 1),
+                                 wall, prng.randrange(len(HERITAGE_AWNINGS)), style])
+                reserve(poly)
+                k += w + prng.uniform(0.3, 0.9)
+print('heritage storefronts:', len(shops))
+if shops:
+    # "Unionville 老街 Main St" sign on the false-front storefront closest to the middle of the street
+    mx = sum(h[0] for h in shops) / len(shops); mz = sum(h[1] for h in shops) / len(shops)
+    host = min(shops, key=lambda h: math.hypot(h[0] - mx, h[1] - mz) + (0 if h[8] else 40))
+    host[8] = 1; host[5] = max(host[5], 6.6)
+    landmarks.append({'t': 'unionville', 'x': host[0], 'z': host[1], 'h': host[5], 'a': host[2]})
+
+# ---------------------------------------------------------------- Toogood Pond: gazebo on the shore + lookout dock
+gz = named('Toogood Pond Gazebo')
+if gz:
+    x, z = gz
+    wd, shore = water_dist(x, z)
+    if shore and wd > 9:
+        # the compressed shoreline sits far from the mapped point: walk the gazebo down to ~6 m from the water
+        best = None
+        for t in range(0, 101, 2):
+            px, pz = x + (shore[0] - x) * t / 100, z + (shore[1] - z) * t / 100
+            d2, _ = water_dist(px, pz)
+            ok = d2 >= 5.5 and spot_ok(rect_poly(px, pz, 0, 7.4, 7.4), road_pad=2, occ_pad=0.5, keep_off=0)
+            if ok:
+                best = (px, pz)
+            if d2 < 6.5:
+                break
+        if best:
+            x, z = best
+    if water_dist(x, z)[0] > 3.6:
+        landmarks.append({'t': 'gazebo', 'x': round(x, 1), 'z': round(z, 1), 'r': 3.3})
+        reserve(rect_poly(x, z, 0, 7.4, 7.4))
+lk = named('Toogood Pond Lookout Platform')
+if lk:
+    wd, shore, sdir = water_dist(lk[0], lk[1], seg=True)
+    if shore and abs(wd) < 12:
+        # point the dock from the shore into the pond, as square to the shoreline as the water allows
+        nx, nz = -sdir[1], sdir[0]
+        if not in_water(shore[0] + nx * 1.5, shore[1] + nz * 1.5):
+            nx, nz = -nx, -nz
+        a0 = math.atan2(nx, nz)
+        best = None
+        for k in range(-6, 7):
+            a = a0 + k * math.radians(6)
+            ux, uz = math.sin(a), math.cos(a)
+            wet = sum(1 for s in range(1, 10) if in_water(shore[0] + ux * s, shore[1] + uz * s))
+            dry = sum(1 for s in range(1, 4) if not in_water(shore[0] - ux * s, shore[1] - uz * s))
+            score = wet * 2 + dry - abs(k) * 0.5
+            if best is None or score > best[0]:
+                best = (score, a)
+        a = best[1]
+        ux, uz = math.sin(a), math.cos(a)
+        L = 2.0 + sum(1 for s in range(1, 9) if in_water(shore[0] + ux * s, shore[1] + uz * s))
+        rx, rz = shore[0] - ux * 2.0, shore[1] - uz * 2.0   # land end
+        landmarks.append({'t': 'dock', 'x': round(rx, 2), 'z': round(rz, 2), 'a': round(a, 3), 'L': round(min(L, 9.0), 1), 'w': 2.6})
+        reserve(rect_poly(rx + ux * 1.5, rz + uz * 1.5, a, 3.4, 4.0))
+
+# ---------------------------------------------------------------- Downtown Markham: cinema + a cluster of towers
+cin = None
+for e in els:
+    t = e.get('tags', {})
+    if t.get('amenity') == 'cinema':
+        p = osm_point(e)
+        if p and abs(p[0]) < HALF_W and abs(p[1]) < HALF_H:
+            cin = p; break
+if cin:
+    best = None
+    for b in occ.query((cin[0] - 25, cin[1] - 25, cin[0] + 25, cin[1] + 25)):
+        if 'k' not in b or b.get('lm') or abs(poly_area(b['p'])) < 150:
+            continue
+        p = b['p']
+        dist = 0 if point_in_poly(cin[0], cin[1], p) else min(
+            seg_dist(cin[0], cin[1], p[i][0], p[i][1], p[(i + 1) % len(p)][0], p[(i + 1) % len(p)][1]) for i in range(len(p)))
+        if best is None or dist < best[0]:
+            best = (dist, b)
+    if best and best[0] < 25:
+        b = best[1]
+        b['lm'] = 'cinema'; b['c'] = '#6d78e0'; b['h'] = max(b['h'], 14)
+        lc = centroid(b['p'])
+        landmarks.append({'t': 'cinema', 'x': round(lc[0], 1), 'z': round(lc[1], 1), 'h': b['h'],
+                          'r': round(math.sqrt(abs(poly_area(b['p']))) * 0.5, 1)})
+    # the tall OSM buildings around the cinema define the downtown core
+    tall = [(centroid(b['p']), b['h']) for b in buildings if b['h'] >= 20]
+    tall = [(c, h) for c, h in tall if math.hypot(c[0] - cin[0], c[1] - cin[1]) < 240]
+    if tall:
+        dx = sum(c[0] * h for c, h in tall) / sum(h for _, h in tall)
+        dz = sum(c[1] * h for c, h in tall) / sum(h for _, h in tall)
+    else:
+        dx, dz = cin
+    TOWER_COLS = ['#bcd7e6', '#c7d2fe', '#cbd5e1', '#d5e8d4', '#e2d6c7', '#a5c8e4', '#dbe4f0']
+    tall_pts = [c for c, _ in tall]
+    def downtown_ground(x, z):
+        """towers go on commercial land (parking lots) or right next to the existing high-rises"""
+        if any(math.hypot(x - c[0], z - c[1]) < 55 for c in tall_pts):
+            return True
+        return any(point_in_poly(x, z, p) for p in lots
+                   if bbox_of(p)[0] <= x <= bbox_of(p)[2] and bbox_of(p)[1] <= z <= bbox_of(p)[3])
+    cands = []
+    for ix in range(-24, 25):
+        for iz in range(-24, 25):
+            x, z = dx + ix * 6, dz + iz * 6
+            r = math.hypot(x - dx, z - dz)
+            if r < 140:
+                cands.append((r + prng.uniform(0, 14), x, z))
+    cands.sort()
+    towers = 0
+    for _, x, z in cands:
+        if towers >= 8:
+            break
+        if not downtown_ground(x, z):
+            continue
+        w, d = prng.choice((14, 16, 18)), prng.choice((14, 16, 18))
+        # axis aligned like the (rotated) arterial grid
+        if not spot_ok(rect_poly(x, z, 0, w + 4, d + 4), road_pad=2.5, occ_pad=2.5, allow_park=False):
+            continue
+        h = prng.choice((26, 30, 34, 38, 42, 46))
+        place_building(r2p(rect_poly(x, z, 0, w, d)), h, prng.choice(TOWER_COLS), 'tower')
+        towers += 1
+    # landmark point = centre of the finished high-rise cluster (OSM + procedural towers)
+    tall = [(centroid(b['p']), b['h']) for b in buildings if b['h'] >= 20]
+    tall = [(c, h) for c, h in tall if math.hypot(c[0] - dx, c[1] - dz) < 200]
+    if tall:
+        dx = sum(c[0] * h for c, h in tall) / sum(h for _, h in tall)
+        dz = sum(c[1] * h for c, h in tall) / sum(h for _, h in tall)
+    landmarks.append({'t': 'downtown', 'x': round(dx, 1), 'z': round(dz, 1)})
+    print('downtown towers added:', towers, 'cluster centre', round(dx), round(dz))
+
+# ---------------------------------------------------------------- Viva rapidway stations + bus stops
+def lane_clear(x, z):
+    """distance from a point to the nearest car lane path (one-way: centre, two-way: +-w/4)"""
+    best = 1e9
+    for (ax, az, bx, bz, hw) in road_grid.query((x - 16, z - 16, x + 16, z + 16)):
+        dx, dz = bx - ax, bz - az; L = math.hypot(dx, dz) or 1e-9
+        ux, uz = dx / L, dz / L
+        t = (x - ax) * ux + (z - az) * uz
+        s = (x - ax) * -uz + (z - az) * ux
+        lanes = (0.0,) if seg_oneway.get((ax, az, bx, bz)) else (-hw / 2, hw / 2)
+        for o in lanes:
+            if t < 0:
+                d = math.hypot(x - (ax - uz * o), z - (az + ux * o))
+            elif t > L:
+                d = math.hypot(x - (bx - uz * o), z - (bz + ux * o))
+            else:
+                d = abs(s - o)
+            best = min(best, d)
+    return best
+seg_oneway = {}
+for e in edges:
+    for (ax, az), (bx, bz) in zip(e[6], e[6][1:]):
+        seg_oneway[(ax, az, bx, bz)] = e[4]
+jdeg = defaultdict(int)
+for e in edges:
+    jdeg[e[0]] += 1; jdeg[e[1]] += 1
+junctions = [jnodes[i] for i, dg in jdeg.items() if dg >= 3]
+
+def island_ok(cx, cz, ux, uz, L, hw=0.35):
+    """a median platform between the two bus lanes: clear of car lanes, junctions, water and buildings"""
+    nx, nz = -uz, ux
+    for k in range(0, 9):
+        a = -L / 2 + L * k / 8
+        for o in (-hw, hw):
+            x, z = cx + ux * a + nx * o, cz + uz * a + nz * o
+            if lane_clear(x, z) < 1.45 or in_water(x, z, 2) or river_clear(x, z) < 2:
+                return False
+            if abs(x) > HALF_W - 8 or abs(z) > HALF_H - 8:
+                return False
+    if min((math.hypot(jx - cx, jz - cz) for jx, jz in junctions), default=1e9) < L / 2 + 9:
+        return False
+    for o in occ.query((cx - L, cz - L, cx + L, cz + L)):
+        if 'k' in o and polys_overlap(rect_poly(cx, cz, math.atan2(ux, uz), 0.8, L), o['p']):
+            return False
+    return True
+
+stations = []
+VIVA_LEN = 16.0
+# anchors: OSM platforms on the busway, then arterial junctions next to it
+anchors = []
+for nd in nodes_pt:
+    t = nd.get('tags', {})
+    if t.get('public_transport') == 'platform' or t.get('highway') == 'bus_stop':
+        p = osm_point(nd)
+        if p and line_dist(p[0], p[1], busways, 20) < 9:
+            anchors.append((0, p))
+jcls = defaultdict(list)
+for e in edges:
+    jcls[e[0]].append(e[2]); jcls[e[1]].append(e[2])
+for i, cl in jcls.items():
+    if len(cl) >= 3 and sum(1 for c in cl if c <= 2) >= 2:
+        p = jnodes[i]
+        if line_dist(p[0], p[1], busways, 50) < 40:
+            anchors.append((1 + min(cl), p))
+anchors.sort(key=lambda a: a[0])
+for pri, (axx, azz) in anchors:
+    if any(math.hypot(s['x'] - axx, s['z'] - azz) < 110 for s in stations):
+        continue
+    best = None
+    for pts in busways:
+        for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+            L = math.hypot(bx - ax, bz - az)
+            if L < VIVA_LEN + 1:
+                continue
+            ux, uz = (bx - ax) / L, (bz - az) / L
+            s = VIVA_LEN / 2 + 0.5
+            while s <= L - VIVA_LEN / 2 - 0.5:
+                cx, cz = ax + ux * s, az + uz * s
+                da = math.hypot(cx - axx, cz - azz)
+                if da < 70:
+                    score = abs(da - (6 if pri == 0 else 24))
+                    if (best is None or score < best[0]) and island_ok(cx, cz, ux, uz, VIVA_LEN):
+                        best = (score, cx, cz, ux, uz)
+                s += 2
+    if best and all(math.hypot(st['x'] - best[1], st['z'] - best[2]) > 110 for st in stations):
+        _, cx, cz, ux, uz = best
+        stations.append({'t': 'viva', 'x': round(cx, 2), 'z': round(cz, 2), 'a': round(math.atan2(ux, uz), 4), 'L': VIVA_LEN, 'kind': 'median'})
+        reserve(rect_poly(cx, cz, math.atan2(ux, uz), 3.6, VIVA_LEN + 1))
+
+# curbside stops: Viva platforms on mixed-traffic roads get a blue shelter, other bus stops a small shelter / bench
+stops = []   # [x, z, ang, kind] kind: 0 bench + pole, 1 small shelter, 2 viva curbside shelter
+seen_stops = []
+for nd in nodes_pt:
+    t = nd.get('tags', {})
+    if not (t.get('highway') == 'bus_stop' or t.get('public_transport') == 'platform'):
+        continue
+    p = osm_point(nd)
+    if not p or abs(p[0]) > HALF_W - 10 or abs(p[1]) > HALF_H - 10:
+        continue
+    if line_dist(p[0], p[1], busways, 20) < 9 or any(math.hypot(p[0] - a, p[1] - b) < 9 for a, b in seen_stops):
+        continue
+    viva = 'VIVA' in (t.get('network', '') + t.get('operator', '')).upper()
+    kind = 2 if viva else (1 if t.get('shelter') == 'yes' else 0)
+    # snap to the back of the sidewalk of the road the stop belongs to
+    best = None
+    for (ax, az, bx, bz, hw) in road_grid.query((p[0] - 14, p[1] - 14, p[0] + 14, p[1] + 14)):
+        d = seg_dist(p[0], p[1], ax, az, bx, bz)
+        if d < 14 and (best is None or d < best[0]):
+            best = (d, ax, az, bx, bz, hw)
+    if not best:
+        continue
+    _, ax, az, bx, bz, hw = best
+    L = math.hypot(bx - ax, bz - az) or 1
+    ux, uz = (bx - ax) / L, (bz - az) / L
+    nx, nz = -uz, ux
+    t0 = max(0.0, min(L, (p[0] - ax) * ux + (p[1] - az) * uz))
+    side = 1 if (p[0] - ax) * nx + (p[1] - az) * nz >= 0 else -1
+    depth = 1.8 if kind else 1.0
+    placed = False
+    for shift in (0, 3, -3, 6, -6, 9, -9):
+        tt = t0 + shift
+        if tt < 4 or tt > L - 4:
+            continue
+        off = hw + 1.9 + 0.45 + depth / 2
+        cx, cz = ax + ux * tt + nx * off * side, az + uz * tt + nz * off * side
+        ang = math.atan2(-nx * side, -nz * side)   # front (bench side) faces the road
+        poly = rect_poly(cx, cz, ang, 6.0 if kind == 2 else 4.2, depth)
+        if spot_ok(poly, road_pad=0.3, occ_pad=0.3, keep_off=0):
+            stops.append([round(cx, 2), round(cz, 2), round(ang, 3), kind])
+            reserve(poly); seen_stops.append(p); placed = True
+            break
+print('viva stations:', len(stations), 'bus stops:', len(stops), '(viva curbside: %d)' % sum(1 for s in stops if s[3] == 2))
+landmarks.extend(stations)
 
 # ---------------------------------------------------------------- procedural houses
 HOUSE_WALLS = ['#f4e3b1', '#f7f2e7', '#cfe3b0', '#f6d5c3', '#dbe7f5', '#f3dcae', '#e7d9f2', '#fde2e4']
@@ -710,6 +1255,10 @@ out = {
     'houseRoofs': HOUSE_ROOFS,
     'trees': trees,
     'landmarks': landmarks,
+    'heritage': shops,
+    'heritageWalls': HERITAGE_WALLS,
+    'heritageAwnings': HERITAGE_AWNINGS,
+    'stops': stops,
     'attribution': 'Map data (c) OpenStreetMap contributors, ODbL',
 }
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
