@@ -402,6 +402,18 @@ export class Game {
       path.e = this.w.edges[ch.e]; path.dir = ch.dir; path.next = null;
     }
   }
+  // is the move e -> nx a left turn, with oncoming traffic about to come through the junction?
+  leftTurnBlocked(car, e, dir, nx, sig) {
+    const W = this.w, a = W.edgePoint(e, Math.max(0, e.len - 6), dir), o = W.edges[nx.e], b = W.edgePoint(o, Math.min(6, o.len), nx.dir);
+    if (b.dx * a.dz - b.dz * a.dx < 0.5) return false; // not a left turn (left of travel = (dz, -dx))
+    for (const c of this.cars) {
+      if (c === car || !c.ai || Math.abs(c.speed) < 2) continue;
+      if (Math.sin(c.a) * a.dx + Math.cos(c.a) * a.dz > -0.7) continue; // not heading the other way
+      const dx = sig.x - c.x, dz = sig.z - c.z, d = Math.hypot(dx, dz);
+      if (d < 45 && dx * Math.sin(c.a) + dz * Math.cos(c.a) > 0 && d / c.speed < 4) return true; // approaching, < 4 s away
+    }
+    return false;
+  }
   // next traffic-light stop line ahead of a traffic car: {ap, d} with d = path distance to it
   // (negative once passed), looking at the current edge and the committed next edge
   signalAhead(path) {
@@ -714,7 +726,8 @@ export class Game {
       if (c.crossWait > 0) {
         c.crossWait -= dt; c.speed = 0;
         c.face += angDiff(c.face, Math.atan2(c.crossTo[0] - c.x, c.crossTo[1] - c.z)) * Math.min(1, 6 * dt);
-        if (c.crossWait > 0 && !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp)) return;
+        const red = c.crossSig && this.w.signalState(c.crossSig, c.crossAxis, this.time) !== SIG_GREEN;
+        if (c.crossWait > 0 && (red || !this.roadClear(c.x, c.z, c.crossTo[0], c.crossTo[1], sp))) return;
         c.crossWait = 0;
       }
       const left = this.stepToward(c, c.crossTo[0], c.crossTo[1], sp, dt); c.speed = sp;
@@ -739,7 +752,15 @@ export class Game {
       const pl = this.player, inSpace = !pl.hidden && Math.hypot(p.x - pl.x, p.z - pl.z) < c.r + pl.r + 0.6;
       if (gap <= PD.keepUp || c.lagT > 1.5 || inSpace) { this.advancePath(c.path, PD.walk * dt * (inSpace ? 3 : 1), true); p = pathPoint(); gap = Math.hypot(p.x - c.x, p.z - c.z); }
       // far from the path point (crossing, turning across a junction, dead-end turn-around): walk there, never snap
-      if (gap > 6) { c.crossBack = c.state; c.state = 'cross'; c.crossTo = [p.x, p.z]; c.crossWait = PD.crossMaxWait; c.crossBest = 1e9; c.crossStall = 0; c.lagT = 0; return; }
+      if (gap > 6) {
+        c.crossBack = c.state; c.state = 'cross'; c.crossTo = [p.x, p.z]; c.crossBest = 1e9; c.crossStall = 0; c.lagT = 0;
+        // at a signalised junction: walk with the traffic going the same way (wait for its green)
+        const mx = (c.x + p.x) / 2, mz = (c.z + p.z) / 2;
+        c.crossSig = (this.w.signals || []).find((sg) => Math.hypot(sg.x - mx, sg.z - mz) < PD.signalReach) || null;
+        c.crossAxis = Math.abs(p.x - c.x) > Math.abs(p.z - c.z) ? 0 : 1;
+        c.crossWait = c.crossSig ? PD.crossSignalWait : PD.crossMaxWait;
+        return;
+      }
       const x0 = c.x, z0 = c.z;
       this.stepToward(c, p.x, p.z, PD.walk * PD.catchUp, dt);
       c.speed = Math.hypot(c.x - x0, c.z - z0) / dt; // legs swing with the real pace
@@ -874,7 +895,9 @@ export class Game {
       const sg = calm ? this.signalAhead(path) : null;
       if (sg && sg.d > -0.5) {
         const st = this.w.signalState(sg.ap.sig, sg.ap.axis, this.time);
-        if (st !== SIG_GREEN) {
+        // turning left on green: wait at the line while oncoming traffic is coming through
+        const yieldLeft = st === SIG_GREEN && sg.ap.e === e.i && sg.d < 30 && this.leftTurnBlocked(car, e, path.dir, nx, sg.ap.sig);
+        if (st !== SIG_GREEN || yieldLeft) {
           const v = Math.max(0, car.speed), dd = Math.max(0, sg.d - 0.05 - (car.bus ? BUS_EXTRA : 0)); // a bus's nose is further ahead
           const comf = Math.sqrt(2 * SG.comfortDecel * dd), hard = Math.sqrt(2 * SG.maxDecel * dd);
           if (v <= (st === SIG_YELLOW ? comf : hard) + 0.3) cap = Math.min(cap, v <= comf + 0.3 ? comf : hard);

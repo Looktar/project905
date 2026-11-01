@@ -425,3 +425,24 @@ describe('Viva buses in Hwy 7 traffic', () => {
     expect(g.inCar === b).toBe(false);
   });
 });
+
+describe('pedestrians and traffic lights', () => {
+  it('at signalised junctions pedestrians start crossing on their green', async () => {
+    const sim = await newSim(95);
+    const g = sim.game, sigs = g.w.signals;
+    let starts = 0, onRed = 0;
+    sim.seconds(120, DT, () => {
+      for (const c of g.chars) {
+        if (c._waiting && c.state === 'cross' && c.crossWait <= 0 && c.crossSig) {
+          starts++;
+          if (g.w.signalState(c.crossSig, c.crossAxis, g.time) !== 0) onRed++;
+        }
+        c._waiting = c.state === 'cross' && c.crossWait > 0;
+      }
+    });
+    expect(sigs.length).toBeGreaterThan(50);
+    expect(starts).toBeGreaterThan(5);
+    // only someone who gave up waiting (CFG.peds.crossSignalWait) may go on red; before this ~1 in 6 did
+    expect(onRed / starts).toBeLessThan(0.05);
+  });
+});
