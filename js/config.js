@@ -44,6 +44,7 @@ export const CFG = {
     runSpeed: 8.0, hp: 150, punchDmg: 9,
     bustFoot: 1.5, bustCar: 2.0, reinforce: 6, respawn: [150, 300], max: 8,
   },
+  streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },
   world: { viewRadius: 210, fogNear: 150, fogFar: 300 },

@@ -439,6 +439,7 @@ export class World {
         }
     }
     // hydrants, manhole covers, bus stops (baked into the chunk meshes; needs the lamp positions)
+    this.buildStreetSigns();
     this.propStats = buildStreetProps(this);
     // shared unit meshes
     const houseMB = new MeshBuilder();
@@ -579,6 +580,7 @@ export class World {
       if (ps) specs.push(ps);
     }
     for (const b of this.map.buildings) specs.push(...poiSigns(b)); // brands, plazas, schools ... (v0.2)
+    specs.push(...(this.streetSigns || []));
     if (!specs.length) return;
     // multi-page shelf-packed atlas: every sign gets a cell with its own aspect ratio (text never stretched)
     const pages = packSigns(specs);
@@ -599,6 +601,42 @@ export class World {
     });
     this.signStats = { count: specs.length, pages: pages.map((p) => [p.w, p.h]) };
     this.signs = meshes.length === 1 ? meshes[0] : meshes;
+  }
+  // green street-name signs at signalised intersections, like the concept art: a pole on the
+  // sidewalk corner that faces the camera (so the sign is never behind the junction), sign on top.
+  // Poles are baked into the chunk mesh; the signs join the camera-facing sign atlas.
+  buildStreetSigns() {
+    const S = CFG.streetSigns, camX = Math.sin(CFG.camera.azimuth), camZ = Math.cos(CFG.camera.azimuth);
+    this.streetSigns = [];
+    for (const sg of this.signals || []) {
+      const byAxis = [[], []];
+      for (const ap of sg.approaches) { const nm = this.names[this.edges[ap.e].name]; if (nm && !byAxis[ap.axis].includes(nm)) byAxis[ap.axis].push(nm); }
+      if (!byAxis[0].length || !byAxis[1].length) continue;
+      const text = byAxis[0][0] + ' · ' + byAxis[1][0]; // E-W road first, as the HUD pill reads
+      const maxW = Math.max(...sg.approaches.map((ap) => this.edges[ap.e].w));
+      const d = maxW / 2 + S.cornerGap;
+      // corners ordered by how much they face the camera
+      const corners = [[1, 1], [1, -1], [-1, 1], [-1, -1]].sort((a, b) => (b[0] * camX + b[1] * camZ) - (a[0] * camX + a[1] * camZ));
+      // walk out along each corner diagonal to the first free sidewalk spot (divided roads put the
+      // junction centre in the median, so the corner is further out than half a road width)
+      let spot = null;
+      for (const [sx, sz] of corners) {
+        for (let k = d; k < d + 16 && !spot; k += 0.75) {
+          const x = sg.x + sx * k * Math.SQRT1_2 * 1.2, z = sg.z + sz * k * Math.SQRT1_2 * 1.2;
+          const ne = this.nearestEdge(x, z, 8);
+          if (ne && ne.d < 0.5) continue;                   // on the road
+          if (!ne || ne.d > 4) break;                       // past the sidewalk
+          if (this.collide(x, z, 0.5).hit) break;           // a building / tree / car: try another corner
+          if (this.inWater(x, z) || nearPole(this.sigPoles, x, z, 1.6)) continue;
+          spot = [x, z];
+        }
+        if (spot) break;
+      }
+      if (!spot) continue;
+      const [x, z] = spot;
+      this.chunk(x, z).mb.add(cyl(0.1, 0.11, S.y, 6), M.T(x, S.y / 2, z), '#3f4659');
+      this.streetSigns.push({ text, bg: '#13784a', fg: '#ffffff', x, z, y: S.y, h: S.h, push: 0.15, res: S.res });
+    }
   }
   // ---------------------------------------------------------------- occlusion fade
   // Buildings standing between the camera and the player fade out (spec 4).
@@ -735,7 +773,8 @@ function packSigns(specs) {
   let pages;
   for (const row of SIGN_ROWS) {
     for (const s of specs) {
-      s.row = row; s.ch = s.sub ? row * 2 : row;
+      const r = Math.max(24, Math.round(row * (s.res || 1))); // res < 1: small on screen, so fewer texels
+      s.row = r; s.ch = s.sub ? r * 2 : r;
       s.cw = Math.min(SIGN_PAGE, Math.max(48, Math.ceil((s.ch * s.w) / s.h / 4) * 4));
     }
     const order = [...specs].sort((a, b) => b.ch - a.ch || b.cw - a.cw);
