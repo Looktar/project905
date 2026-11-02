@@ -87,7 +87,7 @@
   - 手机横屏 844×390：68 draw call（阴影开）。
   - 桌面 1440×900：67 draw call（阴影 + 景深开）。
   - 手机预算是 150。
-- **真机帧率**：待总决策用手机打开 `https://looktar.github.io/project905/?bench=1`，截图发回后填在这里。目标：iPhone 12 / Pixel 6 ≥ 30fps。
+- **真机帧率（2026-11-02，总决策 iPhone，iOS 18.7 Safari，`?bench=1`）**：平均 **60 fps**，最差 1% 58.8 fps，draw call 74，CPU 3.3 ms/帧，24 人 / 22 车，画质 mid + 阴影开，画布 833×503。远高于 30 fps 的目标，有充足余量做模型升级。
 
 **已知问题**
 - Viva 快速公交道在 OSM 里只有西边一段（Warden / Enterprise / Town Centre 一带），出生点附近看不到公交车。概念图里 Hwy 7 × Kennedy 的中央公交道和现实不符。
