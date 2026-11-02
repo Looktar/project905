@@ -225,11 +225,20 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ combat
+  // game feel: one call per impact, scaled by importance tier (CFG.feel): camera trauma (shake),
+  // a short hit-stop (freeze) and, for a struck character, a squash "pop"
+  feedback(tier, who = null) {
+    const F = CFG.feel[tier];
+    this.shake = Math.min(1, this.shake + F.trauma);
+    this.hitStop = Math.max(this.hitStop || 0, F.stop);
+    if (who) who.squashT = CFG.feel.squashTime;
+  }
   hit(target, dmg, attacker) {
     if (target.state === 'down' || target.state === 'fly') return;
     const ax = target.x - attacker.x, az = target.z - attacker.z, L = Math.hypot(ax, az) || 1;
     target.vx += (ax / L) * 4.5; target.vz += (az / L) * 4.5;
     sfx.punch(attacker === this.player ? 1 : 0.6);
+    if (attacker === this.player || target === this.player) this.feedback(target.kind === 'cop' || target === this.player ? 'medium' : 'small', target);
     if (target === this.player) {
       if (this.player.invuln > 0 || this.player.state === 'ko') return;
       this.player.hp -= dmg; this.player.hurtT = 3; this.player.regenT = CFG.player.regenDelay;
@@ -263,6 +272,7 @@ export class Game {
   }
   playerKO(byCop) {
     const p = this.player;
+    this.feedback('large', p);
     p.state = 'ko'; p.timer = CFG.player.koTime; p.hp = 0;
     this.bubble('ko', p, 4);
     if (byCop) { this.bust(); return; }
@@ -377,7 +387,7 @@ export class Game {
     if (this.w.inWater(car.x, car.z)) { car.x -= car.vx * dt * 1.5; car.z -= car.vz * dt * 1.5; car.speed *= -0.3; car.vx *= -0.3; car.vz *= -0.3; }
     if (hit && impact > 0.3) {
       car.speed = (car.vx * fx + car.vz * fz);
-      if (impact > 4) { car.hp -= impact * 1.6; if (car === this.inCar) { sfx.crash(impact / 15); this.shake = Math.min(1, impact / 12); } }
+      if (impact > 4) { car.hp -= impact * 1.6; if (car === this.inCar) { sfx.crash(impact / 15); this.feedback(impact > 12 ? 'large' : 'medium'); } }
     }
   }
 
@@ -635,8 +645,10 @@ export class Game {
 
   // ------------------------------------------------------------------ update
   update(dt) {
-    this.time += dt;
+    // the BUSTED screen counts real time; then hit-stop nearly freezes the world for a few frames
     if (this.busted > 0) { this.busted -= dt; if (this.busted <= 0) this.finishBust(); }
+    if (this.hitStop > 0) { this.hitStop -= dt; dt *= CFG.feel.stopScale; }
+    this.time += dt;
     this.spawnTimer = (this.spawnTimer || 0) - dt;
     if (this.spawnTimer <= 0) { this.spawnAround(); this.spawnTimer = 0.4; }
     this.updatePlayer(dt);
@@ -647,11 +659,12 @@ export class Game {
     this.carHits(dt);
     this.updateChase(dt);
     this.updatePuffs(dt);
-    this.shake = Math.max(0, this.shake - dt * 2.5);
+    this.shake = Math.max(0, this.shake - dt * CFG.feel.decay); // trauma decays; the camera shakes by trauma^2
   }
   updatePlayer(dt) {
     const p = this.player, PC = CFG.player;
     p.invuln = Math.max(0, (p.invuln || 0) - dt);
+    if (p.squashT > 0) p.squashT -= dt;
     p.hurtT = Math.max(0, (p.hurtT || 0) - dt);
     p.regenT = Math.max(0, (p.regenT || 0) - dt);
     if (p.regenT <= 0 && p.hp < PC.hp && p.state !== 'ko') p.hp = Math.min(PC.hp, p.hp + PC.regenRate * dt);
@@ -713,7 +726,7 @@ export class Game {
   }
   updateChar(c, dt) {
     const P = this.playerPos(), PD = CFG.peds;
-    c.bubbleT -= dt; c.cd -= dt; c.punchT -= dt;
+    c.bubbleT -= dt; c.cd -= dt; c.punchT -= dt; if (c.squashT > 0) c.squashT -= dt;
     // knockback velocity
     c.x += c.vx * dt; c.z += c.vz * dt;
     c.vx *= Math.exp(-5 * dt); c.vz *= Math.exp(-5 * dt);
@@ -1043,7 +1056,7 @@ export class Game {
             if (this.player.invuln > 0 || this.player.state === 'ko') continue;
             this.player.vx += car.vx * 0.8; this.player.vz += car.vz * 0.8;
             this.player.hp -= sp * 1.5; this.player.hurtT = 3; this.player.regenT = CFG.player.regenDelay;
-            this.player.state = 'down'; this.player.timer = 1.6; sfx.crash(0.5);
+            this.player.state = 'down'; this.player.timer = 1.6; sfx.crash(0.5); this.feedback('medium', this.player);
             if (this.player.hp <= 0) this.playerKO(car.type === 'police');
             continue;
           }
@@ -1073,7 +1086,7 @@ export class Game {
             const imp = -rel;
             pc.vx -= rel * nx * 1.2; pc.vz -= rel * nz * 1.2; pc.speed *= 0.55;
             if (imp > 3) {
-              pc.hp -= imp * 1.2; sfx.crash(imp / 14); this.shake = Math.min(1, imp / 12);
+              pc.hp -= imp * 1.2; sfx.crash(imp / 14); this.feedback(imp > 12 ? 'large' : 'medium');
               if (!o.bus) {
                 o.hp -= imp * 1.5; o.stopT = 2.5;
                 if (o.ai) { o.speed = 0; } else { o.vx += -rel * nx * -0.6; o.vz += -rel * nz * -0.6; }
@@ -1168,7 +1181,13 @@ export class Game {
   }
   drawChar(c) {
     const B = this.B;
-    let base = M.chain(M.T(c.x, c.y + (c.state === 'down' || c.state === 'ko' ? 0.05 : 0.15), c.z), M.RY(c.face), M.S(CS));
+    // squash & stretch pop after a hit: squash at once, spring back with a little overshoot
+    let sq = 1, st = 1;
+    if (c.squashT > 0) {
+      const u = 1 - c.squashT / CFG.feel.squashTime, k = Math.sin(u * Math.PI * 1.5) * (1 - u); // 1 -> -0.3 -> 0
+      st = 1 - 0.25 * k; sq = 1 + 0.18 * k;
+    }
+    let base = M.chain(M.T(c.x, c.y + (c.state === 'down' || c.state === 'ko' ? 0.05 : 0.15), c.z), M.RY(c.face), M.S(CS * sq, CS * st, CS * sq));
     const lying = c.state === 'down' || c.state === 'ko' || (c.state === 'fly');
     if (lying) base = M.chain(base, M.T(0, 0.3, 0), M.RX(c.state === 'fly' ? -Math.PI / 2 + Math.sin(this.time * 12) * 0.8 : -Math.PI / 2 + 0.1));
     const A = (m, batch, col) => this.put(batch, M.mul(base, m), col);

@@ -22,6 +22,7 @@ const settings = {
   mini: store.mini !== false,                       // minimap expanded
   shadows: store.shadows !== false,
   tilt: typeof store.tilt === 'boolean' ? store.tilt : !isTouch, // miniature tilt-shift blur (spec 4: off on phones by default)
+  shake: store.shake !== false, // screen shake on impacts
   res: DPR[store.res] ? store.res : Q.defaultRes[isTouch ? 'touch' : 'desktop'], // pixel-ratio level: low / mid / high
   manualQ: !!store.manualQ,                         // graphics picked by hand: no auto-lowering
 };
@@ -41,7 +42,7 @@ function applyTexts() {
   $('credit').textContent = t('credit');
   for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
   $('muteBtn').textContent = settings.mute ? '🔇' : '🔊';
-  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', res: settings.res };
+  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', shake: settings.shake ? 'on' : 'off', res: settings.res };
   for (const seg of document.querySelectorAll('.seg[data-key]'))
     for (const b of seg.children) b.classList.toggle('on', b.dataset.v === cur[seg.dataset.key]);
   if (game) game.hud.setMode(!!game.inCar); else ['bA', 'bB', 'bC'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run'][i])));
@@ -151,6 +152,7 @@ for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListe
   if (k === 'mini') { settings.mini = v === 'open'; if (hud) hud.setMiniOpen(settings.mini); }
   if (k === 'shadows') { settings.shadows = v === 'on'; settings.manualQ = true; applyQuality(); }
   if (k === 'tilt') { settings.tilt = v === 'on'; settings.manualQ = true; applyQuality(); }
+  if (k === 'shake') settings.shake = v === 'on';
   if (k === 'res') { settings.res = v; settings.manualQ = true; applyQuality(); }
   save(); applyTexts();
 });
@@ -199,7 +201,12 @@ function loop(now) {
     game.camDist = lerp(game.camDist, want, 1 - Math.exp(-1.5 * dt));
     for (let i = 0; i < 3; i += 2) game.camPos[i] = lerp(game.camPos[i], target[i], 1 - Math.exp(-6 * dt));
     target = game.camPos.slice();
-    if (game.shake > 0) { target[0] += (Math.random() - 0.5) * game.shake * 0.8; target[2] += (Math.random() - 0.5) * game.shake * 0.8; }
+    // smooth trauma shake (sampled sines, not per-frame random jitter, which buzzes); trauma^2 keeps
+    // small hits gentle; the settings switch turns it off (motion-sensitive players)
+    if (game.shake > 0 && settings.shake) {
+      const s = game.shake * game.shake * CFG.feel.maxOffset, t = now / 1000;
+      target[0] += s * Math.sin(t * 47) * 0.8; target[2] += s * Math.sin(t * 61 + 1.3) * 0.8;
+    }
     dist = game.camDist;
   } else {
     const a = now / 9000;

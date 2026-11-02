@@ -46,6 +46,11 @@ export const CFG = {
     runSpeed: 8.0, hp: 150, punchDmg: 9,
     bustFoot: 1.5, bustCar: 2.0, reinforce: 10, respawn: [150, 300], max: 5,
   },
+  // game feel (juice): camera trauma added per impact tier, hit-stop seconds; shake = trauma^2
+  feel: {
+    small: { trauma: 0.12, stop: 0.03 }, medium: { trauma: 0.3, stop: 0.06 }, large: { trauma: 0.6, stop: 0.1 },
+    stopScale: 0.08, decay: 1.6, squashTime: 0.22, maxOffset: 1.4,
+  },
   streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },
