@@ -7,7 +7,8 @@
     "character": 1000,
     "landmarkProp": 4000,
     "maxFileKB": 150,
-    "maxTotalMB": 3
+    "maxTotalMB": 3,
+    "house": 1800
   },
   "assets": [
     {
@@ -119,6 +120,39 @@
       "fit": "width 4.2 m, baked into chunk meshes (small bus stops)",
       "license": "https://polyfork.dev/licensing",
       "status": "default since 2026-11-02"
+    },
+    {
+      "key": "house2",
+      "source": "polyfork",
+      "id": "two-storey-family-house-c63c4a",
+      "url": "https://polyfork.dev/cdn/two-storey-family-house-c63c4a.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 1027,
+      "fit": "native 8 m wide; per-instance scale to the lot (two-storey lots); wall -> instance colour A, roof -> B",
+      "license": "https://polyfork.dev/licensing",
+      "status": "sample behind ?ph=1 (2026-11-02)"
+    },
+    {
+      "key": "split",
+      "source": "polyfork",
+      "id": "split-level-house-40fe1a",
+      "url": "https://polyfork.dev/cdn/split-level-house-40fe1a.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 1754,
+      "fit": "native 12 m wide; scaled to the lot (half of the one-storey lots); wall -> instance colour A, roof -> B",
+      "license": "https://polyfork.dev/licensing",
+      "status": "sample behind ?ph=1 (2026-11-02)"
+    },
+    {
+      "key": "ranch",
+      "source": "polyfork",
+      "id": "single-storey-ranch-house-3880ea",
+      "url": "https://polyfork.dev/cdn/single-storey-ranch-house-3880ea.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 1160,
+      "fit": "native 12 m wide; scaled to the lot (half of the one-storey lots); wall -> instance colour A, roof -> B",
+      "license": "https://polyfork.dev/licensing",
+      "status": "sample behind ?ph=1 (2026-11-02)"
     }
   ]
 }
