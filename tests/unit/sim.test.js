@@ -493,3 +493,17 @@ describe('minor roads give way at the line', () => {
     expect(inside.length, inside.slice(0, 5).join(', ')).toBeLessThanOrEqual(waits * 0.02);
   }, 60000);
 });
+
+describe('wrecked car', () => {
+  it('the player climbs out of a car that has died instead of being stuck in it', async () => {
+    const sim = await newSim(121);
+    const g = sim.game;
+    const car = g.cars.find((c) => c.ai && c.type === 'sedan') || g.cars[0];
+    g.enterCar(car);
+    expect(g.inCar).toBe(car);
+    car.hp = 0; car.speed = 0;
+    sim.seconds(CFG.car.wreckExit + 0.5, DT);
+    expect(g.inCar).toBe(null);
+    expect(g.player.state).toBe('walk');
+  });
+});

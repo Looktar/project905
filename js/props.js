@@ -4,6 +4,7 @@
 import { M, segDist } from './math.js';
 import { MAT_V, box, cyl, ico, torus, roof, disc } from './geo.js';
 import { CFG } from './config.js';
+import { MODELS } from './models.js';
 
 const COL = {
   post: '#475569', glass: '#9ad7f5', glass2: '#bfe6ff', viva: '#2563eb', platform: '#d6dae3', tactile: '#ffd23f',
@@ -421,6 +422,7 @@ export function buildStreetProps(w) {
 
 function hydrant(mb, x, z, a) {
   const F = frame(x, z, a);
+  if (MODELS.hydrant) { mb.addTriangles(MODELS.hydrant, F); return; } // Polyfork hydrant
   put(mb, F, cyl(0.19, 0.24, 0.72, 6, false), at(0, 0.39, 0), COL.hydrant);
   put(mb, F, ico(0.22), at(0, 0.78, 0), COL.hydrant);
   put(mb, F, box(0.62, 0.13, 0.13), at(0, 0.5, 0), COL.hydrantDark);
@@ -437,6 +439,11 @@ function busStop(mb, st) {
     put(mb, F, box(0.35, 2.4, 0.35), at(3.3, 1.2, 0.3), COL.viva, 0.1);
     put(mb, F, box(0.37, 0.45, 0.37), at(3.3, 2.1, 0.3), COL.white, 0.4);
     put(mb, F, box(2.6, 0.1, 0.45), at(-0.6, 0.5, -0.35), COL.bench);
+  } else if (kind === 1 && MODELS.shelter) { // Polyfork shelter (back wall at -z, like ours) + YRT sign
+    put(mb, F, box(4.4, 0.1, 2.1), at(0, 0.05, 0), COL.platform);
+    mb.addTriangles(MODELS.shelter, M.mul(F, at(0, 0.1, 0)));
+    put(mb, F, cyl(0.05, 0.05, 2.7, 6, false), at(2.6, 1.35, 0.8), COL.post);
+    put(mb, F, box(0.55, 0.6, 0.05), at(2.6, 2.45, 0.8), COL.yrt, 0.1);
   } else if (kind === 1) { // small shelter
     put(mb, F, box(4.0, 0.1, 1.7), at(0, 0.05, 0), COL.platform);
     for (const sx of [-1.8, 1.8]) for (const sz of [-0.65, 0.65]) put(mb, F, cyl(0.06, 0.06, 2.5, 6, false), at(sx, 1.3, sz), COL.post);

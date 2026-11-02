@@ -106,8 +106,12 @@ export class Game {
       // traffic-light lamps: a short emissive cylinder through the head, lens on both faces
       sigLamp: mk(cyl(0.25, 0.25, 0.52, 12), MAT_A, '#ffffff', 0.9, 900),
     };
-    // Polyfork models (when loaded, ?pf=1): one instanced batch per model, paint tinted per car
-    if (MODELS.sedan) { const mb = new MeshBuilder(); mb.addTriangles(MODELS.sedan, M.I()); this.B.pfSedan = this.r.instanced(mb, 140); }
+    // Polyfork vehicles (when loaded): one instanced batch per model, paint tinted per car
+    this.pf = {}; // (also listed in this.B as pf_<type>, so every batch loop sees them)
+    for (const [k, cap] of [['sedan', 140], ['suv', 60], ['van', 30], ['taxi', 40], ['police', 20], ['bus', 8]]) {
+      if (!MODELS[k]) continue;
+      const mb = new MeshBuilder(); mb.addTriangles(MODELS[k], M.I()); this.B['pf_' + k] = this.pf[k] = this.r.instanced(mb, cap);
+    }
     this.tmp = new Float32Array(16);
   }
   put(batch, m, col) {
@@ -701,6 +705,12 @@ export class Game {
         // camera is rotated: map steering to car-relative (A/D = left/right of the car)
       }
       this.carPhysics(car, thr, st, input.handbrake, dt);
+      // a wrecked car cannot drive: say so and climb out (on a phone it felt like the stick had locked)
+      if (car.hp <= 0) {
+        if (!car.wreckT) this.hud.banner(t('wrecked'), 'red');
+        car.wreckT = (car.wreckT || 0) + dt;
+        if (car.wreckT > CFG.car.wreckExit && Math.abs(car.speed) < 3) { this.exitCar(); return; }
+      }
       if (input.enter) this.exitCar();
       if (input.horn) { sfx.horn(); this.bubble('honk', car, 3.2); }
       sfx.engineUpdate(true, Math.min(1, Math.abs(car.speed) / CFG.car.maxSpeed));
@@ -1247,6 +1257,7 @@ export class Game {
   }
   // Viva bus (rapidway buses and the ones running in Hwy 7 traffic)
   drawBus(m) {
+    if (this.pf.bus) { this.put(this.pf.bus, m, [0.15, 0.39, 0.92]); return; }
     this.put(this.B.busBody, M.mul(m, M.T(0, 1.8, 0)), [0.15, 0.39, 0.92]);
     this.put(this.B.busGlass, M.mul(m, M.T(0, 2.4, 0.2)));
     this.put(this.B.busRoof, M.mul(m, M.T(0, 3.35, 0)));
@@ -1256,9 +1267,17 @@ export class Game {
     const B = this.B;
     const m = M.chain(M.T(car.x, 0, car.z), M.RY(car.a));
     if (car.bus) { this.drawBus(m); return; }
-    if (car.type === 'sedan' && B.pfSedan) { this.put(B.pfSedan, m, car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col); return; }
     const P = (batch, mm, col) => this.put(batch, M.mul(m, mm), col);
     const dark = car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
+    const pf = this.pf[car.type];
+    if (pf) {
+      this.put(pf, m, dark); // taxi / police models have no paint part: they keep their own livery
+      if (car.type === 'police' && car.chasing) { // flashing bar over the model's own (static) light bar
+        const blink = Math.floor(this.time * 6) % 2;
+        P(blink ? B.barR : B.barB, M.T(blink ? -0.35 : 0.35, 1.78, -0.35));
+      }
+      return;
+    }
     const V = SHAPES[car.type] || SHAPES.sedan;
     P(B.carBody, V.body, dark);
     P(B.carCabin, V.cabin);

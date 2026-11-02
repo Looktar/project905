@@ -7,10 +7,21 @@ import { MAT_A, MAT_V } from './geo.js';
 
 const CDN = 'https://polyfork.dev/cdn/';
 
-// key -> Polyfork asset id + how to fit it into the game (metres; cars face +z, origin on the ground)
+// key -> Polyfork asset id + how to fit it into the game (metres; cars face +z, origin on the ground).
+// fit: len (z) | height (y) | width (x). paint: true = auto-detect the body colour, or the [r, g, b]
+// body colour when it is not saturated enough to detect; it becomes the per-instance tint.
+// origin 'base': x/z origin at the footprint of the lowest vertices (a lamp's pole, not its bbox)
 export const POLYFORK = {
   sedan: { id: 'compact-hatchback-386417', fit: { len: 4.4 }, paint: true },
+  suv: { id: 'family-crossover-suv-42027f', fit: { len: 4.6 }, paint: [0.34, 0.39, 0.43] },
+  van: { id: 'family-minivan-924de0', fit: { len: 4.9 }, paint: true },
+  taxi: { id: 'yellow-cab-8df4a0', fit: { len: 4.5 } },
+  police: { id: 'police-cruiser-a2d25e', fit: { len: 4.6 } },
+  bus: { id: 'city-bus-49fd97', fit: { len: 12 }, paint: [0.43, 0.56, 0.63] }, // blue band -> Viva blue
   tree: { id: 'broad-canopy-shade-tree-e7c4a2', fit: { height: 5.6 }, grade: { light: 1.3, sat: 1.35 } },
+  lamp: { id: 'cobra-head-street-light-3e25b8', fit: { height: 6.2 }, origin: 'base', grade: { light: 1.1, sat: 1 } },
+  hydrant: { id: 'fire-hydrant-b68b17', fit: { height: 0.85 }, grade: { light: 1.2, sat: 1.3 } },
+  shelter: { id: 'bus-shelter-f786b4', fit: { width: 4.2 } },
 };
 
 export const MODELS = {}; // filled by loadModels(): key -> { p, n, c, mat, bounds }
@@ -37,27 +48,40 @@ export async function loadModels(keys = Object.keys(POLYFORK), timeoutMs = 6000)
 // scale to the game size, centre on x/z with the base at y = 0, and mark the paint for tinting
 export function fitModel(t, def) {
   const { lo, hi } = t.bounds;
-  const s = def.fit.len ? def.fit.len / (hi[2] - lo[2]) : def.fit.height / (hi[1] - lo[1]);
-  const cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2;
+  const F = def.fit;
+  const s = F.len ? F.len / (hi[2] - lo[2]) : F.width ? F.width / (hi[0] - lo[0]) : F.height / (hi[1] - lo[1]);
+  let cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2;
+  if (def.origin === 'base') {
+    let x = 0, z = 0, n = 0;
+    for (let i = 0; i < t.p.length; i += 3) if (t.p[i + 1] < lo[1] + 0.03 * (hi[1] - lo[1])) { x += t.p[i]; z += t.p[i + 2]; n++; }
+    if (n) { cx = x / n; cz = z / n; }
+  }
   const p = new Float32Array(t.p.length);
   for (let i = 0; i < p.length; i += 3) { p[i] = (t.p[i] - cx) * s; p[i + 1] = (t.p[i + 1] - lo[1]) * s; p[i + 2] = (t.p[i + 2] - cz) * s; }
-  const nv = t.p.length / 3, mat = new Float32Array(nv).fill(MAT_V), c = Float32Array.from(t.c);
+  const nv = t.p.length / 3, mat = new Float32Array(nv).fill(MAT_V), c = Float32Array.from(t.c), c0 = t.c;
   // colour grade toward our bright toy palette (ART-BIBLE 4): more saturation, lighter
   if (def.grade) for (let i = 0; i < c.length; i += 3) {
     const g = (c[i] + c[i + 1] + c[i + 2]) / 3;
     for (let k = 0; k < 3; k++) c[i + k] = Math.min(1, (g + (c[i + k] - g) * def.grade.sat) * def.grade.light);
   }
   if (def.paint) {
-    // the paint is the most common clearly coloured (saturated, not dark) vertex colour: it becomes
-    // instance colour A (white x tint) so every car keeps its own random colour
+    // the paint is the most common clearly coloured (saturated, not dark) vertex colour, or the
+    // given one: it becomes instance colour A (white x tint) so every car keeps its own colour
     const key = (i) => [c[i], c[i + 1], c[i + 2]].map((v) => Math.round(v * 20)).join(',');
-    const hist = new Map();
-    for (let i = 0; i < c.length; i += 3) {
-      const mx = Math.max(c[i], c[i + 1], c[i + 2]), mn = Math.min(c[i], c[i + 1], c[i + 2]);
-      if (mx > 0.45 && mx - mn > 0.25) hist.set(key(i), (hist.get(key(i)) || 0) + 1);
+    let isPaint;
+    if (Array.isArray(def.paint)) {
+      const P = def.paint;
+      isPaint = (i) => Math.abs(c0[i] - P[0]) < 0.03 && Math.abs(c0[i + 1] - P[1]) < 0.03 && Math.abs(c0[i + 2] - P[2]) < 0.03;
+    } else {
+      const hist = new Map();
+      for (let i = 0; i < c.length; i += 3) {
+        const mx = Math.max(c[i], c[i + 1], c[i + 2]), mn = Math.min(c[i], c[i + 1], c[i + 2]);
+        if (mx > 0.45 && mx - mn > 0.25) hist.set(key(i), (hist.get(key(i)) || 0) + 1);
+      }
+      const paint = [...hist].sort((a, b) => b[1] - a[1])[0];
+      isPaint = (i) => paint && key(i) === paint[0];
     }
-    const paint = [...hist].sort((a, b) => b[1] - a[1])[0];
-    if (paint) for (let i = 0; i < c.length; i += 3) if (key(i) === paint[0]) { c[i] = c[i + 1] = c[i + 2] = 1; mat[i / 3] = MAT_A; }
+    for (let i = 0; i < c.length; i += 3) if (isPaint(i)) { c[i] = c[i + 1] = c[i + 2] = 1; mat[i / 3] = MAT_A; }
   }
   return { p, n: t.n, c, mat, bounds: { lo: [(lo[0] - cx) * s, 0, (lo[2] - cz) * s], hi: [(hi[0] - cx) * s, (hi[1] - lo[1]) * s, (hi[2] - cz) * s] }, tris: nv / 3 };
 }

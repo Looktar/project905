@@ -59,7 +59,9 @@ export function initTouch(app, joyEl, knobEl, buttons) {
   app.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.btn,.ui')) return;
     const [gx, gy] = toGamePoint(e.clientX, e.clientY);
-    if (gx < input.W * 0.5 && !joy) {
+    // a new finger on the stick side takes the stick over: if the old finger's pointerup was lost
+    // (iOS can drop it when the page changes under the finger) the stick must never stay stuck
+    if (gx < input.W * 0.5 && (!joy || !down.has(joy.id))) {
       joy = { id: e.pointerId, sx: e.clientX, sy: e.clientY };
       const [bx, by] = base();
       joy.gx0 = bx; joy.gy0 = by;
@@ -73,8 +75,19 @@ export function initTouch(app, joyEl, knobEl, buttons) {
     const [dx, dy] = toGameDelta(e.clientX - joy.sx, e.clientY - joy.sy);
     updateJoy(joy.ox + dx, joy.oy + dy);
   });
-  const end = (e) => { if (joy && e.pointerId === joy.id) { joy = null; updateJoy(0, 0); } };
-  app.addEventListener('pointerup', end); app.addEventListener('pointercancel', end);
+  // fingers currently down, tracked on window (a release outside #app still counts)
+  const down = new Set();
+  const end = (e) => { down.delete(e.pointerId); if (joy && e.pointerId === joy.id) { joy = null; updateJoy(0, 0); } };
+  for (const t of [window, app]) { // (idempotent: in a browser #app's events also reach window)
+    t.addEventListener('pointerdown', (e) => down.add(e.pointerId), true);
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) t.addEventListener(ev, end, true);
+  }
+  const reset = () => { down.clear(); if (joy) { joy = null; updateJoy(0, 0); } };
+  addEventListener('blur', reset);
+  addEventListener('visibilitychange', () => { if (document.hidden) reset(); }); // (bubbles from document)
+  // iOS fallback: no finger left on the screen at all -> release the stick
+  addEventListener('touchend', (e) => { if (!e.touches.length) reset(); }, true);
+  addEventListener('touchcancel', (e) => { if (!e.touches.length) reset(); }, true);
   function updateJoy(dx, dy) {
     const L = Math.hypot(dx, dy);
     const k = L > R ? R / L : 1;

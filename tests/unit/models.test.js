@@ -29,6 +29,21 @@ describe('Polyfork model fitting', () => {
     expect(m.c[0]).toBeGreaterThan(0.7);
     expect(m.c[0] - m.c[2]).toBeGreaterThan(0.7 - 0.26);
   });
+  it('an explicit paint colour (not saturated enough to detect) becomes the tint', () => {
+    const m = fitModel(fakeCar(), { fit: { len: 4.4 }, paint: [0.1, 0.1, 0.1] });
+    expect([...m.mat]).toEqual([...Array(6).fill(MAT_V), ...Array(3).fill(MAT_A)]);
+    expect(m.c[6 * 3]).toBe(1);
+    expect(m.c[0]).toBeCloseTo(0.7, 5);
+  });
+  it('fits by width, and origin "base" puts the pole (lowest vertices) at x/z = 0', () => {
+    // a "lamp": pole base at x = -1 .. -0.6 (y = 0), arm reaching out to x = 3 at the top
+    const lamp = { p: [-1, 0, 0, -0.6, 0, 0, -0.8, 4, 0, -0.8, 4, 0, 3, 4, 0, 3, 3.6, 0], n: Array(18).fill(0), c: Array(18).fill(0.5), bounds: { lo: [-1, 0, 0], hi: [3, 4, 0] } };
+    const w = fitModel(lamp, { fit: { width: 2 } });
+    expect(w.bounds.hi[0] - w.bounds.lo[0]).toBeCloseTo(2, 5);
+    const b = fitModel(lamp, { fit: { height: 4 }, origin: 'base' });
+    expect((b.p[0] + b.p[3]) / 2).toBeCloseTo(0, 5);
+    expect(b.bounds.hi[0]).toBeCloseTo(3.8, 5);
+  });
   it('?pf=1 / ?pf=0 override the default; every model has an id', () => {
     expect(modelsWanted('?pf=1', false)).toBe(true);
     expect(modelsWanted('?debug=1&pf=0', true)).toBe(false);
