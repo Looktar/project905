@@ -466,9 +466,12 @@ export class World {
       treeMB.add(ico(1.05), M.chain(M.T(-0.75, 2.8, -0.35), M.RY(1.9)), '#f2f7e0', MAT_A);
     }
     const lampMB = new MeshBuilder();
-    lampMB.add(cyl(0.09, 0.12, 5.2, 6), M.T(0, 2.6, 0), '#3f4659');
-    lampMB.add(box(0.14, 0.14, 1.5), M.T(0, 5.1, 0.7), '#3f4659');
-    lampMB.add(rbox(0.6, 0.26, 0.6, 0.1), M.T(0, 4.9, 1.4), '#fff3c4', MAT_V, 0.6);
+    if (MODELS.lamp) lampMB.addTriangles(MODELS.lamp, M.I()); // Polyfork cobra-head light, arm toward +z
+    else {
+      lampMB.add(cyl(0.09, 0.12, 5.2, 6), M.T(0, 2.6, 0), '#3f4659');
+      lampMB.add(box(0.14, 0.14, 1.5), M.T(0, 5.1, 0.7), '#3f4659');
+      lampMB.add(rbox(0.6, 0.26, 0.6, 0.1), M.T(0, 4.9, 1.4), '#fff3c4', MAT_V, 0.6);
+    }
     const carMB = new MeshBuilder();
     carMB.add(rbox(2.1, 0.85, 4.4, 0.3, 1), M.T(0, 0.72, 0), '#ffffff', MAT_A);
     carMB.add(rbox(1.8, 0.78, 2.3, 0.28, 1), M.T(0, 1.47, -0.25), '#9fd3f2');

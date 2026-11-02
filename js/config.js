@@ -18,6 +18,7 @@ export const CFG = {
     accel: 11, brake: 22, reverse: 6, maxSpeed: 24, maxReverse: 7,
     drag: 0.35, steer: 2.3, grip: 9, driftGrip: 1.6, hp: 100,
     radius: 1.2, length: 4.4,
+    wreckExit: 1.2,                                    // s after the player's car dies before they climb out by themselves
   },
   peds: {
     countDesktop: 30, countMobile: 22,

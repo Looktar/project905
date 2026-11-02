@@ -1,9 +1,9 @@
 {
   "note": "Every external model the game ships. Fill one entry per file before it is used; see docs/ART-BIBLE.md section 7 and CREDITS.md.",
   "budgets": {
-    "car": 2500,
+    "car": 2600,
     "tree": 400,
-    "prop": 300,
+    "prop": 550,
     "character": 1000,
     "landmarkProp": 4000,
     "maxFileKB": 150,
@@ -19,7 +19,7 @@
       "triangles": 1876,
       "fit": "length 4.4 m, paint -> per-car colour",
       "license": "https://polyfork.dev/licensing",
-      "status": "style sample (?pf=1), awaiting owner approval"
+      "status": "default since 2026-11-02 (owner approved)"
     },
     {
       "key": "tree",
@@ -30,7 +30,95 @@
       "triangles": 394,
       "fit": "height 5.6 m x random 0.75-1.25, graded lighter/more saturated",
       "license": "https://polyfork.dev/licensing",
-      "status": "style sample (?pf=1), awaiting owner approval"
+      "status": "default since 2026-11-02 (owner approved)"
+    },
+    {
+      "key": "suv",
+      "source": "polyfork",
+      "id": "family-crossover-suv-42027f",
+      "url": "https://polyfork.dev/cdn/family-crossover-suv-42027f.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 2565,
+      "fit": "length 4.6 m, grey body -> per-car colour",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "van",
+      "source": "polyfork",
+      "id": "family-minivan-924de0",
+      "url": "https://polyfork.dev/cdn/family-minivan-924de0.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 2332,
+      "fit": "length 4.9 m, paint -> per-car colour",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "taxi",
+      "source": "polyfork",
+      "id": "yellow-cab-8df4a0",
+      "url": "https://polyfork.dev/cdn/yellow-cab-8df4a0.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 1926,
+      "fit": "length 4.5 m, own livery",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "police",
+      "source": "polyfork",
+      "id": "police-cruiser-a2d25e",
+      "url": "https://polyfork.dev/cdn/police-cruiser-a2d25e.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 2130,
+      "fit": "length 4.6 m, own livery; flashing bar added while chasing",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "bus",
+      "source": "polyfork",
+      "id": "city-bus-49fd97",
+      "url": "https://polyfork.dev/cdn/city-bus-49fd97.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 2008,
+      "fit": "length 12 m, blue band -> Viva blue",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "lamp",
+      "source": "polyfork",
+      "id": "cobra-head-street-light-3e25b8",
+      "url": "https://polyfork.dev/cdn/cobra-head-street-light-3e25b8.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 464,
+      "fit": "height 6.2 m, origin at the pole, arm toward +z",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "hydrant",
+      "source": "polyfork",
+      "id": "fire-hydrant-b68b17",
+      "url": "https://polyfork.dev/cdn/fire-hydrant-b68b17.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 525,
+      "fit": "height 0.85 m, baked into chunk meshes",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
+    },
+    {
+      "key": "shelter",
+      "source": "polyfork",
+      "id": "bus-shelter-f786b4",
+      "url": "https://polyfork.dev/cdn/bus-shelter-f786b4.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 308,
+      "fit": "width 4.2 m, baked into chunk meshes (small bus stops)",
+      "license": "https://polyfork.dev/licensing",
+      "status": "default since 2026-11-02"
     }
   ]
 }
