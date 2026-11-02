@@ -22,7 +22,7 @@ export const POLYFORK = {
   lamp: { id: 'cobra-head-street-light-3e25b8', fit: { height: 6.2 }, origin: 'base', grade: { light: 1.1, sat: 1 } },
   hydrant: { id: 'fire-hydrant-b68b17', fit: { height: 0.85 }, grade: { light: 1.2, sat: 1.3 } },
   shelter: { id: 'bus-shelter-f786b4', fit: { width: 4.2 } },
-  // houses (one kit, sample behind ?ph=1): native size in metres; world.js scales each instance to
+  // houses (one kit, default on, ?ph=0 off): native size in metres; world.js scales each instance to
   // its lot. Wall colour -> instance colour A, roof -> B (the map's house palettes, D-63)
   house2: { id: 'two-storey-family-house-c63c4a', fit: { width: 8 }, tints: [{ col: [0.775, 0.653, 0.483], mat: MAT_A }, { col: [0.296, 0.234, 0.170], mat: MAT_B, tol: 0.04 }] },
   split: { id: 'split-level-house-40fe1a', fit: { width: 12 }, tints: [{ col: [0.847, 0.783, 0.653], mat: MAT_A }, { col: [0.296, 0.234, 0.170], mat: MAT_B, tol: 0.04 }] },
