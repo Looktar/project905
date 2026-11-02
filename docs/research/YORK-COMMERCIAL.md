@@ -25,5 +25,7 @@
 - `york-kingsquare.png`：King Square 修好后。
 - `york-steeles-woodbine.png`：Steelcase / Woodbine 工业区。
 
-## 下一步（可选，需要总决策同意用 York 数据）
-用 York 轮廓补上 OSM 没画的约 100 栋商业 / 工业楼（0.10 km²，主要是写字楼和厂房）。不碰住宅。地图文件约多 30–50 KB。
+## 补上之后（D-68，总决策同意“补上”）
+- `tools/fetch_york.py` 下载 ≥300 m² 的 York 轮廓（5,218 个，`data/raw/york_footprints.json.gz`，784 KB），`build_map.py` 只补 OSM 没有、又是商业 / 工业的楼：新增 44 栋（Esna Park、Steelcase、Valleywood、14th Ave 等）。
+- 对照结果：游戏里有 1,213 栋，3.70 km²（**98%**）；只有一部分 40 栋，0.047 km²；游戏里没有 74 栋，只剩 **0.012 km²**，基本都是 300 m² 以下的小楼（加油站便利店、Unionville 老街店面，游戏里另有生成的版本）。
+- 地图文件 1804 → 1817 KB。

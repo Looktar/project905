@@ -1,5 +1,9 @@
 # 进度
 
+## 2026-11-02 · 用 York Region 数据补商业楼
+- 总决策同意后，用 York Region 建筑轮廓补上 OSM 没画的 44 栋商业 / 工业楼（Esna Park 的大楼、Steelcase、Valleywood 商务园等），住宅不动（D-68）。按面积，York 的商业楼 98% 已在游戏里（之前 96%）。
+- 制作人员、标题页署名、`CREDITS.md` 加 York Region 开放数据许可。
+
 ## 2026-11-02 · 商业建筑对照 York Region 数据
 - 下载 York Region 建筑轮廓，把 1,327 栋商业 / 工业楼和游戏比：按面积 96% 已在游戏里；有店铺的楼几乎都在。缺的主要是 OSM 没画的写字楼、厂房（Esna Park、Steelcase、Valleywood）。报告：`docs/research/YORK-COMMERCIAL.md`。
 - 顺手修了一个 bug：压在地图边线上的建筑以前整栋丢掉（King Square 商场只剩一个替代小方块），现在裁掉超出部分保留（D-67）。OSM 建筑 2184 → 2207 栋。

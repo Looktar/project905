@@ -16,6 +16,7 @@ from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(ROOT, 'data', 'raw', 'markham_osm.json.gz')
+YORK = os.path.join(ROOT, 'data', 'raw', 'york_footprints.json.gz')   # tools/fetch_york.py (D-68)
 OUT = os.path.join(ROOT, 'maps', 'markham.json')
 
 SCALE = 0.4            # coordinate compression
@@ -602,6 +603,60 @@ for w, p in blds:
           and in_heritage_zone(*centroid(gp))):
         continue  # tiny shop boxes on a historic main street are replaced by procedural storefronts
     osm_placed.append((place_building(gp, h, color, btype, extra), t))
+
+# ---- York Region footprints (D-68): offices, warehouses and shops that OSM never drew. Only on
+# business land (or big, off residential land, or with a shop inside), only where OSM has nothing.
+COM_LANDUSE = {'commercial': 'commercial', 'retail': 'retail', 'industrial': 'industrial'}
+com_land = Grid(40.0); resi_land = Grid(40.0)
+for w in ways:
+    t = w['tags']
+    kind = 'retail' if t.get('shop') == 'mall' else COM_LANDUSE.get(t.get('landuse'))
+    if 'building' in t or not (kind or t.get('landuse') == 'residential'):
+        continue
+    gp = area_polys(w)
+    if gp:
+        bb = (min(q[0] for q in gp), min(q[1] for q in gp), max(q[0] for q in gp), max(q[1] for q in gp))
+        (com_land if kind else resi_land).add(bb, (gp, kind))
+shop_pts = Grid(20.0)
+SHOP_AMENITY = {'restaurant', 'fast_food', 'cafe', 'fuel', 'bank', 'pharmacy', 'bar', 'pub', 'car_wash', 'cinema'}
+for e in els:
+    t = e.get('tags', {})
+    if e['type'] == 'node' and (t.get('shop') or t.get('amenity') in SHOP_AMENITY or (t.get('office') and t.get('name'))):
+        q = g(rot(proj(e['lat'], e['lon'])))
+        shop_pts.add((q[0], q[1], q[0], q[1]), q)
+def land_at(grid, x, z):
+    return next((k for gp, k in grid.query((x, z, x, z)) if point_in_poly(x, z, gp)), None)
+york_added = 0
+yrng = random.Random(9068)   # own RNG: York buildings never reshuffle the rest of the map
+with gzip.open(YORK, 'rt', encoding='utf8') as f:
+    york = json.load(f)
+for oid, ring in york:
+    p = [rot(proj(lat, lon)) for lon, lat in ring]
+    if len(p) < 3 or not any(inside(q) for q in p):
+        continue
+    if not all(inside(q) for q in p):
+        p = clip_rect(p, X0 + 2, Z0 + 2, X1 - 2, Z1 - 2)
+        if len(p) < 3:
+            continue
+    real_area = abs(poly_area(p))
+    gp = ring_simplify([g(q) for q in p], 0.4)
+    if len(gp) < 3 or abs(poly_area(gp)) < 14:
+        continue
+    cx, cz = centroid(gp)
+    kind = land_at(com_land, cx, cz)
+    xs = [q[0] for q in gp]; zs = [q[1] for q in gp]
+    has_shop = any(point_in_poly(q[0], q[1], gp) for q in shop_pts.query((min(xs), min(zs), max(xs), max(zs))))
+    if not kind:
+        if not has_shop and (real_area < 1000 or land_at(resi_land, cx, cz)):
+            continue
+        kind = 'retail' if has_shop else 'commercial'
+    if not fits(gp, 1.0):   # OSM already has it (or a road runs through it)
+        continue
+    h = {'industrial': 7, 'retail': 6}.get(kind, 9 if real_area < 4000 else 12)
+    b = place_building([(round(x, 2), round(z, 2)) for x, z in gp], h, yrng.choice(PALETTE[kind]), kind)
+    osm_placed.append((b, {'building': kind}))
+    york_added += 1
+print('York Region buildings added:', york_added)
 
 # toy proportions: true-scale footprints look tiny next to full-size cars and people, so each one
 # grows around its centroid as far as BLD_GROW allows without touching a road or a neighbour (D-64)
@@ -1987,7 +2042,7 @@ out = {
     'heritageAwnings': HERITAGE_AWNINGS,
     'stops': stops,
     'stores': stores,
-    'attribution': 'Map data (c) OpenStreetMap contributors, ODbL',
+    'attribution': 'Map data (c) OpenStreetMap contributors, ODbL; contains information licensed under the Open Data Licence - York Region',
 }
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w') as f:

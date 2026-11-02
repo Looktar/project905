@@ -16,6 +16,7 @@ describe('maps/markham.json', () => {
 
   it('credits OpenStreetMap (ODbL)', () => {
     expect(map.attribution).toMatch(/OpenStreetMap/);
+    expect(map.attribution).toMatch(/York Region/); // D-68: York footprints fill in commercial buildings
   });
 
   it('has every section that js/world.js and js/game.js read', () => {

@@ -11,7 +11,7 @@
     "smoke": "node tests/e2e/smoke.mjs",
     "stamp": "node tools/stamp.mjs",
     "map": "python3 tools/build_map.py",
-    "map:fetch": "python3 tools/fetch_osm.py",
+    "map:fetch": "python3 tools/fetch_osm.py && python3 tools/fetch_york.py",
     "check:map": "python3 tools/build_map.py && git diff --exit-code maps/markham.json"
   },
   "engines": {
