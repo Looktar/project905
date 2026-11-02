@@ -56,3 +56,4 @@
   - **性能**：预算表写进美术规范第 8 节；
   - **试玩**：反馈表 `docs/PLAYTEST.md`；
   - **技能**：把 game-feel、performance-optimization、create-game-assets 三个技能原样放进 `.claude/skills/`，保留 Apache-2.0 许可和 NOTICE。
+- **D-50 Polyfork 模型运行时从官方 CDN 加载，不提交进仓库**：Polyfork 许可允许游戏使用、链接加载免费模型，但禁止转发文件本身；我们的仓库是公开的，把 GLB 提交进来就成了转发。CDN 允许跨域（`access-control-allow-origin: *`），模型用顶点色、没有贴图，正好适合我们的渲染器。加载超过 6 秒或失败就退回代码模型。先按美术规范第 7 节做样板（轿车 + 行道树），挂在 `?pf=1` 开关后面，总决策确认后再默认开启并扩展到其他车型、路灯、消防栓、公交站、人物。车的面数预算从 1500 放宽到 2500。

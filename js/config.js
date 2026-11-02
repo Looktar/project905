@@ -51,6 +51,8 @@ export const CFG = {
     small: { trauma: 0.12, stop: 0.03 }, medium: { trauma: 0.3, stop: 0.06 }, large: { trauma: 0.6, stop: 0.1 },
     stopScale: 0.08, decay: 1.6, squashTime: 0.22, maxOffset: 1.4,
   },
+  // Polyfork models (D-42): off by default while the style sample is reviewed; ?pf=1 / ?pf=0 override
+  models: { polyfork: false, timeoutMs: 6000 },
   streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },

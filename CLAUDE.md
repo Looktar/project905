@@ -24,6 +24,7 @@ js/game.js            玩法：主角、路人(随机属性/性格/过马路)、
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
 js/glb.js             最小 GLB 加载器：模型转成顶点色三角形，交给 MeshBuilder.addTriangles 烘焙
+js/models.js          Polyfork 模型清单：运行时从 polyfork.dev CDN 加载（?pf=1），缩放、调色、车漆改随机色；失败退回代码模型
 js/hud.js             小地图、路名、血条、气泡、横幅、被抓画面
 js/audio.js           WebAudio 合成音效（无音频文件）
 js/config.js          所有可调数值

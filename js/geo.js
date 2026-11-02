@@ -39,7 +39,8 @@ export class MeshBuilder {
       const nx = nm[0] * a + nm[1] * b + nm[2] * d, ny = nm[3] * a + nm[4] * b + nm[5] * d, nz = nm[6] * a + nm[7] * b + nm[8] * d;
       const l = Math.hypot(nx, ny, nz) || 1;
       N.push(nx / l, ny / l, nz / l);
-      C.push(t.c[i], t.c[i + 1], t.c[i + 2], mat + em * 0.1);
+      // t.mat (optional, one per vertex) overrides mat, e.g. MAT_A on a car's paint for per-car colours
+      C.push(t.c[i], t.c[i + 1], t.c[i + 2], (t.mat ? t.mat[i / 3] : mat) + em * 0.1);
     }
   }
   // raw triangles with one normal (for flat ground pieces)

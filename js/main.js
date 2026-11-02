@@ -7,6 +7,7 @@ import { input, layout, initTouch, poll, clearEdges, isTouch } from './input.js'
 import * as sfx from './audio.js';
 import { t, setLang, getLang } from './i18n.js';
 import { lerp } from './math.js';
+import { loadModels, modelsWanted } from './models.js';
 
 const app = document.getElementById('app');
 const canvas = document.getElementById('c');
@@ -91,8 +92,9 @@ async function boot() {
   }
   applyQuality();
   $('loading').textContent = t('loading');
-  const res = await fetch('maps/markham.json');
-  const map = await res.json();
+  // map and (optional) Polyfork models load in parallel; models that fail or time out fall back
+  const wantPF = modelsWanted(location.search, CFG.models.polyfork);
+  const [map] = await Promise.all([fetch('maps/markham.json').then((r) => r.json()), wantPF ? loadModels(undefined, CFG.models.timeoutMs) : null]);
   hud = new HUD(app);
   hud.setMiniOpen(settings.mini);
   hud.onMiniToggle = (open) => { settings.mini = open; save(); applyTexts(); };

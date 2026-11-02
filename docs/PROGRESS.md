@@ -1,5 +1,13 @@
 # 进度
 
+## 2026-11-02 · Polyfork 模型样板（等总决策确认）
+- 云端已能访问 polyfork.dev（`overpass-api.de` 仍不通）。
+- **样板**：轿车（Compact Hatchback，每辆车保留随机颜色）和行道树（Broad Canopy Shade Tree，已调亮、调鲜艳）。
+- **试玩**：https://looktar.github.io/project905/?pf=1 ；默认仍是代码模型。
+- **截图**：`docs/screenshots/v0.2/polyfork/`
+- **性能**：draw call 不变（+1 个批次）；首次多下载约 270 KB。
+- **加载方式**：按许可，模型运行时从 polyfork.dev 加载，不放进仓库（D-50）。
+
 ## 2026-11-02 · 学习两个开源项目（手感、美术规范、预算、试玩表）
 - **手感**：
   - 打击反馈分三级：出拳打中路人是小，打警察、被打、撞车是中，被打倒、重撞是大。
