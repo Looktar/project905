@@ -2,6 +2,7 @@
 
 ## 地图数据
 - © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors，ODbL 许可。原始导出在 `data/raw/`。
+- 部分商业 / 工业建筑轮廓：Contains information licensed under the [Open Data Licence – York Region](https://insights-york.opendata.arcgis.com/)（York Region Building Footprint）。只用于 OSM 没画的商业楼，不用于住宅（D-68）。原始数据 `data/raw/york_footprints.json.gz`，由 `tools/fetch_york.py` 下载。
 
 ## 模型、音效、招牌
 - 全部由本项目代码程序生成（`js/geo.js`、`js/props.js`、`js/poi.js`、`js/audio.js`），没有使用外部素材文件。
