@@ -37,6 +37,7 @@ export const CFG = {
     mix: { sedan: 50, suv: 25, van: 10, taxi: 15 },   // vehicle type weights (traffic + street parking)
     suvSpeed: 0.97, vanSpeed: 0.88, vanAccel: 0.8,     // handling multipliers (top speed / acceleration)
     gap: 6.8, headway: 0.5, followDecel: 6,            // queueing: stop gap (m, centre to centre), + s of speed, braking (m/s^2)
+    giveWayGap: 3.2,                                   // minor road: wait this far (m, car centre) outside the main road's carriageway
     onewayLane: 2.2,                                   // m right of a one-way carriageway's centre (divided roads)
     passGap: 2.35,                                     // m sideways clearance when pulling out around a parked car
   },
@@ -51,8 +52,8 @@ export const CFG = {
     small: { trauma: 0.12, stop: 0.03 }, medium: { trauma: 0.3, stop: 0.06 }, large: { trauma: 0.6, stop: 0.1 },
     stopScale: 0.08, decay: 1.6, squashTime: 0.22, maxOffset: 1.4,
   },
-  // Polyfork models (D-42): off by default while the style sample is reviewed; ?pf=1 / ?pf=0 override
-  models: { polyfork: false, timeoutMs: 6000 },
+  // Polyfork models (D-42): on since the owner approved the style sample (2026-11-02); ?pf=0 / ?pf=1 override
+  models: { polyfork: true, timeoutMs: 6000 },
   streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },

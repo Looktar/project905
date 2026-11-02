@@ -7,7 +7,7 @@ import { CFG } from './config.js';
 import { MODELS } from './models.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
 import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
-import { poiColliders, poiGround, poiDetail, poiWindows, poiSigns, poiIcons, inApron } from './poi.js';
+import { poiColliders, poiGround, poiDetail, poiWindows, poiSigns, poiIcons, storeSigns, storeIcons, inApron } from './poi.js';
 
 const CH = 160; // chunk size (m)
 const COL = {
@@ -35,9 +35,17 @@ export class World {
     const k = this.chunkKey(x, z);
     let c = this.chunks.get(k);
     if (!c) {
-      c = { k, cx: (Math.floor(x / CH) + 0.5) * CH, cz: (Math.floor(z / CH) + 0.5) * CH, mb: new MeshBuilder(), houses: [], trees: [], lamps: [] };
+      const cx = (Math.floor(x / CH) + 0.5) * CH, cz = (Math.floor(z / CH) + 0.5) * CH, h = CH / 2;
+      c = { k, cx, cz, bb: [cx - h, cz - h, cx + h, cz + h], mb: new MeshBuilder(), houses: [], trees: [], lamps: [] };
       this.chunks.set(k, c);
     }
+    return c;
+  }
+  // chunk at a polygon's centroid, grown to hold the whole polygon: a big parking lot or park that
+  // crosses into the neighbours must stay visible while any part of it is on screen
+  polyChunk(p) {
+    const c = this.chunk(...centroid(p)), bb = c.bb;
+    for (const [x, z] of p) { bb[0] = Math.min(bb[0], x); bb[1] = Math.min(bb[1], z); bb[2] = Math.max(bb[2], x); bb[3] = Math.max(bb[3], z); }
     return c;
   }
 
@@ -285,9 +293,9 @@ export class World {
     const m = this.map;
     // ground areas
     const areaY = { lot: 0.012, park: 0.008, water: 0.02 };
-    for (const a of m.parks) flatPoly(this.chunk(...centroid(a.p)).mb, a.p, a.t, areaY.park, COL.park);
-    for (const a of m.lots) flatPoly(this.chunk(...centroid(a.p)).mb, a.p, a.t, areaY.lot, COL.lot);
-    for (const a of m.water) flatPoly(this.chunk(...centroid(a.p)).mb, a.p, a.t, areaY.water, COL.water);
+    for (const a of m.parks) flatPoly(this.polyChunk(a.p).mb, a.p, a.t, areaY.park, COL.park);
+    for (const a of m.lots) flatPoly(this.polyChunk(a.p).mb, a.p, a.t, areaY.lot, COL.lot);
+    for (const a of m.water) flatPoly(this.polyChunk(a.p).mb, a.p, a.t, areaY.water, COL.water);
     for (const [big, pts] of m.rivers) {
       const c = this.chunk(...pts[(pts.length / 2) | 0]);
       ribbon(c.mb, pts, big ? 9 : 3.5, 0.022, COL.water);
@@ -373,7 +381,7 @@ export class World {
     this.bRange = [];
     this.fade = new Map(); // building index -> current alpha (occlusion fade)
     for (const b of m.buildings) {
-      const c = this.chunk(...centroid(b.p));
+      const c = this.polyChunk(b.p);
       poiGround(this, b); // gas station forecourt (ground, outside the fade range)
       const v0 = c.mb.count;
       const wc = hex(b.c);
@@ -534,7 +542,7 @@ export class World {
   }
   buildLandmark(lm) {
     if (lm.t === 'pool') {
-      const c = this.chunk(...centroid(lm.p));
+      const c = this.polyChunk(lm.p);
       const tris = earclipJS(lm.p);
       flatPoly(c.mb, lm.p, tris, 0.04, '#7fd0f0');
       return;
@@ -584,6 +592,7 @@ export class World {
       if (ps) specs.push(ps);
     }
     for (const b of this.map.buildings) specs.push(...poiSigns(b)); // brands, plazas, schools ... (v0.2)
+    specs.push(...storeSigns(this.map.stores)); // Top-50 restaurants and bubble tea (v0.2)
     specs.push(...(this.streetSigns || []));
     if (!specs.length) return;
     // multi-page shelf-packed atlas: every sign gets a cell with its own aspect ratio (text never stretched)
@@ -712,14 +721,15 @@ export class World {
     for (const lm of this.map.landmarks) if (icon[lm.t]) { const [x, y] = T(lm.x, lm.z); g.fillStyle = icon[lm.t]; g.beginPath(); g.arc(x, y, lm.t === 'tims' ? 4 : 7, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
     propIcons(g, T, this.map.landmarks);
     poiIcons(g, T, this.map.buildings); // gas stations + big brands
+    storeIcons(g, T, this.map.stores); // restaurants, bubble tea, Asian supermarkets
     this.minimap = cv;
   }
 
   // chunks overlapping a rectangle [x0,z0,x1,z1] (+margin)
   visibleRect(r, m = 0) {
-    const out = [], h = CH / 2;
+    const out = [];
     for (const c of this.chunks.values())
-      if (c.cx + h > r[0] - m && c.cx - h < r[2] + m && c.cz + h > r[1] - m && c.cz - h < r[3] + m) out.push(c);
+      if (c.bb[2] > r[0] - m && c.bb[0] < r[2] + m && c.bb[3] > r[1] - m && c.bb[1] < r[3] + m) out.push(c);
     return out;
   }
   // visible chunks around a point
@@ -762,36 +772,41 @@ function segPolyEntry(ax, az, bx, bz, poly) {
 function centroid(p) { let x = 0, z = 0; for (const q of p) { x += q[0]; z += q[1]; } return [x / p.length, z / p.length]; }
 function polyArea(p) { let s = 0; for (let i = 0; i < p.length; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % p.length]; s += x1 * z2 - x2 * z1; } return s / 2; }
 // ---------------------------------------------------------------- sign atlas
-const SIGN_ROWS = [128, 112, 96, 80], SIGN_PAGE = 2048;
+const SIGN_ROWS = [128, 112, 96, 80, 72, 64], SIGN_PAGE = 2048;
 const signFont = (fs, w = 800) => `${w} ${fs}px "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif`;
 // Every sign gets an atlas cell with its own world aspect ratio (text is never stretched; the width
 // follows the text when s.w is not given). Cells are shelf-packed into SIGN_PAGE x SIGN_PAGE pages,
-// one draw call each: the row height drops from 128 px until everything fits on one page (two at most
-// in practice: 80 px rows hold ~150 signs per page).
+// one draw call each: the row height drops from 128 px until everything fits on one page; if none
+// does, the sharpest layout that fits on two pages wins (80 px rows hold ~150 signs per page).
 function packSigns(specs) {
   const m = document.createElement('canvas').getContext('2d');
   m.font = signFont(76);
   for (const s of specs) {
     if (!s.w) s.w = Math.min((s.h * (m.measureText(s.text).width + 64)) / 128, s.maxW || 1e9);
   }
-  let pages;
+  let two = null, pages;
   for (const row of SIGN_ROWS) {
-    for (const s of specs) {
-      const r = Math.max(24, Math.round(row * (s.res || 1))); // res < 1: small on screen, so fewer texels
-      s.row = r; s.ch = s.sub ? r * 2 : r;
-      s.cw = Math.min(SIGN_PAGE, Math.max(48, Math.ceil((s.ch * s.w) / s.h / 4) * 4));
-    }
-    const order = [...specs].sort((a, b) => b.ch - a.ch || b.cw - a.cw);
-    pages = [];
-    let pg = null, x = 0, y = 0, shelf = 0;
-    for (const s of order) {
-      if (pg && x + s.cw > SIGN_PAGE) { x = 0; y += shelf; shelf = 0; }
-      if (!pg || y + s.ch > SIGN_PAGE) { pg = { items: [], w: 0, h: 0 }; pages.push(pg); x = y = shelf = 0; }
-      s.ax = x; s.ay = y; pg.items.push(s);
-      x += s.cw; shelf = Math.max(shelf, s.ch);
-      pg.w = Math.max(pg.w, x); pg.h = Math.max(pg.h, y + s.ch);
-    }
-    if (pages.length === 1) break;
+    pages = layoutSigns(specs, row);
+    if (pages.length === 1) return pages;
+    if (pages.length === 2 && two === null) two = row;
+  }
+  return two === null || two === SIGN_ROWS[SIGN_ROWS.length - 1] ? pages : layoutSigns(specs, two);
+}
+function layoutSigns(specs, row) {
+  for (const s of specs) {
+    const r = Math.max(24, Math.round(row * (s.res || 1))); // res < 1: small on screen, so fewer texels
+    s.row = r; s.ch = s.sub ? r * 2 : r;
+    s.cw = Math.min(SIGN_PAGE, Math.max(48, Math.ceil((s.ch * s.w) / s.h / 4) * 4));
+  }
+  const order = [...specs].sort((a, b) => b.ch - a.ch || b.cw - a.cw);
+  const pages = [];
+  let pg = null, x = 0, y = 0, shelf = 0;
+  for (const s of order) {
+    if (pg && x + s.cw > SIGN_PAGE) { x = 0; y += shelf; shelf = 0; }
+    if (!pg || y + s.ch > SIGN_PAGE) { pg = { items: [], w: 0, h: 0 }; pages.push(pg); x = y = shelf = 0; }
+    s.ax = x; s.ay = y; pg.items.push(s);
+    x += s.cw; shelf = Math.max(shelf, s.ch);
+    pg.w = Math.max(pg.w, x); pg.h = Math.max(pg.h, y + s.ch);
   }
   return pages;
 }

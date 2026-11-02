@@ -5,13 +5,13 @@ Turns the raw OpenStreetMap export (data/raw/markham_osm.json.gz) into the
 compact game map (maps/markham.json).
 
 Steps: project to local metres -> rotate so the main road grid is axis aligned
-("map north") -> clip to Warden..McCowan x Steeles..16th -> compress 40% ->
+("map north") -> clip to Woodbine..Markham Rd x Steeles..16th -> compress 40% ->
 road graph (junctions + polylines) -> procedural houses -> OSM buildings ->
 water / parks / rail / 407 overpass -> landmarks.
 
 Usage: python3 tools/build_map.py
 """
-import gzip, json, math, os, random, sys
+import gzip, json, math, os, random, re, sys
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -197,13 +197,13 @@ def road_coord(name, axis):
     return vals[len(vals) // 2] if vals else None
 
 # median x of N-S roads / median z of E-W roads, restricted to the core area
-xW = road_coord('Warden Avenue', 0)
-xE = road_coord('McCowan Road', 0)
+xW = road_coord('Woodbine Avenue', 0)
+xE = road_coord('Markham Road', 0)
 zS = road_coord('Steeles Avenue East', 1)
 zN = road_coord('16th Avenue', 1)
 print('bounds real:', xW, xE, zN, zS)
-X0, X1 = min(xW, xE) - MARGIN - 420.0, max(xW, xE) + MARGIN  # extra west strip keeps the Civic Centre
-Z0, Z1 = min(zN, zS) - MARGIN, max(zN, zS) + MARGIN
+X0, X1 = min(xW, xE) - MARGIN - 600.0, max(xW, xE) + MARGIN  # west strip keeps the plazas on both sides of Woodbine
+Z0, Z1 = min(zN, zS) - MARGIN - 250.0, max(zN, zS) + MARGIN  # north strip keeps King Square (north of 16th)
 CX, CZ = (X0 + X1) / 2, (Z0 + Z1) / 2
 
 def inside(p, pad=0):
@@ -1109,6 +1109,12 @@ BRANDS = {
     'Circle K': ('gas', 'Circle Q', 'circleq'),
     'Esso': ('gas', 'Ezzo', 'ezzo'),
     'Shell': ('gas', 'Shel', 'shel'),
+    'Husky': ('gas', 'Huskee', 'huskee'),
+    'Pioneer': ('gas', 'Pioneir', 'pioneir'),
+    'Global': ('gas', 'Globle Gas', 'globle'),
+    'Petro': ('gas', 'Petro-Kanada', 'petro'),
+    'Canadian Tire Gas': ('gas', 'Canadian Tyre Gas', 'tyre'),
+    '_fuel': ('gas', '加油站 Gas', 'gasgen'),        # unbranded / small chains
     "McDonald's": ('fast', "McDanold's", 'mcd'),
     'Boston Pizza': ('fast', 'Bostin Pizza', 'bpizza'),
     'Swiss Chalet': ('fast', 'Swiss Chalay', 'chalay'),
@@ -1150,7 +1156,10 @@ NAMED = {     # well-known names (real place names may stay; shops and malls get
     '朗豪坊 Langham Square': ('plaza', '朗好坊 Langhum Square', 'plaza'),
     'Market Village': ('plaza', 'Markit Village', 'plaza'),
     'Splendid China Mall': ('plaza', '华丽中国 Splendid Chyna Mall', 'plaza'),
-    'J-Town': ('plaza', 'J-Toun', 'plaza'),
+    'J-Town': ('plaza', '日夲城 J-Toun', 'plaza'),
+    'First Markham Place': ('plaza', '万景广场 First Markum Place', 'plaza'),
+    '王府井': ('plaza', '王府景 Kingz Square', 'plaza'),
+    'Metro Square': ('plaza', '大都汇广场 Metroh Square', 'plaza'),
     'Sherwood Plaza': ('plaza', 'Sherwud Plaza', 'plaza'),
     '冠業超市 First Choice Supermarket': ('grocer', '冠叶超市 First Choyce', 'firstchoyce'),
     'Village Grocer': ('grocer', 'Village Grosser', 'vgrocer'),
@@ -1283,6 +1292,17 @@ for b, t in poi_items:
 for t, gc in poi_rejected:
     if BRANDS.get(t.get('brand'), ('',))[0] == 'gas':
         gas.append((t['brand'], None, gc, t))
+def fuel_key(t):
+    br = t.get('brand', '')
+    if BRANDS.get(br, ('',))[0] == 'gas':
+        return br
+    return 'Canadian Tire Gas' if br == 'Canadian Tire' else '_fuel'
+for e in els:   # most stations are only an amenity=fuel point
+    t = e.get('tags', {})
+    if t.get('amenity') == 'fuel' and 'building' not in t:
+        gc = osm_point(e)
+        if gc and abs(gc[0]) < HALF_W - 25 and abs(gc[1]) < HALF_H - 25:
+            gas.append((fuel_key(t), None, gc, t))
 groups = []
 for brand, b, gc, t in gas:
     for gr in groups:
@@ -1489,6 +1509,106 @@ for t, gc in extra_pts:
     poi_set(b, cl[0], cl[1], cl[2])
     poi_report[cl[0] + ' (new)'] += 1
     print('poi placed near the OSM spot:', cl[1], round(math.hypot(centroid(poly)[0] - gc[0], centroid(poly)[1] - gc[1])), 'm away')
+
+# ---- malls that OSM only maps as a named retail area: the biggest building on it becomes the plaza
+MALL_AREAS = {
+    'First Markham Place 萬錦廣場': NAMED['First Markham Place'],
+    'King Square Shopping Centre': NAMED['王府井'],
+    '旺角 Peachtree Centre': ('plaza', '旺阁广场 Peachtrea Centre', 'plaza'),
+    'Times Square': ('plaza', '时戴广场 Tymes Square', 'plaza'),
+}
+for w in ways:
+    t = w['tags']
+    cl = MALL_AREAS.get(t.get('name'))
+    if not cl or 'building' in t:
+        continue
+    gp = area_polys(w)
+    if not gp:
+        continue
+    if any(b.get('n') == cl[1] for b in buildings):
+        continue
+    inner = [b for b in buildings if not b.get('lm') and b.get('poi') in (None, 'plaza') and point_in_poly(*centroid(b['p']), gp)]
+    if inner:
+        b = max(inner, key=lambda b: abs(poly_area(b['p'])))
+    else:   # the mall building itself did not fit: a compact one on its own lot
+        poly = poi_spot(*centroid(gp), [(30.0, 20.0), (24.0, 16.0), (18.0, 12.0)], 45)
+        if not poly:
+            print('mall area FAILED', cl[1]); continue
+        b = place_building(poly, 8.0, '#ffffff', 'retail')
+    poi_set(b, *cl)
+    poi_report['plaza (area)'] += 1
+
+# ---- Top-50 restaurants, bubble tea and Asian supermarkets (docs/RECOGNITION-TOP50.md): a small
+# sign on the building the shop is in, at the shop's own spot, plus a minimap dot. Puns only.
+STORES = [   # (regex on name / brand / name:zh, sign, style, kind)
+    (r'Haidilao', '海底涝火锅 Haidelao', 'haidelao', 'food'),
+    (r'Dayali|大鸭梨', '大鸭莉烤鸭 Dayalee Duck', 'dayalee', 'food'),
+    (r'QJD|Quanjude|全聚德', '全聚得 QJB Duck', 'qjb', 'food'),
+    (r'Congee Queen', '皇后茗粥 Congee Kween', 'kween', 'food'),
+    (r'Kaka All You', 'Kaga 任食 All-U-Can-Eat', 'kaga', 'food'),
+    (r'^Phoenix Restaurant', '凤凰茶餐厅 Phoenyx', 'phoenyx', 'food'),
+    (r'Big Beef Bowl|牛大碗', '牛太碗 Big Beaf Bowl', 'beaf', 'food'),
+    (r'西域食府', '西域食坊 Magical Tayste', 'tayste', 'food'),
+    (r'Hey Noodles', '嘿晓面 Hay Noodles', 'hay', 'food'),
+    (r"Diana's", "Dianna's Oyster Bar", 'dianna', 'food'),
+    (r'Mr\. Congee', '龙粥纪 Mr. Kongee', 'kongee', 'food'),
+    (r'Wonton Hut', '云吞小屋 Wantan Hutt', 'hutt', 'food'),
+    (r'Yunshang Rice Noodle', '云上米线 Yunshan Noodle', 'yunshan', 'food'),
+    (r'Chatime', '日出茶泰 Chatyme', 'chatyme', 'tea'),
+    (r'^CoCo', '都渴 CoKo Tea', 'coko', 'tea'),
+    (r'The Alley', '鹿脚巷 The Allee', 'allee', 'tea'),
+    (r'(?i)machi machi', '麦吉吉 Machy Machy', 'machy', 'tea'),
+    (r'Yi Fang', '一方水果茶 Yi Fong', 'yifong', 'tea'),
+    (r'Kung Fu Tea', '功夫茶 Kung Fu Tee', 'kungfutee', 'tea'),
+    (r'Presotea|PrestoTea', 'Prestotee', 'prestotee', 'tea'),
+    (r"Ten Ren", "天人茗茶 Ten Wren's", 'tenwren', 'tea'),
+    (r'Real Fruit Bubble', 'Reel Fruit Bubble Tea', 'reelfruit', 'tea'),
+    (r'Comebuy', 'Comebye', 'comebye', 'tea'),
+    (r'Tealicious', '书意 Shuyee Tea', 'shuyee', 'tea'),
+    (r'T&T Supermarket', '大统花 T+T Market', 'ttee', 'grocer'),
+    (r'^Foody Mart', '丰太超市 Foodee Mart', 'foodee', 'grocer'),
+]
+STORE_RE = [(re.compile(rx), sign, st, kind) for rx, sign, st, kind in STORES]
+store_grid = Grid(20.0)
+stores = []
+store_skip = defaultdict(int)
+
+def store_host(x, z, R=18):
+    """building the shop is in (or the nearest one within R)"""
+    best = None
+    for b in occ.query((x - R, z - R, x + R, z + R)):
+        if 'p' not in b or 'h' not in b or b.get('st') or b.get('lm') == 'tims':
+            continue
+        if point_in_poly(x, z, b['p']):
+            return b, 0.0
+        d = min(seg_dist(x, z, *b['p'][i], *b['p'][(i + 1) % len(b['p'])]) for i in range(len(b['p'])))
+        if d < R and (best is None or d < best[1]):
+            best = (b, d)
+    return best
+
+for e in els:
+    t = e.get('tags', {})
+    if 'highway' in t:
+        continue
+    key = ' | '.join(t.get(k, '') for k in ('name', 'brand', 'name:zh'))
+    hit = next(((sign, st, kind) for rx, sign, st, kind in STORE_RE if rx.search(key)), None)
+    if not hit:
+        continue
+    p = osm_point(e)
+    if not p or abs(p[0]) > HALF_W - 5 or abs(p[1]) > HALF_H - 5:
+        store_skip['outside'] += 1; print('store outside', hit[0], p and [round(v) for v in p]); continue
+    if any(math.hypot(p[0] - s[0], p[1] - s[1]) < 9 for s in store_grid.query((p[0] - 9, p[1] - 9, p[0] + 9, p[1] + 9))):
+        store_skip['crowded'] += 1; continue
+    host = store_host(*p)
+    if not host:
+        store_skip['no building'] += 1; continue
+    b = host[0]
+    # sign row above the building's own name sign; pushed out to the camera-facing front of the building
+    y = b['h'] + (3.0 if b.get('n') else 0.3)
+    push = max(0.4, max((q[0] - p[0]) * CAM_DIR[0] + (q[1] - p[1]) * CAM_DIR[1] for q in b['p']) + 0.3)
+    stores.append([round(p[0], 2), round(p[1], 2), round(y, 2), round(push, 2), hit[0], hit[1], hit[2]])
+    store_grid.add((p[0], p[1], p[0], p[1]), p)
+print('stores:', len(stores), dict(store_skip), sorted({s[4] for s in stores}))
 
 # schools and libraries are often only tagged on the grounds: name the biggest building on them
 for w in ways:
@@ -1701,6 +1821,7 @@ out = {
     'heritageWalls': HERITAGE_WALLS,
     'heritageAwnings': HERITAGE_AWNINGS,
     'stops': stops,
+    'stores': stores,
     'attribution': 'Map data (c) OpenStreetMap contributors, ODbL',
 }
 os.makedirs(os.path.dirname(OUT), exist_ok=True)

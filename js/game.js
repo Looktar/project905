@@ -430,6 +430,19 @@ export class Game {
     }
   }
   // is the move e -> nx a left turn, with oncoming traffic about to come through the junction?
+  // give-way line on a minor road: distance before the junction node (end of edge e driven in dir)
+  // where a car waiting for traffic on a bigger road stops, clear of that road's carriageway.
+  // 0 = no line (we are on the biggest road there, or it is a signalised junction)
+  giveWay(e, dir) {
+    const k = dir > 0 ? 'gwF' : 'gwB';
+    if (e[k] === undefined) {
+      const node = dir > 0 ? e.b : e.a;
+      let w = 0, major = Infinity;
+      for (const a of this.w.adj[node]) if (a.e !== e.i) { const o = this.w.edges[a.e]; w = Math.max(w, o.w); major = Math.min(major, o.cls); }
+      e[k] = major < e.cls ? w / 2 + CFG.traffic.giveWayGap : 0;
+    }
+    return e[k];
+  }
   leftTurnBlocked(car, e, dir, nx, sig) {
     const W = this.w, a = W.edgePoint(e, Math.max(0, e.len - 6), dir), o = W.edges[nx.e], b = W.edgePoint(o, Math.min(6, o.len), nx.dir);
     if (b.dx * a.dz - b.dz * a.dx < 0.5) return false; // not a left turn (left of travel = (dz, -dx))
@@ -858,6 +871,10 @@ export class Game {
       // car) cap our speed the same way; people in the cone make us stop
       const fx = Math.sin(car.a), fz = Math.cos(car.a), rem = e.len - path.s;
       let block = false, blockPlayer = false, cap = Infinity, lead = Infinity, leadV = 0;
+      // minor road into a bigger one: give way at the line (nose clear of the main road), never
+      // creep into the junction; once past the line the car just goes
+      const gw = calm ? this.giveWay(e, path.dir) : 0, toLine = rem - gw, node = path.dir > 0 ? e.b : e.a;
+      const giveWay = () => { if (gw && toLine > -0.3 && toLine < 25) cap = Math.min(cap, follow(Math.max(0, toLine) + TR.gap, 0)); };
       // forward cone: returns the distance ahead along our heading, or 0
       const cone1 = (x, z, r, range) => { const dx = x - car.x, dz = z - car.z, d = Math.hypot(dx, dz), lon = dx * fx + dz * fz; return d < range && d > 0.1 && lon / d > 0.82 && Math.abs(dx * fz - dz * fx) < r ? lon : 0; };
       // a 12 m bus is checked at its nose, middle and tail (crossing in front of us it can block the
@@ -880,6 +897,11 @@ export class Game {
       for (const o of this.cars) {
         if (o === car) continue;
         const op = o.ai && o.ai.path;
+        // approaching a give-way line: main-road traffic about to reach the junction, or already in it
+        if (gw && op && op.e !== e && toLine > -0.3 && toLine < 12) {
+          const oEnd = op.dir > 0 ? op.e.b : op.e.a, oStart = op.dir > 0 ? op.e.a : op.e.b;
+          if ((oEnd === node && op.e.cls < e.cls && op.e.len - op.s < 6 + o.speed * 2.5) || (oStart === node && op.s < 6)) giveWay();
+        }
         // (short gaps along the path overestimate the real distance where lane offsets cut a corner)
         const ahead = (g) => { if (g < 15) g = Math.min(g, Math.hypot(o.x - car.x, o.z - car.z)); g -= o.bus ? BUS_EXTRA : 0; if (g < lead) { lead = g; leadV = o.speed; } };
         if (op && op.e === e && op.dir === path.dir) { if (op.s > path.s) ahead(op.s - path.s); continue; }
@@ -888,7 +910,7 @@ export class Game {
         // from the merge point treats the closer one as the car ahead
         if (calm && op && op.next && op.next.e === nx.e && op.next.dir === nx.dir && rem < 15) {
           const ro = op.e.len - op.s;
-          if (ro < rem || (ro === rem && o.id < car.id)) ahead(rem - ro);
+          if (ro < rem || (ro === rem && o.id < car.id)) { ahead(rem - ro); if (ro < 12 || o.speed > 2) giveWay(); }
           continue;
         }
         if (!calm && o !== this.inCar || parkedCar(o)) continue; // parked cars: measured along the path below
@@ -897,6 +919,7 @@ export class Game {
         const lon = cone(o, (o === this.inCar ? 2.4 : 2.2) + (car.bus ? 0.5 : 0), 14 + ext);
         if (!lon) continue;
         cap = Math.min(cap, follow(lon - ext - (o.bus ? BUS_EXTRA : 0), (o.vx || 0) * fx + (o.vz || 0) * fz)); // crossing / turning traffic
+        if (op) giveWay();
         if (o === this.inCar && lon < 10) blockPlayer = true;
       }
       for (const o of this.chars) if (cone(o, car.bus ? 2.2 : 1.8, car.bus ? 10 + BUS_EXTRA : 10)) { block = true; if (o === this.player) blockPlayer = true; }

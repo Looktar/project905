@@ -8,11 +8,11 @@
 - 背景音乐、车载电台
 - 上 407 高速（匝道、上下两层）
 - GO 火车
-- 地图扩展到 Woodbine（First Markham Place）和世嘉堡
+- 地图扩展到世嘉堡（Steeles 以南；Woodbine 到 Markham Rd 已在 v0.2 完成）
 - 更多地标（Unionville 老街特色建筑、Toogood Pond 凉亭、Downtown Markham 影院等）
 - Kenney CC0 模型替换程序化建筑/车辆
 - 换装、手柄支持
 - 公交车到站停靠几秒
 - 停车场静态车加入 SUV / 面包车（每个区块会多 draw call）
-- 补抓 OSM 数据（amenity=fuel、全部店铺、楼高），可能扩大地图到 McCowan 以东 / Steeles 以南（需要放开 overpass-api.de）
+- 用 OSM 楼高（building:levels）以外的数据补楼高；Top 50 里 OSM 没有的餐厅（鼎泰丰、乙龍天、鳳庭、金瑞麟、良心冰室等）要手工补点
 - 用 Polyfork 模型替换车、树、街道道具（需要放开 polyfork.dev，D-42）
