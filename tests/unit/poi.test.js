@@ -12,11 +12,33 @@ const REAL_BRANDS = ['Petro-Canada', 'Circle K', 'Esso', 'Shell', "McDonald's", 
   'Canada Computers', 'Winners', 'RBC', 'TD Canada', 'BMO', 'CIBC', 'HSBC', 'Scotiabank', 'Hilton', 'Courtyard', 'Monte Carlo',
   'YMCA', 'Toyota', 'Honda', 'Kia ', 'Mazda', 'Mercedes', 'BMW', 'Audi', 'Volvo', 'Infiniti', 'Ford', 'Cadillac', 'Chevrolet',
   'Porsche', 'Subaru', 'Lexus', 'Nissan', 'Hyundai', 'Acura', 'Flato', 'Cineplex', 'Tim Hortons', 'Pacific Mall', 'Markville Mall',
-  'Splendid China', 'Pan Am', 'IBM'];
+  'Splendid China', 'Pan Am', 'IBM', 'Husky', 'Pioneer', 'Haidilao', '海底捞', 'Chatime', '日出茶太', 'CoCo ', 'The Alley', '鹿角巷',
+  'Machi Machi', 'Yi Fang', '一芳', 'Kung Fu Tea', 'Presotea', 'Ten Ren', 'Real Fruit', 'Comebuy', 'Congee Queen', '皇后名粥',
+  'Kaka ', 'Phoenix', 'Big Beef Bowl', '牛大碗', '西域食府', 'Hey Noodles', '嘿小面', "Diana's", 'T&T', '大统华', 'Foody Mart',
+  'First Markham Place', '万锦广场', '王府井', 'King Square', 'Metro Square', 'Peachtree', 'J-Town', '日本城', 'Dayali', '大鸭梨',
+  'QJD', '全聚德', 'Yunshang', 'Wonton Hut', 'Mr. Congee'];
 const stations = map.buildings.map((b, i) => [b, i]).filter(([b]) => b.st);
 const station = (st) => ({ x: st[0], z: st[1], a: st[2], W: st[3], D: st[4] });
 
 describe('POI data (maps/markham.json)', () => {
+  it('Top-50 shops (restaurants, bubble tea, Asian supermarkets) have pun signs inside the map', () => {
+    const [hw, hh] = map.half, bad = [];
+    for (const s of map.stores) {
+      const [x, z, y, push, text, style, kind] = s;
+      if (![x, z, y, push].every(isNum) || Math.abs(x) > hw || Math.abs(z) > hh || y < 0) bad.push(`bad row ${s}`);
+      if (typeof text !== 'string' || !text.trim() || !style || !['food', 'tea', 'grocer'].includes(kind)) bad.push(`bad sign ${s}`);
+      for (const r of REAL_BRANDS) if (` ${text} `.includes(r)) bad.push(`${text} contains ${r}`);
+    }
+    expect(bad).toEqual([]);
+    expect(map.stores.length).toBeGreaterThanOrEqual(25);
+    for (const kind of ['food', 'tea', 'grocer']) expect(map.stores.some((s) => s[6] === kind)).toBe(true);
+  });
+  it('the Top-50 malls are signed', () => {
+    const names = map.buildings.map((b) => b.n || '');
+    for (const m of ['First Markum', 'Kingz Square', 'Metroh Square', 'Peachtrea', 'J-Toun', 'Langhum']) {
+      expect(names.some((n) => n.includes(m)), m).toBe(true);
+    }
+  });
   it('signs carry parody names only', () => {
     const bad = [];
     for (const b of map.buildings) {

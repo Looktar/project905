@@ -419,7 +419,9 @@ describe('pedestrians and the player', () => {
       expect(reversals).toBeLessThanOrEqual(2);
       // not stuck at the player: walked on (around them, or crossed the street)
       expect(Math.hypot(ped.x - p.x, ped.z - p.z)).toBeGreaterThan(2);
-      if (ped.state === 'walk') expect((ped.x - p.x) * fx + (ped.z - p.z) * fz).toBeGreaterThan(2);
+      // still on the player's sidewalk: must have got past them (crossing the street is fine too)
+      const side = Math.abs((ped.x - p.x) * fz - (ped.z - p.z) * fx);
+      if (ped.state === 'walk' && side < 6) expect((ped.x - p.x) * fx + (ped.z - p.z) * fz).toBeGreaterThan(2);
     }
   });
 });
@@ -462,4 +464,32 @@ describe('pedestrians and traffic lights', () => {
     // before signals were respected ~1 in 6 started on red
     expect(onRed).toBe(0);
   });
+});
+
+describe('minor roads give way at the line', () => {
+  it('a car waiting to turn out of a side road keeps its nose out of the main road', async () => {
+    let waits = 0;
+    const inside = [];
+    for (const seed of [101, 102]) {
+      const sim = await newSim(seed);
+      const g = sim.game;
+      sim.seconds(60, DT, () => {
+        for (const c of g.cars) {
+          if (!c.ai || c.impatient > 0 || c.speed > 0.3) continue;
+          const { e, s, dir } = c.ai.path, gw = g.giveWay(e, dir);
+          if (!gw) continue;
+          const toLine = e.len - s - gw;
+          if (toLine > 8) continue; // queued further back
+          waits++;
+          // stopped past the line but before the junction centre = nose in the main road
+          // (stopping for someone on foot, or behind a queue spilling back from the main road, is fine)
+          const forPeople = g.chars.some((o) => Math.hypot(o.x - c.x, o.z - c.z) < 12);
+          const queue = g.cars.some((o) => o.ai && o.ai.path.e.i === c.ai.path.next?.e && o.ai.path.s < 9);
+          if (toLine < -1 && toLine > -gw + 1 && !forPeople && !queue) inside.push(`${seed} car ${c.id} ${toLine.toFixed(1)} m`);
+        }
+      });
+    }
+    expect(waits, 'cars do wait at minor-road junctions').toBeGreaterThan(20);
+    expect(inside.length, inside.slice(0, 5).join(', ')).toBeLessThanOrEqual(waits * 0.02);
+  }, 60000);
 });

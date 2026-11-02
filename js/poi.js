@@ -59,7 +59,24 @@ const STYLE = {
   mercedez: { bg: '#111827', fg: '#e5e7eb', band: '#9ca3af' }, bmv: { bg: '#1c69d4', fg: '#ffffff' },
   oudi: { bg: '#111827', fg: '#ffffff', band: '#bb0a30' }, volvu: { bg: '#1e3a8a', fg: '#ffffff' },
   infinitty: { bg: '#1f2937', fg: '#e5e7eb', band: '#9ca3af' }, forb: { bg: '#1e40af', fg: '#ffffff' },
+  // more gas brands (v0.2 map expansion)
+  huskee: { bg: '#c8102e', fg: '#ffffff', band2: '#1f2937' }, pioneir: { bg: '#0f5132', fg: '#ffffff', band2: '#f59e0b' },
+  globle: { bg: '#1d4ed8', fg: '#ffffff' }, gasgen: { bg: '#0f766e', fg: '#ffffff', band2: '#fbbf24' },
 };
+// Top-50 restaurants, bubble tea and Asian supermarkets (map.stores): small sign + minimap dot
+const STORE_STYLE = {
+  haidelao: { bg: '#c8102e', fg: '#ffffff' }, dayalee: { bg: '#b45309', fg: '#fff7ed' }, qjb: { bg: '#7f1d1d', fg: '#fde68a' },
+  kween: { bg: '#92400e', fg: '#fef3c7' }, kaga: { bg: '#ea580c', fg: '#ffffff' }, phoenyx: { bg: '#b91c1c', fg: '#fde68a' },
+  beaf: { bg: '#1f2937', fg: '#fbbf24' }, tayste: { bg: '#0e7490', fg: '#ffffff' }, hay: { bg: '#facc15', fg: '#111827' },
+  dianna: { bg: '#1e3a8a', fg: '#ffffff' }, kongee: { bg: '#78350f', fg: '#fef3c7' }, hutt: { bg: '#dc2626', fg: '#ffffff' },
+  yunshan: { bg: '#15803d', fg: '#ffffff' },
+  chatyme: { bg: '#5b2c83', fg: '#ffffff' }, coko: { bg: '#f59e0b', fg: '#ffffff' }, allee: { bg: '#3f2a1d', fg: '#f5e6c8' },
+  machy: { bg: '#fdf2f8', fg: '#be185d' }, yifong: { bg: '#f97316', fg: '#ffffff' }, kungfutee: { bg: '#b91c1c', fg: '#ffffff' },
+  prestotee: { bg: '#0f766e', fg: '#ffffff' }, tenwren: { bg: '#14532d', fg: '#fef3c7' }, reelfruit: { bg: '#e11d48', fg: '#ffffff' },
+  comebye: { bg: '#7c2d12', fg: '#ffffff' }, shuyee: { bg: '#4d7c0f', fg: '#ffffff' },
+  ttee: { bg: '#c8102e', fg: '#ffffff' }, foodee: { bg: '#047857', fg: '#ffffff' },
+};
+const STORE_DOT = { food: '#f43f5e', tea: '#a855f7', grocer: '#16a34a' };
 const DEF = { bg: '#334155', fg: '#ffffff' };
 export const poiStyle = (b) => STYLE[b.s] || STYLE[b.poi] || DEF;
 const band = (b) => { const s = poiStyle(b); return s.band || s.bg; };
@@ -360,6 +377,14 @@ export function poiSigns(b) {
   return [{ text: b.n, bg: st.bg, fg: st.fg, x: e.mx, z: e.mz, y: b.h + 0.3, h: SIGN_H[b.poi] || 2.0, push: 0.4, maxW: Math.max(10, e.L * 1.3) }];
 }
 
+// map.stores rows: [x, z, y, push, text, style, kind]; signs sit on the shop's building at the shop's spot
+export function storeSigns(stores) {
+  return (stores || []).map(([x, z, y, push, text, st]) => {
+    const c = STORE_STYLE[st] || DEF;
+    return { text, bg: c.bg, fg: c.fg, x, z, y, h: 1.5, push, maxW: 14 };
+  });
+}
+
 // ---------------------------------------------------------------- minimap dots
 export function poiIcons(g, T, buildings) {
   for (const b of buildings) {
@@ -369,5 +394,12 @@ export function poiIcons(g, T, buildings) {
     g.beginPath();
     if (gas) { g.moveTo(x, y - 5); g.lineTo(x + 4.5, y + 3.5); g.lineTo(x - 4.5, y + 3.5); g.closePath(); } else g.arc(x, y, 3.5, 0, 7);
     g.fill(); g.stroke();
+  }
+}
+export function storeIcons(g, T, stores) {
+  for (const [x0, z0, , , , , kind] of stores || []) {
+    const [x, y] = T(x0, z0);
+    g.fillStyle = STORE_DOT[kind] || '#64748b'; g.strokeStyle = '#ffffff'; g.lineWidth = 1.2;
+    g.beginPath(); g.arc(x, y, 2.6, 0, 7); g.fill(); g.stroke();
   }
 }

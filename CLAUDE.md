@@ -29,6 +29,7 @@ js/hud.js             小地图、路名、血条、气泡、横幅、被抓画�
 js/audio.js           WebAudio 合成音效（无音频文件）
 js/config.js          所有可调数值
 js/i18n.js            中英文案
+tools/fetch_osm.py    从 Overpass 抓原始数据（两段查询：地图 + 店铺，自动重试多个镜像）→ data/raw/
 tools/build_map.py    OSM 原始数据 → maps/markham.json（纯 Python 标准库）
 data/raw/markham_osm.json.gz   Overpass 导出的原始数据（已提交，构建不需联网）
 maps/markham.json     游戏地图（构建产物，已提交）
@@ -46,6 +47,7 @@ npm ci                               # 装开发工具（只第一次）
 npm run serve                        # 本地运行，打开 http://localhost:8905/?debug=1
 npm run lint && npm test             # ESLint + 单元测试（约 10 秒；SIM_SEED=7 npm test 换随机种子）
 npm run smoke                        # 三种画面的冒烟测试 + 截图（约 1 分钟）
+npm run map:fetch                    # 重新抓 OSM 原始数据（需要联网；之后再跑 npm run map）
 npm run map                          # 重新生成地图（改了 build_map.py 后必须跑并提交 maps/markham.json）
 npm run check:map                    # 确认提交的地图和 build_map.py 一致
 ```
@@ -53,7 +55,8 @@ npm run check:map                    # 确认提交的地图和 build_map.py 一
 - 云端环境里 Playwright 浏览器已预装（1.63.0），**不要**运行 `playwright install`。
 
 ## 关键约定
-- 坐标：x 向东、z 向南、y 向上，单位米（游戏尺度，真实距离 ×0.4）。“地图北” = -z（路网已转正 15.8°）。
+- 坐标：x 向东、z 向南、y 向上，单位米（游戏尺度，真实距离 ×0.4）。“地图北” = -z（路网已转正约 15.5°）。
+- 地图范围：Woodbine 以西约 600 米 ~ Markham Rd，Steeles ~ 16th Ave 以北约 250 米（游戏里约 3.5 × 2.6 km）。Windows 上没有 `python3` 时用 `python tools/build_map.py`。
 - 镜头方位角固定（config.camera.azimuth），所以招牌是朝向镜头的平面，永远可读。
 - 着色：顶点色 alpha 编码材质（0=实例色A，1=实例色B，2=顶点色，小数部分×10=自发光）。
 - 静态物体按 160m 分块；房子、树、路灯、停车场车辆是每块一个实例化网格。

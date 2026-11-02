@@ -10,6 +10,7 @@
     "test": "vitest run",
     "smoke": "node tests/e2e/smoke.mjs",
     "map": "python3 tools/build_map.py",
+    "map:fetch": "python3 tools/fetch_osm.py",
     "check:map": "python3 tools/build_map.py && git diff --exit-code maps/markham.json"
   },
   "engines": {
