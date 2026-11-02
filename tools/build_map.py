@@ -209,6 +209,24 @@ CX, CZ = (X0 + X1) / 2, (Z0 + Z1) / 2
 def inside(p, pad=0):
     return X0 - pad <= p[0] <= X1 + pad and Z0 - pad <= p[1] <= Z1 + pad
 
+def clip_rect(poly, x0, z0, x1, z1):
+    """Sutherland-Hodgman clip of a polygon to an axis-aligned rectangle"""
+    for axis, lim, keep_lo in ((0, x0, False), (0, x1, True), (1, z0, False), (1, z1, True)):
+        out = []
+        for i in range(len(poly)):
+            a, b = poly[i - 1], poly[i]
+            ina = a[axis] <= lim if keep_lo else a[axis] >= lim
+            inb = b[axis] <= lim if keep_lo else b[axis] >= lim
+            if ina != inb:
+                t = (lim - a[axis]) / (b[axis] - a[axis])
+                out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+            if inb:
+                out.append(b)
+        poly = out
+        if not poly:
+            break
+    return poly
+
 def g(p):
     """real rotated metres -> game metres"""
     return (round((p[0] - CX) * SCALE, 2), round((p[1] - CZ) * SCALE, 2))
@@ -514,9 +532,16 @@ for w in ways:
     if 'building' not in t:
         continue
     p = rpts(w)
-    if len(p) < 4 or not all(inside(q) for q in p):
+    if len(p) < 4:
         continue
-    blds.append((w, p[:-1]))
+    p = p[:-1]
+    if not all(inside(q) for q in p):
+        # on the map edge (King Square, Steelcase): keep the part inside instead of dropping it (D-67)
+        cp = clip_rect(p, X0 + 2, Z0 + 2, X1 - 2, Z1 - 2)
+        if len(cp) < 3 or abs(poly_area(cp)) < 0.3 * abs(poly_area(p)):
+            continue
+        p = cp
+    blds.append((w, p))
 # landmarks and big ones first
 def prio(item):
     w, p = item

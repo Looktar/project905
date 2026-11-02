@@ -1,5 +1,9 @@
 # 进度
 
+## 2026-11-02 · 商业建筑对照 York Region 数据
+- 下载 York Region 建筑轮廓，把 1,327 栋商业 / 工业楼和游戏比：按面积 96% 已在游戏里；有店铺的楼几乎都在。缺的主要是 OSM 没画的写字楼、厂房（Esna Park、Steelcase、Valleywood）。报告：`docs/research/YORK-COMMERCIAL.md`。
+- 顺手修了一个 bug：压在地图边线上的建筑以前整栋丢掉（King Square 商场只剩一个替代小方块），现在裁掉超出部分保留（D-67）。OSM 建筑 2184 → 2207 栋。
+
 ## 2026-11-02 · 商业地点：餐馆、咖啡店、商场招牌
 - **对照**：把 OSM 里的餐馆、咖啡店、加油站、商场、超市逐个和游戏地图比。加油站已基本准确；问题是大部分餐馆和咖啡店没有招牌（看不出是什么店），连锁店（Starbucks、Subway、KFC、Pizza Pizza 等）没有谐音招牌，十几个社区 plaza 没挂名字。Splendid China Mall、Milliken Mall 其实在 Steeles 南边（多伦多），本来就在地图外。
 - **修好**（D-66）：37 个连锁餐饮加谐音招牌（Starbux、Subwey、KFG、Piza Piza…）；其他有名字的餐馆、咖啡店挂“做什么菜”的招牌（中餐 Chinese、越南粉 Pho、披萨 Pizza、咖啡 Café…，不用真店名）；15 个 plaza 加名字（荷里活广场 Hollywud Square、七星广场 Seven Starr Plaza…）。店铺招牌 34 → 185 个；同一栋楼上的招牌不再左右叠在一起。相同的招牌共用贴图格子，招牌贴图仍是 2 张（2 个 draw call）。
