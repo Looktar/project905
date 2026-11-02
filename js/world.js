@@ -672,7 +672,7 @@ export class World {
       const g = cv.getContext('2d');
       const P = [], U = [];
       for (const s of pg.items) {
-        drawSign(g, s);
+        if (!s.dup) drawSign(g, s);
         const cx = s.x + fx * s.push, cz = s.z + fz * s.push, hw = s.w / 2;
         const u0 = s.ax / pg.w, u1 = (s.ax + s.cw) / pg.w, v0 = s.ay / pg.h, v1 = (s.ay + s.ch) / pg.h;
         const A = [cx - rx * hw, s.y, cz - rz * hw], B = [cx + rx * hw, s.y, cz + rz * hw], C = [cx + rx * hw, s.y + s.h, cz + rz * hw], D = [cx - rx * hw, s.y + s.h, cz - rz * hw];
@@ -853,13 +853,26 @@ function packSigns(specs) {
   for (const s of specs) {
     if (!s.w) s.w = Math.min((s.h * (m.measureText(s.text).width + 64)) / 128, s.maxW || 1e9);
   }
+  // identical signs (the plain cuisine signs repeat a lot) share one cell
+  const reps = new Map(), uniq = [], dups = [];
+  for (const s of specs) {
+    const key = [s.text, s.sub, s.bg, s.fg, s.h, s.w, s.res].join('|');
+    const r = reps.get(key);
+    if (r) { s.rep = r; dups.push(s); } else { reps.set(key, s); uniq.push(s); }
+  }
   let two = null, pages;
   for (const row of SIGN_ROWS) {
-    pages = layoutSigns(specs, row);
-    if (pages.length === 1) return pages;
+    pages = layoutSigns(uniq, row);
+    if (pages.length === 1) break;
     if (pages.length === 2 && two === null) two = row;
   }
-  return two === null || two === SIGN_ROWS[SIGN_ROWS.length - 1] ? pages : layoutSigns(specs, two);
+  if (pages.length > 1 && two !== null && two !== SIGN_ROWS[SIGN_ROWS.length - 1]) pages = layoutSigns(uniq, two);
+  for (const s of dups) {
+    const r = s.rep;
+    Object.assign(s, { ax: r.ax, ay: r.ay, cw: r.cw, ch: r.ch, row: r.row, dup: true });
+    r.page.items.push(s);
+  }
+  return pages;
 }
 function layoutSigns(specs, row) {
   for (const s of specs) {
@@ -873,7 +886,7 @@ function layoutSigns(specs, row) {
   for (const s of order) {
     if (pg && x + s.cw > SIGN_PAGE) { x = 0; y += shelf; shelf = 0; }
     if (!pg || y + s.ch > SIGN_PAGE) { pg = { items: [], w: 0, h: 0 }; pages.push(pg); x = y = shelf = 0; }
-    s.ax = x; s.ay = y; pg.items.push(s);
+    s.ax = x; s.ay = y; s.page = pg; pg.items.push(s);
     x += s.cw; shelf = Math.max(shelf, s.ch);
     pg.w = Math.max(pg.w, x); pg.h = Math.max(pg.h, y + s.ch);
   }

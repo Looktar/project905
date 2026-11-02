@@ -75,8 +75,27 @@ const STORE_STYLE = {
   prestotee: { bg: '#0f766e', fg: '#ffffff' }, tenwren: { bg: '#14532d', fg: '#fef3c7' }, reelfruit: { bg: '#e11d48', fg: '#ffffff' },
   comebye: { bg: '#7c2d12', fg: '#ffffff' }, shuyee: { bg: '#4d7c0f', fg: '#ffffff' },
   ttee: { bg: '#c8102e', fg: '#ffffff' }, foodee: { bg: '#047857', fg: '#ffffff' },
+  // chain restaurants and coffee shops (D-66)
+  starbux: { bg: '#00704a', fg: '#ffffff' }, secund: { bg: '#4a1d1f', fg: '#ffffff' }, kountry: { bg: '#b91c1c', fg: '#fde68a' },
+  subwey: { bg: '#008c15', fg: '#ffc600' }, mcd: { bg: '#da291c', fg: '#ffc72c' }, piza: { bg: '#f97316', fg: '#ffffff' },
+  popeyez: { bg: '#f25c05', fg: '#ffffff' }, chalay: { bg: '#b91c1c', fg: '#ffffff' }, dominoe: { bg: '#006491', fg: '#ffffff' },
+  subb: { bg: '#d71920', fg: '#ffffff' }, novva: { bg: '#c8102e', fg: '#ffffff' }, harvy: { bg: '#e31837', fg: '#ffffff' },
+  boostur: { bg: '#e2007a', fg: '#ffffff' }, dq: { bg: '#ee3124', fg: '#ffffff' }, kfg: { bg: '#a3080c', fg: '#ffffff' },
+  hutt2: { bg: '#ee3124', fg: '#ffffff' }, teri: { bg: '#b91c1c', fg: '#ffffff' }, hiro: { bg: '#111827', fg: '#facc15' },
+  wendee: { bg: '#e2203d', fg: '#ffffff' }, pizzavil: { bg: '#15803d', fg: '#ffffff' }, kora: { bg: '#f59e0b', fg: '#7c2d12' },
+  aw: { bg: '#f58220', fg: '#7c2d12' }, osmo: { bg: '#1f2937', fg: '#f59e0b' }, bpizza: { bg: '#b91c1c', fg: '#ffffff' },
+  kelsee: { bg: '#3f2a1d', fg: '#ffffff' }, burito: { bg: '#facc15', fg: '#111827' }, quiznoz: { bg: '#b91c1c', fg: '#ffffff' },
+  wyld: { bg: '#15803d', fg: '#ffffff' }, chipoltle: { bg: '#451400', fg: '#ffffff' }, sunsett: { bg: '#f97316', fg: '#ffffff' },
+  tacobel: { bg: '#702082', fg: '#ffffff' }, eggsmarts: { bg: '#facc15', fg: '#7c2d12' }, bkin: { bg: '#f5ebdc', fg: '#d62300' },
+  mario: { bg: '#15803d', fg: '#ffffff' }, aster: { bg: '#111827', fg: '#ffffff' }, moxee: { bg: '#7f1d1d', fg: '#ffffff' },
+  panerra: { bg: '#4d7c0f', fg: '#ffffff' },
+  // plain cuisine signs for the other named restaurants
+  g_red: { bg: '#b91c1c', fg: '#fef3c7' }, g_amber: { bg: '#b45309', fg: '#ffffff' }, g_navy: { bg: '#1e3a8a', fg: '#ffffff' },
+  g_green: { bg: '#166534', fg: '#ffffff' }, g_orange: { bg: '#ea580c', fg: '#ffffff' }, g_blue: { bg: '#0369a1', fg: '#ffffff' },
+  g_brown: { bg: '#78350f', fg: '#ffffff' }, g_purple: { bg: '#7e22ce', fg: '#ffffff' }, g_lime: { bg: '#65a30d', fg: '#ffffff' },
+  g_coffee: { bg: '#5b3a29', fg: '#fef3c7' }, g_pink: { bg: '#db2777', fg: '#ffffff' },
 };
-const STORE_DOT = { food: '#f43f5e', tea: '#a855f7', grocer: '#16a34a' };
+const STORE_DOT = { food: '#f43f5e', tea: '#a855f7', grocer: '#16a34a', cafe: '#8b5a2b' }; // 'gen' (plain cuisine signs): no dot
 const DEF = { bg: '#334155', fg: '#ffffff' };
 export const poiStyle = (b) => STYLE[b.s] || STYLE[b.poi] || DEF;
 const band = (b) => { const s = poiStyle(b); return s.band || s.bg; };
@@ -398,6 +417,7 @@ export function poiIcons(g, T, buildings) {
 }
 export function storeIcons(g, T, stores) {
   for (const [x0, z0, , , , , kind] of stores || []) {
+    if (kind === 'gen') continue;
     const [x, y] = T(x0, z0);
     g.fillStyle = STORE_DOT[kind] || '#64748b'; g.strokeStyle = '#ffffff'; g.lineWidth = 1.2;
     g.beginPath(); g.arc(x, y, 2.6, 0, 7); g.fill(); g.stroke();

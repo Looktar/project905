@@ -7,7 +7,7 @@ import { CFG } from '../../js/config.js';
 const map = loadMap();
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 // content red line: real brand names must never reach a sign (puns only)
-const REAL_BRANDS = ['Petro-Canada', 'Circle K', 'Esso', 'Shell', "McDonald's", 'Boston Pizza', 'Swiss Chalet', 'No Frills',
+const REAL_BRANDS = ['Starbucks', 'Second Cup', 'Country Style', 'Subway', 'Pizza Pizza', 'Popeyes', "Domino's", 'Pizza Nova', "Harvey's", 'Booster Juice', 'Dairy Queen', 'KFC', 'Pizza Hut', "Wendy's", 'Pizzaville', 'A&W', "Osmow's", "Kelsey's", 'Quiznos', 'Wild Wing', 'Chipotle', 'Taco Bell', 'Burger King', "Moxie's", 'Panera', 'Petro-Canada', 'Circle K', 'Esso', 'Shell', "McDonald's", 'Boston Pizza', 'Swiss Chalet', 'No Frills',
   'Loblaws', 'FreshCo', 'Walmart', 'Costco', 'Home Depot', 'Canadian Tire', 'Rona', 'Shoppers Drug Mart', 'LCBO', 'Staples',
   'Canada Computers', 'Winners', 'RBC', 'TD Canada', 'BMO', 'CIBC', 'HSBC', 'Scotiabank', 'Hilton', 'Courtyard', 'Monte Carlo',
   'YMCA', 'Toyota', 'Honda', 'Kia ', 'Mazda', 'Mercedes', 'BMW', 'Audi', 'Volvo', 'Infiniti', 'Ford', 'Cadillac', 'Chevrolet',
@@ -26,7 +26,7 @@ describe('POI data (maps/markham.json)', () => {
     for (const s of map.stores) {
       const [x, z, y, push, text, style, kind] = s;
       if (![x, z, y, push].every(isNum) || Math.abs(x) > hw || Math.abs(z) > hh || y < 0) bad.push(`bad row ${s}`);
-      if (typeof text !== 'string' || !text.trim() || !style || !['food', 'tea', 'grocer'].includes(kind)) bad.push(`bad sign ${s}`);
+      if (typeof text !== 'string' || !text.trim() || !style || !['food', 'tea', 'grocer', 'cafe', 'gen'].includes(kind)) bad.push(`bad sign ${s}`);
       for (const r of REAL_BRANDS) if (` ${text} `.includes(r)) bad.push(`${text} contains ${r}`);
     }
     expect(bad).toEqual([]);
@@ -35,7 +35,7 @@ describe('POI data (maps/markham.json)', () => {
   });
   it('the Top-50 malls are signed', () => {
     const names = map.buildings.map((b) => b.n || '');
-    for (const m of ['First Markum', 'Kingz Square', 'Metroh Square', 'Peachtrea', 'J-Toun', 'Langhum']) {
+    for (const m of ['First Markum', 'Kingz Square', 'Metroh Square', 'Peachtrea', 'J-Toun', 'Langhum', 'Hollywud', 'Seven Starr', 'Markum Town']) {
       expect(names.some((n) => n.includes(m)), m).toBe(true);
     }
   });
