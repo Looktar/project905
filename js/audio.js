@@ -97,3 +97,46 @@ export function sirenUpdate(level) {
     siren.g.gain.setTargetAtTime(level * 0.06, t, 0.1);
   }
 }
+
+// ---- v0.3: fire + missions
+export function ignite() {
+  if (!ctx) return;
+  const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf(0.5); f.type = 'bandpass'; f.frequency.value = 900;
+  s.connect(f).connect(g).connect(master); env(g, t, 0.05, 0.4, 0.25); s.start(t);
+}
+export function boom() {
+  if (!ctx) return;
+  const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf(1.4); f.type = 'lowpass'; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(80, t + 1.2);
+  s.connect(f).connect(g).connect(master); env(g, t, 0.01, 1.3, 1.0); s.start(t);
+}
+let hoseT = 0;
+export function hose() {
+  if (!ctx || ctx.currentTime < hoseT) return;
+  hoseT = ctx.currentTime + 0.25;
+  const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf(0.3); f.type = 'highpass'; f.frequency.value = 2500;
+  s.connect(f).connect(g).connect(master); env(g, t, 0.03, 0.25, 0.08); s.start(t);
+}
+function tone(freq, t0, dur, vol, type = 'sine') {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.value = freq; o.connect(g).connect(master); env(g, t0, 0.01, dur, vol); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+export function ding() { if (ctx) tone(1320, ctx.currentTime, 0.25, 0.18); }
+export function cash() { if (!ctx) return; const t = ctx.currentTime; tone(988, t, 0.12, 0.15, 'square'); tone(1319, t + 0.1, 0.3, 0.15, 'square'); }
+// fire-truck siren: a slow wail (rises and falls), unlike the police two-tone
+let fsiren = null;
+export function fireSirenUpdate(level) {
+  if (!ctx) return;
+  if (level > 0.01 && !fsiren) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth'; g.gain.value = 0; o.connect(g).connect(master); o.start();
+    fsiren = { o, g };
+  }
+  if (fsiren) {
+    const t = ctx.currentTime, ph = (t % 3) / 3;
+    fsiren.o.frequency.setTargetAtTime(520 + 380 * Math.sin(ph * Math.PI), t, 0.05);
+    fsiren.g.gain.setTargetAtTime(level * 0.035, t, 0.1);
+  }
+}

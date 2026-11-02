@@ -46,7 +46,7 @@ function applyTexts() {
   const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', shake: settings.shake ? 'on' : 'off', res: settings.res };
   for (const seg of document.querySelectorAll('.seg[data-key]'))
     for (const b of seg.children) b.classList.toggle('on', b.dataset.v === cur[seg.dataset.key]);
-  if (game) game.hud.setMode(!!game.inCar); else ['bA', 'bB', 'bC'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run'][i])));
+  if (game) game.hud.setMode(!!game.inCar, game.inCar && game.inCar.type); else ['bA', 'bB', 'bC', 'bD'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run', 'light'][i])));
 }
 
 // ---------------- renderer / sizing
@@ -201,7 +201,7 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 addEventListener('contextmenu', (e) => e.preventDefault());
-initTouch(app, $('joy'), $('knob'), [[$('bA'), 'a'], [$('bB'), 'b'], [$('bC'), 'c']]);
+initTouch(app, $('joy'), $('knob'), [[$('bA'), 'a'], [$('bB'), 'b'], [$('bC'), 'c'], [$('bD'), 'd']]);
 if (isTouch) document.body.classList.add('touch');
 
 // ---------------- loop

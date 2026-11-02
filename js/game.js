@@ -1,6 +1,6 @@
 // Gameplay: player, pedestrians, police, traffic, buses, combat and the chase.
 import { M, clamp, lerp, angDiff, rr, pick, segDist } from './math.js';
-import { MeshBuilder, MAT_A, MAT_V, rbox, box, sphere, ico, cyl, star } from './geo.js';
+import { MeshBuilder, MAT_A, MAT_V, rbox, box, sphere, ico, cyl, star, torus } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
 import { MODELS } from './models.js';
@@ -8,6 +8,10 @@ import { input } from './input.js';
 import * as sfx from './audio.js';
 import { t } from './i18n.js';
 import { SIG_GREEN, SIG_YELLOW, laneOff } from './signals.js';
+import { Fires, bindInput } from './fire.js';
+import { Missions } from './missions.js';
+
+bindInput(input);
 
 const CS = 1.3; // character scale (chibi proportions)
 const SKIN = ['#f3c9a2', '#e2ad84', '#c68b62', '#f6d5b8', '#a8714d'];
@@ -49,6 +53,12 @@ const SHAPES = (() => {
       body: C(T(0, 1.3, 0), S(1.05, 2.2, 1.07)), cabin: C(T(0, 1.78, 0.02), S(1.24, 0.8, 2.08)), roof: C(T(0, 2.27, -0.05), S(1.08, 1, 2.15)),
       wheels: wheels(1.02, 0.44, 1.6, 1.05), head: pair(0.7, 0.86, 2.36), tail: pair(0.76, 1.0, -2.36),
     },
+    // fire truck (v0.3): long red body, cab up front, silver ladder on the roof, yellow band, red lights
+    fire: {
+      body: C(T(0, 1.25, -0.3), S(1.15, 2.0, 1.72)), cabin: C(T(0, 2.05, 2.45), S(1.3, 1.05, 0.55)), roof: C(T(0, 2.45, -1.1), S(0.62, 1, 2.7)),
+      wheels: wheels(1.15, 0.5, 2.6, 1.2), head: pair(0.8, 1.0, 3.5), tail: pair(0.85, 1.0, -4.1),
+      band: C(T(0, 1.05, -0.3), S(1.14, 0.45, 2.55)), rungs: [-3, -1.5, 0, 1.5].map((z) => C(T(0, 2.56, z - 1.1), S(0.5, 0.4, 0.04))),
+    },
   };
 })();
 
@@ -77,6 +87,8 @@ export class Game {
     this.inCar = null;
     this.camPos = [sx, 0, sz]; this.camDist = CFG.camera.distWalk;
     this.viewAspect = 844 / 390; // main.js sets the real screen aspect every frame
+    this.fires = new Fires(this);
+    this.missions = new Missions(this);
     this.spawnAround(true);
     // a parked car right next to the spawn point so cars are discoverable immediately
     const near = world.nearestEdge(sx, sz, 40);
@@ -102,7 +114,10 @@ export class Game {
       stripe: mk(box(2.14, 0.3, 3.0), MAT_V, '#1e3a8a', 0, 40), barR: mk(box(0.7, 0.2, 0.4), MAT_V, '#ff2d2d', 0.9, 40), barB: mk(box(0.7, 0.2, 0.4), MAT_V, '#2d6bff', 0.9, 40),
       taxi: mk(rbox(0.8, 0.3, 0.4, 0.08), MAT_V, '#fff7d6', 0.3, 40),
       busBody: mk(rbox(2.5, 2.9, 12, 0.4), MAT_A, '#ffffff', 0, 8), busGlass: mk(rbox(2.56, 1.0, 10.6, 0.2), MAT_V, '#bfe6ff', 0, 8), busRoof: mk(rbox(2.2, 0.25, 10, 0.1), MAT_V, '#e8eef8', 0, 8),
-      puff: mk(ico(0.55), MAT_A, '#ffffff', 0, 200),
+      puff: mk(ico(0.55), MAT_A, '#ffffff', 0, 600),
+      // fire + water (fire.js) and mission markers (missions.js): emissive so they glow
+      flame: mk(ico(0.55), MAT_A, '#ffffff', 0.85, 500), water: mk(ico(0.16), MAT_A, '#ffffff', 0.3, 500),
+      ring: mk(torus(2.6, 0.2, 32, 6), MAT_A, '#ffffff', 0.75, 24), gem: mk(ico(0.7), MAT_A, '#ffffff', 0.6, 24),
       // traffic-light lamps: a short emissive cylinder through the head, lens on both faces
       sigLamp: mk(cyl(0.25, 0.25, 0.52, 12), MAT_A, '#ffffff', 0.9, 900),
     };
@@ -290,6 +305,7 @@ export class Game {
     this.busted = 2.2;
     sfx.cuffs();
     this.hud.busted(true);
+    this.missions.onBusted();
   }
   finishBust() {
     this.hud.busted(false);
@@ -344,7 +360,7 @@ export class Game {
     car.driver = 'player'; car.ai = null; car.parked = false; car.stopT = 0;
     this.inCar = car;
     p.hidden = true;
-    this.hud.setMode(true);
+    this.hud.setMode(true, car.type);
   }
   carSide(car, off) {
     const rx = Math.cos(car.a), rz = -Math.sin(car.a);
@@ -570,8 +586,8 @@ export class Game {
     const PD = CFG.peds, TR = CFG.traffic, PO = CFG.police;
     const target = this.isMobile ? PD.countMobile : PD.countDesktop;
     // despawn far ones
-    this.chars = this.chars.filter((c) => c === this.player || this.dist(c, P) < (c.kind === 'cop' && c.state === 'chase' ? 260 : PD.despawn));
-    this.cars = this.cars.filter((c) => c === this.inCar || this.dist(c, P) < (c.chasing ? 320 : TR.despawn));
+    this.chars = this.chars.filter((c) => c === this.player || this.dist(c, P) < ((c.kind === 'cop' && c.state === 'chase') || c.kind === 'fireman' ? 260 : PD.despawn));
+    this.cars = this.cars.filter((c) => c === this.inCar || this.dist(c, P) < (c.chasing || c.task ? 320 : TR.despawn));
     const peds = this.chars.filter((c) => c.kind === 'ped').length;
     const cops = this.chars.filter((c) => c.kind === 'cop').length;
     // a road near a random point of the ring [a, b] m around the player; after the first frame it must
@@ -677,6 +693,8 @@ export class Game {
     this.updateBuses(dt);
     this.resolveChars(dt);
     this.carHits(dt);
+    this.fires.update(dt);
+    this.missions.update(dt);
     this.updateChase(dt);
     this.updatePuffs(dt);
     this.shake = Math.max(0, this.shake - dt * CFG.feel.decay); // trauma decays; the camera shakes by trauma^2
@@ -763,7 +781,7 @@ export class Game {
     }
     if (c.state === 'down') {
       c.timer -= dt;
-      if (c.timer <= 0) { c.hp = Math.max(c.hp, c.maxhp * 0.5); if (c.kind === 'cop') c.state = this.chase.active ? 'chase' : 'patrol'; else { c.state = 'wander'; this.flee(c, P.x, P.z, 6); } } // flee() ignores downed people
+      if (c.timer <= 0) { c.hp = Math.max(c.hp, c.maxhp * 0.5); if (c.kind === 'cop') c.state = this.chase.active ? 'chase' : 'patrol'; else if (c.kind === 'fireman') c.state = 'hose'; else { c.state = 'wander'; this.flee(c, P.x, P.z, 6); } } // flee() ignores downed people
       return;
     }
     const moveTo = (tx, tz, speed) => {
@@ -773,6 +791,18 @@ export class Game {
       c.speed = speed;
       return L;
     };
+    // watching a fire from a safe distance (fire.js), or waving down a taxi (missions.js)
+    if (c.state === 'gawk' || c.state === 'hail') {
+      c.timer -= dt;
+      const f = c.gawk, tx = f ? f.x : P.x, tz = f ? f.z : P.z, d = Math.hypot(tx - c.x, tz - c.z);
+      if (c.timer <= 0 || (f && f.out && f.outT > 4)) { c.gawk = null; c.mouth = false; this.rejoinPath(c); return; }
+      if (f && d > 16) { this.stepToward(c, tx, tz, PD.walk * 1.2, dt); c.speed = PD.walk * 1.2; return; }
+      if (f && d < 9) { const L = d || 1; c.x -= (tx - c.x) / L * PD.walk * dt; c.z -= (tz - c.z) / L * PD.walk * dt; }
+      c.speed = 0; c.face += angDiff(c.face, Math.atan2(tx - c.x, tz - c.z)) * Math.min(1, 6 * dt);
+      c.mouth = c.state === 'hail' ? Math.sin(this.time * 6) > 0 : Math.sin(this.time * 2 + c.id) > 0.6; // waving / pointing
+      if (f && c.bubbleT <= 0 && Math.random() < dt * 0.12) { this.bubble(pick(['fire', 'wow', 'call119']), c); c.bubbleT = 5; }
+      return;
+    }
     if (c.state === 'cross') {
       // look both ways at the curb (give up waiting after a while), then walk over to the other sidewalk
       const sp = PD.walk * PD.crossSpeed;
@@ -868,6 +898,7 @@ export class Game {
     car.smokeT -= dt;
     if (car.hp < 35 && car.smokeT <= 0) { car.smokeT = car.hp <= 0 ? 0.08 : 0.25; this.puffs.push({ x: car.x + Math.sin(car.a) * 1.8, y: 1.2, z: car.z + Math.cos(car.a) * 1.8, vy: 1.6, life: 1.6, s: 0.6, c: car.hp <= 0 ? [0.25, 0.25, 0.28] : [0.75, 0.75, 0.78] }); }
     if (car === this.inCar) return;
+    if (car.type === 'fire' && car.task && !car.ai) return; // a fire truck on a call drives itself (fire.js)
     if (car.chasing) { this.policeDrive(car, dt); return; }
     if (car.ai) {
       const ai = car.ai, path = ai.path, e = path.e, TR = CFG.traffic, SG = CFG.signals;
@@ -1081,7 +1112,7 @@ export class Game {
     for (const b of this.buses) if (b.moving) movers.push({ x: b.x, z: b.z, a: b.a, speed: CFG.bus.speed, vx: Math.sin(b.a) * CFG.bus.speed, vz: Math.cos(b.a) * CFG.bus.speed, bus: true });
     for (const car of movers) {
       const fx = Math.sin(car.a), fz = Math.cos(car.a);
-      const halfL = car.bus ? 6 : 2.2, halfW = car.bus ? 1.3 : 1.05;
+      const halfL = car.bus ? 6 : car.type === 'fire' ? 3.9 : 2.2, halfW = car.bus ? 1.3 : car.type === 'fire' ? 1.25 : 1.05;
       for (const c of this.chars) {
         if (c.hidden || c.state === 'fly' || c.state === 'down') continue;
         const dx = c.x - car.x, dz = c.z - car.z;
@@ -1107,13 +1138,13 @@ export class Game {
     if (pc) {
       const others = [...this.cars.filter((c) => c !== pc), ...this.buses.map((b) => ({ x: b.x, z: b.z, a: b.a, bus: true, speed: 0 }))];
       for (const o of others) {
-        const rad = o.bus ? 5.5 : 3.6;
+        const rad = o.bus ? 5.5 : o.type === 'fire' ? 5 : 3.6;
         const dx = pc.x - o.x, dz = pc.z - o.z, d = Math.hypot(dx, dz);
         if (d < rad && d > 0.01) {
           // approximate OBB with distance along each car's axis
           const ofx = Math.sin(o.a), ofz = Math.cos(o.a);
           const lon = dx * ofx + dz * ofz, lat = dx * ofz - dz * ofx;
-          const hl = (o.bus ? 6 : 2.2) + 1.6, hw = (o.bus ? 1.3 : 1.05) + 1.05;
+          const hl = (o.bus ? 6 : o.type === 'fire' ? 3.9 : 2.2) + 1.6, hw = (o.bus ? 1.3 : o.type === 'fire' ? 1.25 : 1.05) + 1.05;
           if (Math.abs(lon) > hl || Math.abs(lat) > hw) continue;
           const nx = dx / d, nz = dz / d;
           const rel = (pc.vx - (o.vx || 0)) * nx + (pc.vz - (o.vz || 0)) * nz;
@@ -1184,7 +1215,7 @@ export class Game {
     }
   }
   updatePuffs(dt) {
-    for (const f of this.puffs) { f.y += f.vy * dt; f.life -= dt; f.s += dt * 0.6; }
+    for (const f of this.puffs) { f.y += f.vy * dt; f.life -= dt; f.s += dt * 0.6; if (f.vx) { f.x += f.vx * dt; f.z += f.vz * dt; } }
     this.puffs = this.puffs.filter((f) => f.life > 0);
   }
 
@@ -1203,6 +1234,8 @@ export class Game {
       this.drawBus(M.chain(M.T(b.x, 0, b.z), M.RY(b.a)));
     }
     for (const f of this.puffs) this.put(this.B.puff, M.chain(M.T(f.x, f.y, f.z), M.S(f.s)), f.c);
+    this.fires.draw();
+    this.missions.draw();
     this.drawSignals(P);
     for (const b of Object.values(this.B)) if (b.n) this.r.upload(b);
   }
@@ -1268,7 +1301,7 @@ export class Game {
     const m = M.chain(M.T(car.x, 0, car.z), M.RY(car.a));
     if (car.bus) { this.drawBus(m); return; }
     const P = (batch, mm, col) => this.put(batch, M.mul(m, mm), col);
-    const dark = car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
+    const dark = car.burnt ? [0.13, 0.13, 0.14] : car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
     const pf = this.pf[car.type];
     if (pf) {
       this.put(pf, m, dark); // taxi / police models have no paint part: they keep their own livery
@@ -1294,6 +1327,12 @@ export class Game {
       P(B.barB, M.T(0.4, 2.35, -0.25), !blink && car.chasing ? [0.1, 0.1, 0.4] : null);
     }
     if (car.type === 'taxi') P(B.taxi, M.T(0, 2.42, -0.25));
+    if (car.type === 'fire') {
+      if (!car.burnt) { P(B.stripe, V.band, [1, 0.85, 0.2]); for (const r of V.rungs) P(B.carRoof, r, [0.85, 0.87, 0.9]); }
+      const blink = Math.floor(this.time * 5) % 2, on = !!car.task;
+      P(B.barR, M.T(-0.45, 2.75, 2.45), on && blink ? null : [0.4, 0.1, 0.1]);
+      P(B.barR, M.T(0.45, 2.75, 2.45), on && !blink ? null : [0.4, 0.1, 0.1]);
+    }
   }
 }
 
