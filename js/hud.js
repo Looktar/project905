@@ -28,9 +28,21 @@ export class HUD {
     b.textContent = text; b.className = 'show ' + color;
     clearTimeout(this._bt); this._bt = setTimeout(() => (b.className = ''), 2600);
   }
+  // missions (v0.3): money pill under the minimap, job panel at the bottom
+  money(v) { const e = this.el('money'); if (e && this._money !== v) { this._money = v; e.textContent = '$ ' + v; e.classList.toggle('show', v > 0); } }
+  mission(title, sub, hurry) {
+    const e = this.el('mission'); if (!e) return;
+    if (!title) { if (this._mis) { e.classList.remove('show'); this._mis = ''; } return; }
+    const key = title + sub + hurry;
+    if (key === this._mis) return;
+    this._mis = key; e.classList.add('show'); e.classList.toggle('hurry', !!hurry);
+    e.firstElementChild.textContent = title; e.lastElementChild.textContent = sub;
+  }
   busted(on) { this.bustEl.textContent = t('busted'); this.bustEl.classList.toggle('show', on); }
   chaseMeter(v) { this.meter.style.display = v > 0.02 ? 'block' : 'none'; this.meter.firstElementChild.style.width = Math.min(100, v * 100) + '%'; }
-  setMode(inCar) {
+  setMode(inCar, type) {
+    const bD = this.el('bD');
+    if (bD) { bD.textContent = t(inCar ? 'spray' : 'light'); bD.classList.toggle('hide', !!inCar && type !== 'fire'); }
     this.el('bA').textContent = t(inCar ? 'drift' : 'punch');
     this.el('bB').textContent = t(inCar ? 'exit' : 'enter');
     this.el('bC').textContent = t(inCar ? 'horn' : 'run');
@@ -80,6 +92,7 @@ export class HUD {
     const blink = Math.floor(performance.now() / 250) % 2;
     for (const ch of game.chars) if (ch.kind === 'cop') dot(ch.x, ch.z, ch.state === 'chase' ? (blink ? '#ef4444' : '#3b82f6') : '#3b82f6', size * 0.022);
     for (const car of game.cars) if (car.type === 'police' && car !== game.inCar) dot(car.x, car.z, car.chasing ? (blink ? '#3b82f6' : '#ef4444') : '#1e3a8a', size * 0.032);
+    if (game.missions) game.missions.mini(c, P, k, size);
     // player arrow
     const ang = game.inCar ? game.inCar.a : game.player.face;
     c.translate(size / 2, size / 2); c.rotate(-ang + Math.PI);

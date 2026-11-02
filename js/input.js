@@ -11,12 +11,13 @@ export const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart'
 export const input = {
   mx: 0, my: 0,            // movement vector in screen space (my>0 = screen up)
   run: false, handbrake: false,
-  punch: false, enter: false, horn: false,   // edge-triggered, cleared each frame
+  punch: false, enter: false, horn: false, fire: false, // edge-triggered, cleared each frame
+  fireHeld: false,         // lighter / water cannon button held (v0.3)
   rotated: false, rotateDir: 1, W: 0, H: 0,  // forced-landscape state (see orient.js)
 };
 
 const keys = new Set();
-const edge = (k) => { if (k === 'Space') input.punch = true; if (k === 'KeyF' || k === 'KeyE') input.enter = true; if (k === 'KeyH') input.horn = true; };
+const edge = (k) => { if (k === 'Space') input.punch = true; if (k === 'KeyF' || k === 'KeyE') input.enter = true; if (k === 'KeyH') input.horn = true; if (k === 'KeyG') input.fire = true; };
 addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (!keys.has(e.code)) edge(e.code);
@@ -27,7 +28,7 @@ addEventListener('blur', () => keys.clear());
 
 let joy = null; // {id, cx, cy}
 let joyVec = [0, 0];
-const btnState = { run: false, punchHeld: false };
+const btnState = { run: false, punchHeld: false, fireHeld: false };
 
 // Orientation mode currently applied to #app. Touch coordinates are converted with
 // this same mode, so they always match the CSS transform on screen (even if a
@@ -103,8 +104,9 @@ export function initTouch(app, joyEl, knobEl, buttons) {
       if (act === 'a') { input.punch = true; btnState.punchHeld = true; }
       if (act === 'b') input.enter = true;
       if (act === 'c') { btnState.run = true; input.horn = true; }
+      if (act === 'd') { input.fire = true; btnState.fireHeld = true; }
     });
-    const up = (e) => { el.classList.remove('on'); if (act === 'c') btnState.run = false; if (act === 'a') btnState.punchHeld = false; };
+    const up = (e) => { el.classList.remove('on'); if (act === 'c') btnState.run = false; if (act === 'a') btnState.punchHeld = false; if (act === 'd') btnState.fireHeld = false; };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
   }
 }
@@ -123,5 +125,6 @@ export function poll(inCar) {
   input.keySteer = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
   input.run = keys.has('ShiftLeft') || keys.has('ShiftRight') || btnState.run;
   input.handbrake = keys.has('Space') || (inCar && btnState.punchHeld);
+  input.fireHeld = keys.has('KeyG') || btnState.fireHeld;
 }
-export function clearEdges() { input.punch = input.enter = input.horn = false; }
+export function clearEdges() { input.punch = input.enter = input.horn = input.fire = false; }

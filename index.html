@@ -39,6 +39,15 @@ body.touch .btn{display:flex}
 #bA{right:calc(44px + var(--sa-r, 0px));bottom:calc(44px + var(--sa-b, 0px));width:100px;height:100px;background:#ff6b4a;font-size:28px}
 #bB{right:calc(162px + var(--sa-r, 0px));bottom:calc(30px + var(--sa-b, 0px));width:74px;height:74px;background:#3fa7ff;font-size:18px}
 #bC{right:calc(70px + var(--sa-r, 0px));bottom:calc(164px + var(--sa-b, 0px));width:74px;height:74px;background:#56c26b;font-size:18px}
+#bD{right:calc(166px + var(--sa-r, 0px));bottom:calc(122px + var(--sa-b, 0px));width:62px;height:62px;background:#f97316;font-size:16px}
+body.touch #bD.hide{display:none}
+#money{position:absolute;left:calc(18px + var(--sa-l, 0px));top:calc(206px + var(--sa-t, 0px));background:rgba(255,255,255,.94);color:#15803d;font-weight:900;font-size:17px;padding:4px 12px;border-radius:999px;box-shadow:0 3px 0 rgba(30,40,70,.2);display:none}
+#money.show{display:block}
+#mission{position:absolute;left:50%;bottom:calc(12px + var(--sa-b, 0px));transform:translateX(-50%);background:rgba(17,24,39,.82);color:#fff;border-radius:14px;padding:6px 16px;text-align:center;display:none;max-width:52vw;pointer-events:none}
+#mission.show{display:block}
+#mission b{display:block;font-size:clamp(13px,1.9vw,17px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mission span{font-size:13px;color:#fcd34d;font-weight:700}
+#mission.hurry span{color:#f87171}
 #bubbles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bub{position:absolute;transform:translate(-50%,-100%);background:#fff;color:#2d3a55;font-weight:900;font-size:clamp(13px,1.9vw,19px);padding:4px 12px 5px;border-radius:12px;border:3px solid #2d3a55;white-space:nowrap}
 .bub:after{content:'';position:absolute;left:50%;bottom:-10px;margin-left:-7px;border:7px solid transparent;border-top-color:#2d3a55;border-bottom:0}
@@ -96,7 +105,8 @@ body.touch .btn{display:flex}
     <div id="meter"><i></i></div>
     <div id="bubbles"></div>
     <div id="joy"><div id="knob"></div></div>
-    <div id="bA" class="btn"></div><div id="bB" class="btn"></div><div id="bC" class="btn"></div>
+    <div id="bA" class="btn"></div><div id="bB" class="btn"></div><div id="bC" class="btn"></div><div id="bD" class="btn"></div>
+    <div id="money"></div><div id="mission"><b></b><span></span></div>
     <div id="bust"></div>
   </div>
   <div id="title">
@@ -146,8 +156,8 @@ body.touch .btn{display:flex}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=0e1861b824","./js/config.js":"./js/config.js?v=0e1861b824","./js/game.js":"./js/game.js?v=0e1861b824","./js/geo.js":"./js/geo.js?v=0e1861b824","./js/glb.js":"./js/glb.js?v=0e1861b824","./js/hud.js":"./js/hud.js?v=0e1861b824","./js/i18n.js":"./js/i18n.js?v=0e1861b824","./js/input.js":"./js/input.js?v=0e1861b824","./js/main.js":"./js/main.js?v=0e1861b824","./js/math.js":"./js/math.js?v=0e1861b824","./js/models.js":"./js/models.js?v=0e1861b824","./js/orient.js":"./js/orient.js?v=0e1861b824","./js/poi.js":"./js/poi.js?v=0e1861b824","./js/props.js":"./js/props.js?v=0e1861b824","./js/renderer.js":"./js/renderer.js?v=0e1861b824","./js/signals.js":"./js/signals.js?v=0e1861b824","./js/world.js":"./js/world.js?v=0e1861b824"}}</script>
-<script type="module" src="js/main.js?v=0e1861b824"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5afd7f5bd2","./js/config.js":"./js/config.js?v=5afd7f5bd2","./js/fire.js":"./js/fire.js?v=5afd7f5bd2","./js/game.js":"./js/game.js?v=5afd7f5bd2","./js/geo.js":"./js/geo.js?v=5afd7f5bd2","./js/glb.js":"./js/glb.js?v=5afd7f5bd2","./js/hud.js":"./js/hud.js?v=5afd7f5bd2","./js/i18n.js":"./js/i18n.js?v=5afd7f5bd2","./js/input.js":"./js/input.js?v=5afd7f5bd2","./js/main.js":"./js/main.js?v=5afd7f5bd2","./js/math.js":"./js/math.js?v=5afd7f5bd2","./js/missions.js":"./js/missions.js?v=5afd7f5bd2","./js/models.js":"./js/models.js?v=5afd7f5bd2","./js/orient.js":"./js/orient.js?v=5afd7f5bd2","./js/poi.js":"./js/poi.js?v=5afd7f5bd2","./js/props.js":"./js/props.js?v=5afd7f5bd2","./js/renderer.js":"./js/renderer.js?v=5afd7f5bd2","./js/signals.js":"./js/signals.js?v=5afd7f5bd2","./js/world.js":"./js/world.js?v=5afd7f5bd2"}}</script>
+<script type="module" src="js/main.js?v=5afd7f5bd2"></script>
 <!-- stamp:end -->
 </body>
 </html>
