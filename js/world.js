@@ -492,7 +492,7 @@ export class World {
     houseMB.add(box(0.16, 0.6, 0.02), M.T(0, 0.3, 0.505), '#7c2d12');
     for (const sx of [-0.28, 0.28]) houseMB.add(box(0.15, 0.3, 0.02), M.T(sx, 0.55, 0.505), '#dbeafe');
     houseMB.add(box(0.08, 0.5, 0.08), M.T(0.25, 1.25, -0.15), '#9a3412');
-    // Polyfork houses (?ph=1 sample, D-63): one instanced mesh per variant per chunk
+    // Polyfork houses (D-63 / D-65): one instanced mesh per variant per chunk
     const houseVar = HOUSE_MODELS.filter((k) => MODELS[k]).map((k) => {
       const mb = new MeshBuilder(), b = MODELS[k].bounds;
       mb.addTriangles(MODELS[k], M.I());
