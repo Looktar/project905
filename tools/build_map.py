@@ -1549,6 +1549,22 @@ MALL_AREAS = {
     'King Square Shopping Centre': NAMED['王府井'],
     '旺角 Peachtree Centre': ('plaza', '旺阁广场 Peachtrea Centre', 'plaza'),
     'Times Square': ('plaza', '时戴广场 Tymes Square', 'plaza'),
+    # neighbourhood plazas (D-66)
+    'Cachet Centre': ('plaza', 'Cashay Centre', 'plaza'),
+    'Markham Town Square': ('plaza', 'Markum Town Square', 'plaza'),
+    'Harvest Moon Plaza': ('plaza', 'Harvist Moon Plaza', 'plaza'),
+    'Kenlee Plaza': ('plaza', 'Kenlea Plaza', 'plaza'),
+    'Hollywood Square 荷里活廣場': ('plaza', '荷里活广场 Hollywud Square', 'plaza'),
+    'Hillcroft Mall': ('plaza', 'Hilcroft Mall', 'plaza'),
+    'Shoppes of Unionville': ('plaza', 'Shoppz of Unionville', 'plaza'),
+    'Armadale Square': ('plaza', 'Armadayle Square', 'plaza'),
+    'Raymerville Shopping Centre': ('plaza', 'Raymervile Plaza', 'plaza'),
+    'Seven Star Plaza': ('plaza', '七星广场 Seven Starr Plaza', 'plaza'),
+    'Denison Centre': ('plaza', 'Dennison Centre', 'plaza'),
+    'The Bridle Post': ('plaza', 'The Bridel Post', 'plaza'),
+    'Milliken Centre': ('plaza', 'Millikin Centre', 'plaza'),
+    'Woodside SmartCentre': ('plaza', 'Woodsyde Centre', 'plaza'),
+    'Uptown Market': ('plaza', 'Uptoun Market', 'plaza'),
 }
 for w in ways:
     t = w['tags']
@@ -1600,7 +1616,78 @@ STORES = [   # (regex on name / brand / name:zh, sign, style, kind)
     (r'Tealicious', '书意 Shuyee Tea', 'shuyee', 'tea'),
     (r'T&T Supermarket', '大统花 T+T Market', 'ttee', 'grocer'),
     (r'^Foody Mart', '丰太超市 Foodee Mart', 'foodee', 'grocer'),
+    # chain restaurants and coffee shops (D-66)
+    (r'Starbucks', 'Starbux', 'starbux', 'cafe'),
+    (r'Second Cup', 'Secund Cup', 'secund', 'cafe'),
+    (r'Country Style', 'Kountry Style', 'kountry', 'cafe'),
+    (r'^Subway', 'Subwey', 'subwey', 'food'),
+    (r"McDonald's", "McDanold's", 'mcd', 'food'),
+    (r'^Pizza Pizza', 'Piza Piza', 'piza', 'food'),
+    (r'^Popeyes', 'Popeyez', 'popeyez', 'food'),
+    (r'Swiss Chalet', 'Swiss Chalay', 'chalay', 'food'),
+    (r"Domino's", "Dominoe's", 'dominoe', 'food'),
+    (r'^Mr\.? Sub', 'Mr. Subb', 'subb', 'food'),
+    (r'Pizza Nova', 'Pizza Novva', 'novva', 'food'),
+    (r"Harvey's", "Harvy's", 'harvy', 'food'),
+    (r'Booster Juice', 'Boostur Juice', 'boostur', 'food'),
+    (r'Dairy Queen', 'Dairy Kween', 'dq', 'food'),
+    (r'^KFC', 'KFG', 'kfg', 'food'),
+    (r'Pizza Hut', 'Pizzah Hutt', 'hutt2', 'food'),
+    (r'Teriyaki Experience', 'Teriyaki Xperience', 'teri', 'food'),
+    (r'Hero Certified', 'Hiro Burgers', 'hiro', 'food'),
+    (r"Wendy's", "Wendee's", 'wendee', 'food'),
+    (r'Pizzaville', 'Pizzavil', 'pizzavil', 'food'),
+    (r'^Cora\b', 'Kora 早餐 Breakfast', 'kora', 'food'),
+    (r'^A&W', 'A+W Burgers', 'aw', 'food'),
+    (r"Osmow's", "Osmo's", 'osmo', 'food'),
+    (r'Boston Pizza', 'Bostin Pizza', 'bpizza', 'food'),
+    (r"Kelsey's", "Kelsee's", 'kelsee', 'food'),
+    (r'BarBurrito', 'BarBurito', 'burito', 'food'),
+    (r'Quiznos', 'Quiznoz', 'quiznoz', 'food'),
+    (r'Wild Wing', 'Wyld Wing', 'wyld', 'food'),
+    (r'Chipotle', 'Chipoltle', 'chipoltle', 'food'),
+    (r'Sunset Grill', 'Sunsett Grill', 'sunsett', 'food'),
+    (r'Taco Bell', 'Taco Bel', 'tacobel', 'food'),
+    (r'Eggsmart', 'Eggsmarts', 'eggsmarts', 'food'),
+    (r'Burger King', 'Burger Kin', 'bkin', 'food'),
+    (r"East Side Mario's", "East Syde Mario's", 'mario', 'food'),
+    (r"Jack Astor's", "Jack Aster's", 'aster', 'food'),
+    (r"Moxie's", "Moxee's", 'moxee', 'food'),
+    (r'Panera', 'Panerra Bread', 'panerra', 'food'),
 ]
+# every other named restaurant / cafe gets a plain sign saying what it serves (no names: they are
+# real businesses). cuisine tag -> sign text, style; amenity is the fallback (D-66)
+CUISINE_SIGNS = {
+    'chinese': ('中餐 Chinese', 'g_red'), 'cantonese': ('粤菜 Cantonese', 'g_red'), 'dim_sum': ('点心 Dim Sum', 'g_red'),
+    'hot_pot': ('火锅 Hot Pot', 'g_red'), 'sichuan': ('川菜 Sichuan', 'g_red'), 'taiwanese': ('台湾小吃 Taiwanese', 'g_red'),
+    'noodle': ('面馆 Noodles', 'g_amber'), 'ramen': ('拉面 Ramen', 'g_amber'), 'congee': ('粥 Congee', 'g_amber'),
+    'japanese': ('日料 Japanese', 'g_navy'), 'sushi': ('寿司 Sushi', 'g_navy'), 'korean': ('韩餐 Korean', 'g_navy'),
+    'vietnamese': ('越南粉 Pho', 'g_green'), 'pho': ('越南粉 Pho', 'g_green'), 'thai': ('泰餐 Thai', 'g_green'),
+    'asian': ('亚洲菜 Asian', 'g_red'), 'indian': ('印度菜 Indian', 'g_orange'), 'pakistani': ('Halal 清真', 'g_orange'),
+    'kebab': ('烤肉 Kebab', 'g_orange'), 'mediterranean': ('地中海 Mediterranean', 'g_orange'),
+    'greek': ('希腊菜 Greek', 'g_blue'), 'italian': ('意餐 Italian', 'g_green'), 'pizza': ('披萨 Pizza', 'g_orange'),
+    'burger': ('汉堡 Burgers', 'g_red'), 'chicken': ('炸鸡 Chicken', 'g_orange'), 'sandwich': ('三明治 Subs', 'g_green'),
+    'breakfast': ('早餐 Breakfast', 'g_amber'), 'diner': ('Diner 小馆', 'g_blue'), 'american': ('Grill 烧烤', 'g_brown'),
+    'barbecue': ('烧烤 BBQ', 'g_brown'), 'bar_and_grill': ('Grill 烧烤', 'g_brown'), 'seafood': ('海鲜 Seafood', 'g_blue'),
+    'fish_and_chips': ('炸鱼薯条 Fish & Chips', 'g_blue'), 'mexican': ('Tacos 墨西哥', 'g_orange'),
+    'tex-mex': ('Tacos 墨西哥', 'g_orange'), 'caribbean': ('Caribbean 加勒比', 'g_green'),
+    'bubble_tea': ('奶茶 Bubble Tea', 'g_purple'), 'tea': ('茶 Tea', 'g_purple'), 'juice': ('果汁 Juice', 'g_lime'),
+    'coffee_shop': ('咖啡 Café', 'g_coffee'), 'donut': ('甜甜圈 Donuts', 'g_pink'), 'cake': ('蛋糕 Cakes', 'g_pink'),
+    'dessert': ('甜品 Dessert', 'g_pink'), 'ice_cream': ('雪糕 Ice Cream', 'g_pink'), 'bakery': ('面包 Bakery', 'g_amber'),
+}
+AMENITY_SIGNS = {'cafe': ('咖啡 Café', 'g_coffee'), 'fast_food': ('快餐 Fast Food', 'g_red'),
+                 'restaurant': ('餐馆 Restaurant', 'g_brown')}
+def generic_store(t):
+    am = t.get('amenity')
+    if am not in AMENITY_SIGNS or not t.get('name') or t.get('brand') == 'Tim Hortons':
+        return None
+    for cu in (t.get('cuisine') or '').split(';'):
+        if cu.strip() in CUISINE_SIGNS:
+            text, st = CUISINE_SIGNS[cu.strip()]
+            break
+    else:
+        text, st = AMENITY_SIGNS[am]
+    return text, st, 'cafe' if am == 'cafe' else 'gen'
 STORE_RE = [(re.compile(rx), sign, st, kind) for rx, sign, st, kind in STORES]
 store_grid = Grid(20.0)
 stores = []
@@ -1619,29 +1706,49 @@ def store_host(x, z, R=18):
             best = (b, d)
     return best
 
-for e in els:
-    t = e.get('tags', {})
-    if 'highway' in t:
-        continue
-    key = ' | '.join(t.get(k, '') for k in ('name', 'brand', 'name:zh'))
-    hit = next(((sign, st, kind) for rx, sign, st, kind in STORE_RE if rx.search(key)), None)
-    if not hit:
-        continue
-    p = osm_point(e)
-    if not p or abs(p[0]) > HALF_W - 5 or abs(p[1]) > HALF_H - 5:
-        store_skip['outside'] += 1; print('store outside', hit[0], p and [round(v) for v in p]); continue
-    if any(math.hypot(p[0] - s[0], p[1] - s[1]) < 9 for s in store_grid.query((p[0] - 9, p[1] - 9, p[0] + 9, p[1] + 9))):
-        store_skip['crowded'] += 1; continue
-    host = store_host(*p)
-    if not host:
-        store_skip['no building'] += 1; continue
-    b = host[0]
-    # sign row above the building's own name sign; pushed out to the camera-facing front of the building
-    y = b['h'] + (3.0 if b.get('n') else 0.3)
-    push = max(0.4, max((q[0] - p[0]) * CAM_DIR[0] + (q[1] - p[1]) * CAM_DIR[1] for q in b['p']) + 0.3)
-    stores.append([round(p[0], 2), round(p[1], 2), round(y, 2), round(push, 2), hit[0], hit[1], hit[2]])
-    store_grid.add((p[0], p[1], p[0], p[1]), p)
-print('stores:', len(stores), dict(store_skip), sorted({s[4] for s in stores}))
+CAM_RIGHT = (CAM_DIR[1], -CAM_DIR[0])
+host_signs = defaultdict(list)   # id(building) -> [(screen-x along camera right, half width)]
+def sign_halfw(text):
+    return min(14, 0.62 * 1.5 * sum(1.7 if ord(ch) > 0x2e80 else 1 for ch in text)) / 2
+
+# pass 0: Top-50 and chains; pass 1: plain cuisine signs where there is still room
+for gen in (False, True):
+    for e in els:
+        t = e.get('tags', {})
+        if 'highway' in t:
+            continue
+        if gen:
+            hit = generic_store(t)
+            if not hit or any(rx.search(' | '.join(t.get(k, '') for k in ('name', 'brand', 'name:zh'))) for rx, _, _, _ in STORE_RE):
+                continue
+        else:
+            key = ' | '.join(t.get(k, '') for k in ('name', 'brand', 'name:zh'))
+            hit = next(((sign, st, kind) for rx, sign, st, kind in STORE_RE if rx.search(key)), None)
+            if not hit:
+                continue
+        p = osm_point(e)
+        if not p or abs(p[0]) > HALF_W - 5 or abs(p[1]) > HALF_H - 5:
+            store_skip['outside'] += 1; continue
+        if any(math.hypot(p[0] - s[0], p[1] - s[1]) < 9 for s in store_grid.query((p[0] - 9, p[1] - 9, p[0] + 9, p[1] + 9))):
+            store_skip['crowded'] += 1; continue
+        host = store_host(*p)
+        if not host:
+            store_skip['no building'] += 1; continue
+        b = host[0]
+        if b.get('n') == hit[0]:
+            store_skip['own building'] += 1; continue   # a brand building already carries this sign
+        # signs on one building sit on its camera-facing front, so they must not overlap side by side
+        sx = p[0] * CAM_RIGHT[0] + p[1] * CAM_RIGHT[1]; hw = sign_halfw(hit[0])
+        if any(abs(sx - ox) < hw + ow + 0.4 for ox, ow in host_signs[id(b)]):
+            store_skip['overlap'] += 1; continue
+        # sign row above the building's own name sign; pushed out to the camera-facing front of the building
+        y = b['h'] + (3.0 if b.get('n') else 0.3)
+        push = max(0.4, max((q[0] - p[0]) * CAM_DIR[0] + (q[1] - p[1]) * CAM_DIR[1] for q in b['p']) + 0.3)
+        # pre-round: libm differences between platforms must not flip the last digit (CI map check)
+        stores.append([round(round(p[0], 6), 2), round(round(p[1], 6), 2), round(y, 2), round(push, 2), hit[0], hit[1], hit[2]])
+        store_grid.add((p[0], p[1], p[0], p[1]), p)
+        host_signs[id(b)].append((sx, hw))
+print('stores:', len(stores), dict(store_skip))
 
 # schools and libraries are often only tagged on the grounds: name the biggest building on them
 for w in ways:
