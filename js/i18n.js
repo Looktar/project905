@@ -22,6 +22,8 @@ const DICT = {
     mGetIn: '师傅，走！', mThanks: '谢谢师傅！', mAngry: '什么破司机！', mFareDone: '车费', mRace: '赛车', mRaceDone: '完赛', mRecord: '新纪录！',
     mCheckin: '打卡', mNeedCar: '要开车才能比赛', mFailCold: '外卖凉了…', mFailFare: '乘客不坐了', mFailSlow: '超时了', mFailCar: '下车就算输',
     mFailBusted: '被抓了，任务失败',
+    pTitle: '📋 万锦恶作剧清单', pDone: '恶作剧完成：', pBun: '金点心', pBunPop: '金点心！', pBunHint: '30 个金点心藏在地标、商场和公园旁边的人行道上，小地图上看不到。',
+    pLandmarks: '地标打卡', pRaces: '赛车最好成绩', pList: '清单',
   },
   en: {
     start: 'Play', subtitle: 'Markham · Toy Town', lang: '中文', loading: 'Loading map…', building: 'Building the town…',
@@ -46,6 +48,8 @@ const DICT = {
     mGetIn: 'Let us go!', mThanks: 'Thanks, driver!', mAngry: 'Worst driver ever!', mFareDone: 'fare', mRace: 'Race', mRaceDone: 'finished', mRecord: 'new record!',
     mCheckin: 'Checked in:', mNeedCar: 'You need a car to race', mFailCold: 'The food got cold…', mFailFare: 'The passenger gave up', mFailSlow: 'Out of time', mFailCar: 'Left the car: race lost',
     mFailBusted: 'Busted: job failed',
+    pTitle: '📋 Markham mischief list', pDone: 'Prank done:', pBun: 'Golden dim sum', pBunPop: 'Dim sum!', pBunHint: '30 golden dim sum hide on sidewalks next to landmarks, malls and parks. They are not on the minimap.',
+    pLandmarks: 'Landmarks visited', pRaces: 'Best race times', pList: 'List',
   },
 };
 let lang = (navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
