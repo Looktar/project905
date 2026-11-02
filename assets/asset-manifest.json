@@ -1,5 +1,36 @@
 {
   "note": "Every external model the game ships. Fill one entry per file before it is used; see docs/ART-BIBLE.md section 7 and CREDITS.md.",
-  "budgets": { "car": 1500, "tree": 400, "prop": 300, "character": 1000, "landmarkProp": 4000, "maxFileKB": 150, "maxTotalMB": 3 },
-  "assets": []
+  "budgets": {
+    "car": 2500,
+    "tree": 400,
+    "prop": 300,
+    "character": 1000,
+    "landmarkProp": 4000,
+    "maxFileKB": 150,
+    "maxTotalMB": 3
+  },
+  "assets": [
+    {
+      "key": "sedan",
+      "source": "polyfork",
+      "id": "compact-hatchback-386417",
+      "url": "https://polyfork.dev/cdn/compact-hatchback-386417.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 1876,
+      "fit": "length 4.4 m, paint -> per-car colour",
+      "license": "https://polyfork.dev/licensing",
+      "status": "style sample (?pf=1), awaiting owner approval"
+    },
+    {
+      "key": "tree",
+      "source": "polyfork",
+      "id": "broad-canopy-shade-tree-e7c4a2",
+      "url": "https://polyfork.dev/cdn/broad-canopy-shade-tree-e7c4a2.glb",
+      "delivery": "runtime CDN link (not stored in repo)",
+      "triangles": 394,
+      "fit": "height 5.6 m x random 0.75-1.25, graded lighter/more saturated",
+      "license": "https://polyfork.dev/licensing",
+      "status": "style sample (?pf=1), awaiting owner approval"
+    }
+  ]
 }

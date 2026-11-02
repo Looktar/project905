@@ -64,7 +64,10 @@ export function glbToTriangles(gltf, bin, textures = {}) {
     const o = (y * img.w + x) * 4;
     return [img.data[o] / 255, img.data[o + 1] / 255, img.data[o + 2] / 255];
   };
-  const srgb = (c) => c; // baked as-is: our shader works in display space like the procedural colours
+  // glTF colours (baseColorFactor, COLOR_0) are linear; our shader works in display (sRGB-ish)
+  // space like the procedural hex colours, so encode the final colour; textures are sRGB already
+  const srgb = (c) => Math.pow(Math.max(0, Math.min(1, c)), 1 / 2.2);
+  const lin = (c) => Math.pow(c, 2.2);
   const emit = (mesh, M) => {
     for (const pr of mesh.primitives) {
       if (pr.mode !== undefined && pr.mode !== 4) continue;
@@ -85,7 +88,7 @@ export function glbToTriangles(gltf, bin, textures = {}) {
         const x = pos.data[i * 3], y = pos.data[i * 3 + 1], z = pos.data[i * 3 + 2];
         let r = f[0], g = f[1], b = f[2];
         if (col) { r *= col.data[i * col.n]; g *= col.data[i * col.n + 1]; b *= col.data[i * col.n + 2]; }
-        if (img && uv) { const s = sample(img, uv.data[i * 2], uv.data[i * 2 + 1]); r *= s[0]; g *= s[1]; b *= s[2]; }
+        if (img && uv) { const s = sample(img, uv.data[i * 2], uv.data[i * 2 + 1]); r *= lin(s[0]); g *= lin(s[1]); b *= lin(s[2]); }
         const wx = M[0] * x + M[4] * y + M[8] * z + M[12], wy = M[1] * x + M[5] * y + M[9] * z + M[13], wz = M[2] * x + M[6] * y + M[10] * z + M[14];
         tri.push([wx, wy, wz, srgb(r), srgb(g), srgb(b), nrm ? [nrm.data[i * 3], nrm.data[i * 3 + 1], nrm.data[i * 3 + 2]] : null]);
         if (tri.length === 3) {

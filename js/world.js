@@ -4,6 +4,7 @@ import { M, hex, segDist, rnd } from './math.js';
 import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
+import { MODELS } from './models.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
 import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
 import { poiColliders, poiGround, poiDetail, poiWindows, poiSigns, poiIcons, inApron } from './poi.js';
@@ -449,10 +450,13 @@ export class World {
     for (const sx of [-0.28, 0.28]) houseMB.add(box(0.15, 0.3, 0.02), M.T(sx, 0.55, 0.505), '#dbeafe');
     houseMB.add(box(0.08, 0.5, 0.08), M.T(0.25, 1.25, -0.15), '#9a3412');
     const treeMB = new MeshBuilder();
-    treeMB.add(cyl(0.22, 0.3, 2.2, 6, false), M.T(0, 1.1, 0), '#8a5a3b');
-    treeMB.add(ico(1.45), M.T(0, 3.25, 0), '#ffffff', MAT_A);
-    treeMB.add(ico(1.1), M.chain(M.T(0.85, 2.7, 0.3), M.RY(0.7)), '#e8f0d0', MAT_A);
-    treeMB.add(ico(1.05), M.chain(M.T(-0.75, 2.8, -0.35), M.RY(1.9)), '#f2f7e0', MAT_A);
+    if (MODELS.tree) treeMB.addTriangles(MODELS.tree, M.I()); // Polyfork tree (vertex colours)
+    else {
+      treeMB.add(cyl(0.22, 0.3, 2.2, 6, false), M.T(0, 1.1, 0), '#8a5a3b');
+      treeMB.add(ico(1.45), M.T(0, 3.25, 0), '#ffffff', MAT_A);
+      treeMB.add(ico(1.1), M.chain(M.T(0.85, 2.7, 0.3), M.RY(0.7)), '#e8f0d0', MAT_A);
+      treeMB.add(ico(1.05), M.chain(M.T(-0.75, 2.8, -0.35), M.RY(1.9)), '#f2f7e0', MAT_A);
+    }
     const lampMB = new MeshBuilder();
     lampMB.add(cyl(0.09, 0.12, 5.2, 6), M.T(0, 2.6, 0), '#3f4659');
     lampMB.add(box(0.14, 0.14, 1.5), M.T(0, 5.1, 0.7), '#3f4659');

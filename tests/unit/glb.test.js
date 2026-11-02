@@ -43,8 +43,8 @@ describe('glb loader', () => {
     expect(t.p.length).toBe(6 * 3);
     // vertex 1 = (1,0,0) -> scale 2 -> +2 x -> (4,0,0) -> rotate 90 deg about Y -> (0,0,-4)
     expect(t.p[3]).toBeCloseTo(0, 5); expect(t.p[4]).toBeCloseTo(0, 5); expect(t.p[5]).toBeCloseTo(-4, 5);
-    // colour = baseColorFactor x COLOR_0: vertex 0 red * (0.5,1,1)
-    expect([t.c[0], t.c[1], t.c[2]]).toEqual([0.5, 0, 0]);
+    // colour = baseColorFactor x COLOR_0 (linear), encoded for display: vertex 0 red * (0.5,1,1)
+    expect(t.c[0]).toBeCloseTo(Math.pow(0.5, 1 / 2.2), 5); expect(t.c[1]).toBe(0); expect(t.c[2]).toBe(0);
     // the quad faced +z; after the Y rotation it faces +x (flat normal computed from the triangle)
     expect(t.n[0]).toBeCloseTo(1, 5); expect(t.n[2]).toBeCloseTo(0, 5);
     expect(t.bounds.lo[2]).toBeCloseTo(-4, 5); expect(t.bounds.hi[1]).toBeCloseTo(2, 5);
@@ -53,9 +53,9 @@ describe('glb loader', () => {
     const { json, bin } = parseGLB(makeGLB({ withTexture: true }));
     const tex = { 0: { w: 2, h: 2, data: new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 128, 128, 128, 255]) } };
     const t = glbToTriangles(json, bin, tex);
-    expect(t.c[0]).toBeCloseTo(0.5, 3); // uv (0.1,0.1) -> white texel; red vertex * 0.5 factor
-    expect(t.c[3 * 2]).toBeCloseTo(0.5 * 0, 3); // uv (0.9,0.9) on vertex 2 (green) -> grey texel * green -> r 0
-    expect(t.c[3 * 2 + 1]).toBeCloseTo(128 / 255, 3);
+    expect(t.c[0]).toBeCloseTo(Math.pow(0.5, 1 / 2.2), 3); // uv (0.1,0.1) -> white texel; red vertex * 0.5 factor
+    expect(t.c[3 * 2]).toBeCloseTo(0, 3); // uv (0.9,0.9) on vertex 2 (green) -> grey texel * green -> r 0
+    expect(t.c[3 * 2 + 1]).toBeCloseTo(128 / 255, 2); // an sRGB texel survives linear -> display unchanged
   });
   it('bakes into MeshBuilder with vertex-colour material', () => {
     const { json, bin } = parseGLB(makeGLB());

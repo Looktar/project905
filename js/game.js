@@ -3,6 +3,7 @@ import { M, clamp, lerp, angDiff, rr, pick, segDist } from './math.js';
 import { MeshBuilder, MAT_A, MAT_V, rbox, box, sphere, ico, cyl, star } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
+import { MODELS } from './models.js';
 import { input } from './input.js';
 import * as sfx from './audio.js';
 import { t } from './i18n.js';
@@ -105,6 +106,8 @@ export class Game {
       // traffic-light lamps: a short emissive cylinder through the head, lens on both faces
       sigLamp: mk(cyl(0.25, 0.25, 0.52, 12), MAT_A, '#ffffff', 0.9, 900),
     };
+    // Polyfork models (when loaded, ?pf=1): one instanced batch per model, paint tinted per car
+    if (MODELS.sedan) { const mb = new MeshBuilder(); mb.addTriangles(MODELS.sedan, M.I()); this.B.pfSedan = this.r.instanced(mb, 140); }
     this.tmp = new Float32Array(16);
   }
   put(batch, m, col) {
@@ -1230,6 +1233,7 @@ export class Game {
     const B = this.B;
     const m = M.chain(M.T(car.x, 0, car.z), M.RY(car.a));
     if (car.bus) { this.drawBus(m); return; }
+    if (car.type === 'sedan' && B.pfSedan) { this.put(B.pfSedan, m, car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col); return; }
     const P = (batch, mm, col) => this.put(batch, M.mul(m, mm), col);
     const dark = car.hp <= 0 ? [0.3, 0.3, 0.32] : car.col;
     const V = SHAPES[car.type] || SHAPES.sedan;
