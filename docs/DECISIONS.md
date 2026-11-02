@@ -50,3 +50,9 @@
 - **D-46（总决策要求）警察调少**：平时步行巡逻 2→1，追捕时步行 4→2、警车 3→2，总数上限 8→5，增援间隔 6→10 秒。
 - **D-47（总决策要求）多一些印度裔路人**：约 35% 的路人是南亚外观（`CFG.peds.southAsian`）：肤色和发色另用一组调色板；约一半穿彩色长款 kurta；男士约 30% 戴 dastar 头巾；女士多为长辫，一半搭配 dupatta 披肩（配 kurta）。都由现有身体部件组合，不增加 draw call，也不配任何口音或刻板台词。
 - **D-48 有红绿灯的路口，路人永远不闯红灯**：等候超时只跳过“检查转弯车”这一步，不再跳过红灯。
+- **D-49 学习 Claude-Code-Game-Studios 和 awesome-gamedev-agent-skills，但不整套照搬**。前者是给大型 Godot/Unity/Unreal 团队用的 49 个代理加审批流程，后者大多是针对具体引擎的技能，都不适合我们这个无引擎、一人决策的小网页游戏。采用的部分：
+  - **手感**：反馈分三级、平滑的创伤值震动、顿帧、被打压扁回弹、设置里的震动开关；
+  - **素材**：美术规范 `docs/ART-BIBLE.md`，外来模型先做样板确认再批量替换，`assets/asset-manifest.json` 和 `CREDITS.md` 记录来源；
+  - **性能**：预算表写进美术规范第 8 节；
+  - **试玩**：反馈表 `docs/PLAYTEST.md`；
+  - **技能**：把 game-feel、performance-optimization、create-game-assets 三个技能原样放进 `.claude/skills/`，保留 Apache-2.0 许可和 NOTICE。

@@ -147,6 +147,23 @@ describe('headless boot', () => {
 
 // ---------------------------------------------------------------- combat + police
 describe('combat and police', () => {
+  it('a landed punch gives feedback: shake, a short hit-stop and a squash pop, all settling back', async () => {
+    const sim = await newSim(22);
+    sim.step(1).removePolice();
+    const g = sim.game;
+    const at = sim.ahead(1.0);
+    const ped = sim.spawn('ped', at.x, at.z, { temper: 'timid', hp: 80, maxhp: 80 });
+    sim.press('punch').step();
+    expect(ped.hp).toBeLessThan(80);
+    expect(g.shake).toBeGreaterThan(0);
+    expect(g.hitStop).toBeGreaterThan(0);
+    expect(ped.squashT).toBeGreaterThan(0);
+    sim.seconds(1.5);
+    expect(g.shake).toBe(0);
+    expect(g.hitStop).toBeLessThanOrEqual(0);
+    expect(ped.squashT).toBeLessThanOrEqual(0);
+  });
+
   it('punching a pedestrian in front of the player lowers its hp; the punch then cools down', async () => {
     const sim = await newSim(21);
     sim.step(1).removePolice(); // spawning waits 0.4 s after this frame

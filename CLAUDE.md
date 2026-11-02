@@ -31,7 +31,9 @@ js/i18n.js            中英文案
 tools/build_map.py    OSM 原始数据 → maps/markham.json（纯 Python 标准库）
 data/raw/markham_osm.json.gz   Overpass 导出的原始数据（已提交，构建不需联网）
 maps/markham.json     游戏地图（构建产物，已提交）
-docs/                 规格、概念图、进度、决策；docs/screenshots/ 每个里程碑的截图
+docs/                 规格、概念图、进度、决策；docs/ART-BIBLE.md 美术规范和性能预算；docs/PLAYTEST.md 试玩反馈表；docs/screenshots/ 截图
+assets/               外来模型（assets/models/）和素材清单 assets/asset-manifest.json；来源写进 CREDITS.md
+.claude/skills/       项目技能：game-feel、performance-optimization、create-game-assets（Apache-2.0，示例是 Godot/Unity，要换成我们的写法）
 tests/unit/           Vitest：坐标换算、数学、地图数据、无头玩法模拟（tests/helpers/headless.js）
 tests/e2e/smoke.mjs   Playwright 冒烟：桌面 / 手机横屏 / 手机竖屏，截图到 test-results/smoke/
 .github/workflows/ci.yml   PR 和 main 上自动跑 lint、测试、地图可复现、冒烟（不部署）
@@ -58,6 +60,8 @@ npm run check:map                    # 确认提交的地图和 build_map.py 一
 - 每个区块的实例化网格都放进 `c.inst` 列表（main.js 统一画）；小道具直接烘焙进区块静态网格，不增加 draw call。
 - 每栋 OSM 建筑在区块网格里的顶点范围记在 `world.bRange`，遮挡淡出靠它把这栋楼单独画成半透明。
 - 已知但还没修的 bug 先写成 `it.fails` 测试（D-15）。
+- 打击反馈统一走 `game.feedback(tier, who)`（小/中/大三级，见 `CFG.feel`），不要另外直接改 `game.shake`。
+- 引入任何外来模型前，先按 `docs/ART-BIBLE.md` 第 7 节先做一个样板给总决策确认。
 
 ## 工作规则（与规格第 10 节一致）
 - 只做当前里程碑；新想法写进 `docs/BACKLOG.md`。

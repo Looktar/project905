@@ -1,0 +1,5 @@
+{
+  "note": "Every external model the game ships. Fill one entry per file before it is used; see docs/ART-BIBLE.md section 7 and CREDITS.md.",
+  "budgets": { "car": 1500, "tree": 400, "prop": 300, "character": 1000, "landmarkProp": 4000, "maxFileKB": 150, "maxTotalMB": 3 },
+  "assets": []
+}
