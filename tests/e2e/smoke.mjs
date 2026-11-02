@@ -148,6 +148,17 @@ async function runViewport(browser, base, vp) {
       notes.push('keyboard W -> my 1');
     }
     notes.push('hud: ' + (await page.locator('#dbg').textContent()).trim());
+    // the big map (v0.5): tap the minimap, search, pick the first result, screenshot, close
+    const tap = (sel) => (ctxOpts.hasTouch ? page.tap(sel) : page.click(sel));
+    await tap('#mini');
+    await page.waitForSelector('#bigmap.show', { timeout: 5000 });
+    await page.fill('#bmQ', 'pacific mall');
+    await tap('#bmList [data-i="0"]');
+    await page.waitForSelector('#bmCard.show', { timeout: 5000 });
+    await sleep(500);
+    await page.screenshot({ path: join(SHOT_DIR, `${name}-map.png`) });
+    notes.push('big map: ' + (await page.locator('#bmCard b').textContent()).trim());
+    await tap('#bigmap .x');
   } catch (e) {
     problems.push(e.message.split('\n')[0]);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-failure.png`) }).catch(() => {});

@@ -1,4 +1,4 @@
-// DOM HUD: minimap, street name, health, speech bubbles, banners, busted overlay.
+// DOM HUD: minimap (tap: the big map, bigmap.js), street name, health, speech bubbles, banners, busted overlay.
 import { CFG } from './config.js';
 import { t } from './i18n.js';
 
@@ -12,7 +12,7 @@ export class HUD {
     this.bannerEl = this.el('banner'); this.bustEl = this.el('bust'); this.meter = this.el('meter');
     this.lastStreet = '';
     this.miniOpen = true;
-    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.setMiniOpen(!this.miniOpen); if (this.onMiniToggle) this.onMiniToggle(this.miniOpen); });
+    this.mini.addEventListener('pointerdown', (e) => { e.stopPropagation(); if (this.onMiniTap) this.onMiniTap(); }); // the big map (v0.5); size is in Settings
   }
   setMiniOpen(open) { this.miniOpen = open; this.mini.classList.toggle('small', !open); }
   setWorld(world) { this.world = world; }
@@ -93,6 +93,7 @@ export class HUD {
     for (const ch of game.chars) if (ch.kind === 'cop') dot(ch.x, ch.z, ch.state === 'chase' ? (blink ? '#ef4444' : '#3b82f6') : '#3b82f6', size * 0.022);
     for (const car of game.cars) if (car.type === 'police' && car !== game.inCar) dot(car.x, car.z, car.chasing ? (blink ? '#3b82f6' : '#ef4444') : '#1e3a8a', size * 0.032);
     if (game.missions) game.missions.mini(c, P, k, size);
+    if (game.nav) game.nav.mini(c, P, k, size);
     // player arrow
     const ang = game.inCar ? game.inCar.a : game.player.face;
     c.translate(size / 2, size / 2); c.rotate(-ang + Math.PI);

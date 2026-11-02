@@ -11,6 +11,7 @@ import { SIG_GREEN, SIG_YELLOW, laneOff } from './signals.js';
 import { Fires, bindInput } from './fire.js';
 import { Missions } from './missions.js';
 import { Pranks } from './pranks.js';
+import { Nav } from './nav.js';
 
 bindInput(input);
 
@@ -91,6 +92,7 @@ export class Game {
     this.fires = new Fires(this);
     this.missions = new Missions(this);
     this.pranks = new Pranks(this);
+    this.nav = new Nav(this);
     this.spawnAround(true);
     // a parked car right next to the spawn point so cars are discoverable immediately
     const near = world.nearestEdge(sx, sz, 40);
@@ -704,6 +706,7 @@ export class Game {
     this.fires.update(dt);
     this.missions.update(dt);
     this.pranks.update(dt);
+    this.nav.update(dt);
     this.updateChase(dt);
     this.updatePuffs(dt);
     this.shake = Math.max(0, this.shake - dt * CFG.feel.decay); // trauma decays; the camera shakes by trauma^2
@@ -1246,6 +1249,7 @@ export class Game {
     this.fires.draw();
     this.missions.draw();
     this.pranks.draw();
+    this.nav.draw();
     this.drawSignals(P);
     for (const b of Object.values(this.B)) if (b.n) this.r.upload(b);
   }
