@@ -169,6 +169,7 @@ for (const m of document.querySelectorAll('.modal')) {
 for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModal(b.dataset.close));
 $('setBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
 $('setBtn').addEventListener('click', () => openModal('settings'));
+$('listBtn').addEventListener('click', () => { if (game) game.pranks.render($('plistBody')); openModal('plist'); });
 $('openCredits').addEventListener('click', () => openModal('credits'));
 $('titleCredits').addEventListener('click', () => openModal('credits'));
 addEventListener('keydown', (e) => {

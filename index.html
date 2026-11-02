@@ -79,6 +79,10 @@ body.touch #bD.hide{display:none}
 #banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
 .modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
 .modal.show{display:flex}
+#plistBody h3{font-size:16px;margin:10px 0 4px}
+#plistBody .plist{list-style:none;margin:0;padding:0;font-size:15px;line-height:1.75}
+#plistBody .plist li.done{color:#16a34a}
+#plistBody .phint{font-size:13px;opacity:.75;margin:0}
 .card{background:#fff;color:#2d3a55;border-radius:22px;box-shadow:0 6px 0 rgba(30,40,70,.3);padding:12px 18px 14px;width:min(460px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}
 .card h2{margin:0 0 8px;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .card .x{background:#eef1f6;color:#2d3a55;border:none;border-radius:999px;width:34px;height:34px;font:900 16px inherit;font-family:inherit;cursor:pointer;flex:none}
@@ -100,7 +104,7 @@ body.touch #bD.hide{display:none}
     <canvas id="mini" width="180" height="180"></canvas>
     <div id="street"><span id="streetName"></span><small>万锦 Markham</small></div>
     <div id="hp"><span>♥</span><div class="bar"><i id="hpfill"></i></div></div>
-    <div id="topright"><button id="muteBtn" class="ui">🔊</button><button id="setBtn" class="ui">⚙</button></div>
+    <div id="topright"><button id="listBtn" class="ui">📋</button><button id="muteBtn" class="ui">🔊</button><button id="setBtn" class="ui">⚙</button></div>
     <div id="banner"></div>
     <div id="meter"><i></i></div>
     <div id="bubbles"></div>
@@ -120,6 +124,12 @@ body.touch #bD.hide{display:none}
     <div id="loadbar"><i></i></div>
     <div id="controls"></div>
     <div id="credit"></div>
+  </div>
+  <div id="plist" class="modal">
+    <div class="card">
+      <h2><span data-t="pList"></span><button class="x" data-close="plist">✕</button></h2>
+      <div id="plistBody"></div>
+    </div>
   </div>
   <div id="settings" class="modal">
     <div class="card">
@@ -156,8 +166,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5afd7f5bd2","./js/config.js":"./js/config.js?v=5afd7f5bd2","./js/fire.js":"./js/fire.js?v=5afd7f5bd2","./js/game.js":"./js/game.js?v=5afd7f5bd2","./js/geo.js":"./js/geo.js?v=5afd7f5bd2","./js/glb.js":"./js/glb.js?v=5afd7f5bd2","./js/hud.js":"./js/hud.js?v=5afd7f5bd2","./js/i18n.js":"./js/i18n.js?v=5afd7f5bd2","./js/input.js":"./js/input.js?v=5afd7f5bd2","./js/main.js":"./js/main.js?v=5afd7f5bd2","./js/math.js":"./js/math.js?v=5afd7f5bd2","./js/missions.js":"./js/missions.js?v=5afd7f5bd2","./js/models.js":"./js/models.js?v=5afd7f5bd2","./js/orient.js":"./js/orient.js?v=5afd7f5bd2","./js/poi.js":"./js/poi.js?v=5afd7f5bd2","./js/props.js":"./js/props.js?v=5afd7f5bd2","./js/renderer.js":"./js/renderer.js?v=5afd7f5bd2","./js/signals.js":"./js/signals.js?v=5afd7f5bd2","./js/world.js":"./js/world.js?v=5afd7f5bd2"}}</script>
-<script type="module" src="js/main.js?v=5afd7f5bd2"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5e5fc79984","./js/config.js":"./js/config.js?v=5e5fc79984","./js/fire.js":"./js/fire.js?v=5e5fc79984","./js/game.js":"./js/game.js?v=5e5fc79984","./js/geo.js":"./js/geo.js?v=5e5fc79984","./js/glb.js":"./js/glb.js?v=5e5fc79984","./js/hud.js":"./js/hud.js?v=5e5fc79984","./js/i18n.js":"./js/i18n.js?v=5e5fc79984","./js/input.js":"./js/input.js?v=5e5fc79984","./js/main.js":"./js/main.js?v=5e5fc79984","./js/math.js":"./js/math.js?v=5e5fc79984","./js/missions.js":"./js/missions.js?v=5e5fc79984","./js/models.js":"./js/models.js?v=5e5fc79984","./js/orient.js":"./js/orient.js?v=5e5fc79984","./js/poi.js":"./js/poi.js?v=5e5fc79984","./js/pranks.js":"./js/pranks.js?v=5e5fc79984","./js/props.js":"./js/props.js?v=5e5fc79984","./js/renderer.js":"./js/renderer.js?v=5e5fc79984","./js/signals.js":"./js/signals.js?v=5e5fc79984","./js/world.js":"./js/world.js?v=5e5fc79984"}}</script>
+<script type="module" src="js/main.js?v=5e5fc79984"></script>
 <!-- stamp:end -->
 </body>
 </html>

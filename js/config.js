@@ -101,6 +101,8 @@ export const CFG = {
     taxiWait: 45, taxiMin: 300, taxiMax: 900, taxiPace: 8.5, taxiBase: 15, taxiPerM: 0.08,
     racePace: 14, cpGap: 110, raceBase: 80, raceBonus: 4, landmark: 50, bustFine: 0.1,
   },
+  // prank list + golden dim sum (v0.4, D-70): $ rewards, number of buns, min metres between buns
+  pranks: { reward: 30, bun: 10, allBonus: 500, buns: 30, bunGap: 140 },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
   occlusion: { alpha: 0.32, speed: 9, maxH: 50, sampleY: [0.9, 2.4], silhouette: [0.45, 0.88, 1.0, 0.9] },

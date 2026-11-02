@@ -10,6 +10,7 @@ import { t } from './i18n.js';
 import { SIG_GREEN, SIG_YELLOW, laneOff } from './signals.js';
 import { Fires, bindInput } from './fire.js';
 import { Missions } from './missions.js';
+import { Pranks } from './pranks.js';
 
 bindInput(input);
 
@@ -89,6 +90,7 @@ export class Game {
     this.viewAspect = 844 / 390; // main.js sets the real screen aspect every frame
     this.fires = new Fires(this);
     this.missions = new Missions(this);
+    this.pranks = new Pranks(this);
     this.spawnAround(true);
     // a parked car right next to the spawn point so cars are discoverable immediately
     const near = world.nearestEdge(sx, sz, 40);
@@ -118,6 +120,7 @@ export class Game {
       // fire + water (fire.js) and mission markers (missions.js): emissive so they glow
       flame: mk(ico(0.55), MAT_A, '#ffffff', 0.85, 500), water: mk(ico(0.16), MAT_A, '#ffffff', 0.3, 500),
       ring: mk(torus(2.6, 0.2, 32, 6), MAT_A, '#ffffff', 0.75, 24), gem: mk(ico(0.7), MAT_A, '#ffffff', 0.6, 24),
+      bun: mk(sphere(0.55, 8), MAT_A, '#ffffff', 0.55, 40), // golden dim sum (pranks.js)
       // traffic-light lamps: a short emissive cylinder through the head, lens on both faces
       sigLamp: mk(cyl(0.25, 0.25, 0.52, 12), MAT_A, '#ffffff', 0.9, 900),
     };
@@ -192,6 +195,8 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ helpers
+  // gameplay events for the prank list (pranks.js): hit, carjack, enter, runover, horn, escaped, ignite, boom, crew, ko
+  ev(type, data) { if (this.pranks) this.pranks.on(type, data); }
   bubble(key, c, dy = 3.6) { this.hud.bubble(t(key), [c.x, (c.y || 0) + dy, c.z]); }
   worldDir(mx, my) {
     const az = CFG.camera.azimuth;
@@ -235,7 +240,7 @@ export class Game {
     this.chase.active = false;
     for (const c of this.chars) if (c.kind === 'cop' && c.state === 'chase') { c.state = 'leave'; c.timer = 20; }
     for (const car of this.cars) if (car.type === 'police') car.chasing = false;
-    if (!silent) this.hud.banner(t('escaped'), 'green');
+    if (!silent) { this.hud.banner(t('escaped'), 'green'); this.ev('escaped'); }
   }
   flee(c, fx, fz, time = rr(5, 8)) {
     if (c.state === 'down' || c.state === 'fly') return;
@@ -265,11 +270,12 @@ export class Game {
       if (this.player.invuln > 0 || this.player.state === 'ko') return;
       this.player.hp -= dmg; this.player.hurtT = 3; this.player.regenT = CFG.player.regenDelay;
       if (Math.random() < 0.4) this.bubble('ouch', target);
-      if (this.player.hp <= 0) this.playerKO(attacker.kind === 'cop');
+      if (this.player.hp <= 0) { this.ev('ko', { by: attacker }); this.playerKO(attacker.kind === 'cop'); }
       return;
     }
     target.hp -= dmg;
     if (attacker === this.player) {
+      this.ev('hit', { target, ko: target.hp <= 0 });
       if (Math.random() < 0.6) this.hud.bubble(t('pow'), [target.x, 2.8, target.z], 'pow');
       this.crime(target.x, target.z, target.kind === 'cop' ? target : null);
     }
@@ -356,11 +362,13 @@ export class Game {
       if (car.type === 'police') { car.cops = 0; d.state = 'chase'; }
       else { this.bubble('stolen', d); if (d.temper === 'angry' || d.temper === 'master') { d.state = 'fight'; d.timer = 12; } else this.flee(d, p.x, p.z); }
       this.crime(car.x, car.z, car.type === 'police' ? d : null);
+      this.ev('carjack', car);
     } else if (car.type === 'police' && car.cops) { car.cops = 0; this.crime(car.x, car.z, car); }
     car.driver = 'player'; car.ai = null; car.parked = false; car.stopT = 0;
     this.inCar = car;
     p.hidden = true;
     this.hud.setMode(true, car.type);
+    this.ev('enter', car);
   }
   carSide(car, off) {
     const rx = Math.cos(car.a), rz = -Math.sin(car.a);
@@ -695,6 +703,7 @@ export class Game {
     this.carHits(dt);
     this.fires.update(dt);
     this.missions.update(dt);
+    this.pranks.update(dt);
     this.updateChase(dt);
     this.updatePuffs(dt);
     this.shake = Math.max(0, this.shake - dt * CFG.feel.decay); // trauma decays; the camera shakes by trauma^2
@@ -730,7 +739,7 @@ export class Game {
         if (car.wreckT > CFG.car.wreckExit && Math.abs(car.speed) < 3) { this.exitCar(); return; }
       }
       if (input.enter) this.exitCar();
-      if (input.horn) { sfx.horn(); this.bubble('honk', car, 3.2); }
+      if (input.horn) { sfx.horn(); this.bubble('honk', car, 3.2); this.ev('horn', car); }
       sfx.engineUpdate(true, Math.min(1, Math.abs(car.speed) / CFG.car.maxSpeed));
       p.x = car.x; p.z = car.z;
       return;
@@ -1129,7 +1138,7 @@ export class Game {
           }
           c.state = 'fly'; c.vy = 4 + sp * 0.35; c.vx = car.vx * 0.7 + (lat > 0 ? fz : -fz) * 3; c.vz = car.vz * 0.7 + (lat > 0 ? -fx : fx) * 3; c.y = 0.1; c.path = null;
           c.hp -= sp * 3; sfx.crash(0.4); if (Math.random() < 0.5) sfx.scream(0.5);
-          if (car === this.inCar) { car.hp -= 2; this.crime(c.x, c.z, c.kind === 'cop' ? c : null); if (Math.random() < 0.5) this.hud.bubble(t('pow'), [c.x, 2.5, c.z], 'pow'); }
+          if (car === this.inCar) { car.hp -= 2; this.ev('runover', c); this.crime(c.x, c.z, c.kind === 'cop' ? c : null); if (Math.random() < 0.5) this.hud.bubble(t('pow'), [c.x, 2.5, c.z], 'pow'); }
         }
       }
     }
@@ -1236,6 +1245,7 @@ export class Game {
     for (const f of this.puffs) this.put(this.B.puff, M.chain(M.T(f.x, f.y, f.z), M.S(f.s)), f.c);
     this.fires.draw();
     this.missions.draw();
+    this.pranks.draw();
     this.drawSignals(P);
     for (const b of Object.values(this.B)) if (b.n) this.r.upload(b);
   }

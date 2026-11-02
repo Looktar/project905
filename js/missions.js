@@ -39,7 +39,7 @@ export class Missions {
     for (const lm of m.landmarks) if (lm.t === 'tims') this.shops.push({ x: lm.x, z: lm.z, label: ['Tim Hortz', 'Tim Hortz'] });
     // races: three start spots, each to a landmark ~1 km away
     const L = (id) => this.landmarks.find((l) => l.id === id);
-    const sp = { x: m.spawn[0], z: m.spawn[1] };
+    const sp = { x: m.spawn[0], z: m.spawn[1], nm: ['Kennedy × Hwy 7 路口', 'Kennedy & Hwy 7'] };
     this.races = [[sp, L('markville')], [L('pacific'), sp], [L('civic'), L('unionville')]]
       .filter(([a, b]) => a && b).map(([a, b], i) => ({ id: 'r' + i, from: this.roadSpot(a.x, a.z, 0), to: b }));
     this.hud();

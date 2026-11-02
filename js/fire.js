@@ -38,6 +38,7 @@ export class Fires {
     if (!f) return;
     f.byPlayer = true;
     sfx.ignite();
+    g.ev('ignite', f);
     g.crime(f.x, f.z);
   }
   wallNear(x, z, R) {
@@ -203,6 +204,7 @@ export class Fires {
     car.burnt = true; car.hp = -50; f.t = 0; f.life = F.wreckBurn; f.heat = 0.6;
     if (g.inCar === car) g.exitCar(true);
     sfx.boom();
+    g.ev('boom', f);
     g.hud.bubble(t('boom'), [car.x, 3.4, car.z], 'pow');
     const P = g.playerPos(), d = Math.hypot(P.x - car.x, P.z - car.z);
     if (d < 45) g.feedback(d < 15 ? 'large' : 'medium');
@@ -295,6 +297,7 @@ export class Fires {
       tk.crewOut.push(c);
     }
     tk.crew = 0;
+    g.ev('crew', tk.task);
   }
   updateCrews(dt) {
     const g = this.g, F = CFG.fire;
