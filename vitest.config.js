@@ -7,7 +7,7 @@ export default defineConfig({
     include: ['tests/unit/**/*.test.js'],
     exclude: ['.claude/**', 'node_modules/**', 'test-results/**'],
     setupFiles: ['tests/helpers/setup.js'],
-    testTimeout: 20000,
+    testTimeout: 60000, // long headless simulations on the bigger v0.2 map are slow on CI runners
     hookTimeout: 30000,
   },
 });
