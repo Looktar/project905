@@ -379,6 +379,13 @@ water, parks, lots, plazas = [], [], [], []
 # historic districts are tagged landuse=commercial but are not parking lots (no stalls / parked cars)
 HERITAGE_AREAS = {'Historic Main Street Unionville'}
 heritage_areas = []
+# procedural houses only go where people actually live: never on business / school / church land (D-64)
+NO_HOUSE_LANDUSE = {'commercial', 'retail', 'industrial', 'religious', 'construction', 'cemetery',
+                    'farmland', 'brownfield', 'greenfield', 'recreation_ground'}
+NO_HOUSE_AMENITY = {'school', 'college', 'university', 'hospital', 'place_of_worship', 'parking',
+                    'community_centre', 'fire_station'}
+NO_HOUSE_LEISURE = {'pitch', 'playground', 'sports_centre', 'track', 'golf_course'}
+no_house = []
 for w in ways:
     t = w['tags']
     if t.get('natural') == 'water':
@@ -394,6 +401,10 @@ for w in ways:
     elif t.get('landuse') in ('grass', 'forest', 'meadow', 'cemetery'):
         gp = area_polys(w)
         if gp: parks.append(gp)
+    if (t.get('landuse') in NO_HOUSE_LANDUSE or t.get('amenity') in NO_HOUSE_AMENITY
+            or t.get('leisure') in NO_HOUSE_LEISURE):
+        gp = area_polys(w)
+        if gp: no_house.append(gp)
 for r in rels:
     if r['tags'].get('natural') == 'water':
         for m in r['members']:
@@ -429,6 +440,13 @@ for p in parks:
 def in_park(x, z):
     return any(point_in_poly(x, z, p) for p in park_grid.query((x, z, x, z)))
 
+no_house_grid = Grid(30.0)
+for p in no_house:
+    xs = [q[0] for q in p]; zs = [q[1] for q in p]
+    no_house_grid.add((min(xs), min(zs), max(xs), max(zs)), p)
+def in_no_house(x, z):
+    return any(point_in_poly(x, z, p) for p in no_house_grid.query((x, z, x, z)))
+
 # ---------------------------------------------------------------- buildings (OSM, non-house)
 PALETTE = {
     'retail': ['#f1e4cc', '#e9d5b5', '#f3dcd0', '#dfe7f2'],
@@ -457,13 +475,26 @@ def place_building(poly, h, color, kind, extra=None):
     occ.add(box, b)
     return b
 
-def fits(poly, pad=1.5):
+def segs_cross(a, b, c, d):
+    o = lambda p, q, r: (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    return o(c, d, a) * o(c, d, b) < 0 and o(a, b, c) * o(a, b, d) < 0
+
+def polys_overlap(P, Q):
+    for i in range(len(P)):
+        a, b = P[i], P[(i + 1) % len(P)]
+        for j in range(len(Q)):
+            if segs_cross(a, b, Q[j], Q[(j + 1) % len(Q)]):
+                return True
+    return point_in_poly(P[0][0], P[0][1], Q) or point_in_poly(Q[0][0], Q[0][1], P)
+
+def fits(poly, pad=1.5, skip=None):
     for (x, z) in poly + [centroid(poly)]:
         if road_clear(x, z, pad) < 0:
             return False
     xs = [q[0] for q in poly]; zs = [q[1] for q in poly]
     for o in occ.query((min(xs), min(zs), max(xs), max(zs))):
-        return False
+        if o is not skip and polys_overlap(poly, o['p']):
+            return False
     return True
 
 HERITAGE_MARGIN = 22.0   # game metres around a historic district that get storefronts
@@ -497,15 +528,14 @@ for w, p in blds:
     name = t.get('name', '')
     lm = LANDMARK_NAMES.get(name)
     btype = t.get('building', 'yes')
-    if lm:
-        size_k = 0.72
-    else:
-        size_k = 0.55
+    # every building sits on its own real footprint at map scale; landmarks stay oversized so they
+    # read from afar. The grow pass below then lets buildings swell into the free space around them
+    size_k = 0.72 if lm else SCALE
     c = centroid(p)
     gc = g(c)
     gp = [(gc[0] + (q[0] - c[0]) * size_k, gc[1] + (q[1] - c[1]) * size_k) for q in p]
     gp = ring_simplify(gp, 0.4)
-    if len(gp) < 3 or abs(poly_area(gp)) < 25:
+    if len(gp) < 3 or abs(poly_area(gp)) < 14:
         continue
     ok = False
     for shrink in (1.0, 0.85, 0.7, 0.55):
@@ -543,10 +573,25 @@ for w, p in blds:
         lc = centroid(gp)
         landmarks.append({'t': 'tims', 'x': round(lc[0], 1), 'z': round(lc[1], 1), 'h': h, 'r': 3})
         tims_done.append(lc)
-    elif (not lm and btype in ('retail', 'commercial', 'yes') and abs(poly_area(gp)) < 130
+    elif (not lm and btype in ('retail', 'commercial', 'yes') and abs(poly_area(gp)) < 70
           and in_heritage_zone(*centroid(gp))):
         continue  # tiny shop boxes on a historic main street are replaced by procedural storefronts
     osm_placed.append((place_building(gp, h, color, btype, extra), t))
+
+# toy proportions: true-scale footprints look tiny next to full-size cars and people, so each one
+# grows around its centroid as far as BLD_GROW allows without touching a road or a neighbour (D-64)
+BLD_GROW = (1.35, 1.2, 1.1)
+for b, t in osm_placed:
+    if b.get('lm'):
+        continue
+    P = b['p']; c = centroid(P)
+    for k in BLD_GROW:
+        sp = [(c[0] + (x - c[0]) * k, c[1] + (z - c[1]) * k) for x, z in P]
+        gap = [(c[0] + (x - c[0]) * (k + 0.06), c[1] + (z - c[1]) * (k + 0.06)) for x, z in P]
+        if fits(gap, 1.0, skip=b):
+            b['p'] = [[round(x, 2), round(z, 2)] for x, z in sp]
+            occ.add((min(q[0] for q in sp), min(q[1] for q in sp), max(q[0] for q in sp), max(q[1] for q in sp)), b)
+            break
 
 # ---------------------------------------------------------------- v0.1 landmark / prop placement helpers
 prng = random.Random(9050)   # own RNG so landmark/prop tweaks do not reshuffle the rest of the map
@@ -563,18 +608,6 @@ def rect_poly(cx, cz, ang, w, d):
 
 def r2p(poly):
     return [(round(x, 2), round(z, 2)) for x, z in poly]
-
-def segs_cross(a, b, c, d):
-    o = lambda p, q, r: (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
-    return o(c, d, a) * o(c, d, b) < 0 and o(a, b, c) * o(a, b, d) < 0
-
-def polys_overlap(P, Q):
-    for i in range(len(P)):
-        a, b = P[i], P[(i + 1) % len(P)]
-        for j in range(len(Q)):
-            if segs_cross(a, b, Q[j], Q[(j + 1) % len(Q)]):
-                return True
-    return point_in_poly(P[0][0], P[0][1], Q) or point_in_poly(Q[0][0], Q[0][1], P)
 
 def grow(poly, pad):
     """push the corners of a convex footprint outwards by ~pad metres"""
@@ -1672,7 +1705,7 @@ def try_house(cx, cz, ang, hw, hd, heritage=False):
         return False
     if road_clear(cx, cz, r * 0.85) < 1.2:
         return False
-    if in_water(cx, cz, r) or in_park(cx, cz):
+    if in_water(cx, cz, r) or in_park(cx, cz) or (not heritage and in_no_house(cx, cz)):
         return False
     box = (cx - r, cz - r, cx + r, cz + r)
     for o in hgrid.query(box):
