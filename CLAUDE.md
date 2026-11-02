@@ -24,6 +24,8 @@ js/game.js            玩法：主角、路人(随机属性/性格/过马路)、
 js/fire.js            v0.3 放火：车 / 楼 / 地面着火、爆炸、消防车和消防员、水炮（D-69）
 js/missions.js        v0.3 任务：送外卖、出租车、赛车、地标打卡、钱（D-69）
 js/pranks.js          v0.4 万锦恶作剧清单（game.ev 事件）+ 30 个金点心收集品（D-70）
+js/nav.js             v0.5 地点索引、容错搜索、GPS 导航路线、传送（D-71）
+js/bigmap.js          v0.5 全城大地图界面：点小地图或按 M，拖动 / 缩放 / 搜索 / 导航 / 传送
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
 js/glb.js             最小 GLB 加载器：模型转成顶点色三角形，交给 MeshBuilder.addTriangles 烘焙

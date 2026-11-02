@@ -19,6 +19,7 @@ export const input = {
 const keys = new Set();
 const edge = (k) => { if (k === 'Space') input.punch = true; if (k === 'KeyF' || k === 'KeyE') input.enter = true; if (k === 'KeyH') input.horn = true; if (k === 'KeyG') input.fire = true; };
 addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT') return; // typing in the map search box
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (!keys.has(e.code)) edge(e.code);
   keys.add(e.code);
@@ -48,8 +49,8 @@ export function layout(app) {
 }
 
 // screen -> game (accounts for the rotation)
-function toGameDelta(dx, dy) { return screenDeltaToGame(dx, dy, mode); }
-function toGamePoint(x, y) { return screenToGame(x, y, mode); }
+export function toGameDelta(dx, dy) { return screenDeltaToGame(dx, dy, mode); }
+export function toGamePoint(x, y) { return screenToGame(x, y, mode); }
 
 export function initTouch(app, joyEl, knobEl, buttons) {
   const R = 58;

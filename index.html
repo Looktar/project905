@@ -79,6 +79,29 @@ body.touch #bD.hide{display:none}
 #banner.blue{background:#2563eb;box-shadow:0 4px 0 #1e3a8a}
 .modal{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(30,40,70,.45);padding:12px}
 .modal.show{display:flex}
+#bigmap{padding:0;background:#9fd067;z-index:26}
+#bmCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#bmTop{position:absolute;top:calc(10px + var(--sa-t, 0px));left:calc(10px + var(--sa-l, 0px));right:calc(10px + var(--sa-r, 0px));display:flex;gap:8px;max-width:520px}
+#bmQ{flex:1;min-width:0;font:700 16px inherit;font-family:inherit;padding:8px 14px;border-radius:999px;border:3px solid #fff;box-shadow:0 3px 0 rgba(30,40,70,.25);outline:none;color:#2d3a55}
+#bigmap .x{background:#fff;color:#2d3a55;border:none;border-radius:999px;width:40px;height:40px;font:900 16px inherit;font-family:inherit;box-shadow:0 3px 0 rgba(30,40,70,.25);flex:none;cursor:pointer}
+#bmChips{position:absolute;top:calc(60px + var(--sa-t, 0px));left:calc(10px + var(--sa-l, 0px));right:10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:620px}
+#bmChips button,#bmZoom button,#bmCard button{border:none;border-radius:999px;background:#fff;color:#2d3a55;font:800 13px inherit;font-family:inherit;padding:6px 11px;white-space:nowrap;box-shadow:0 2px 0 rgba(30,40,70,.2);cursor:pointer}
+#bmChips button.on{background:#2d3a55;color:#fff}
+#bmList{position:absolute;top:calc(98px + var(--sa-t, 0px));left:calc(10px + var(--sa-l, 0px));width:min(340px,60%);max-height:calc(100% - 112px);overflow:auto;background:rgba(255,255,255,.96);border-radius:16px;color:#2d3a55;font-size:14px}
+#bmList:empty{display:none}
+#bmList div{padding:8px 12px;border-bottom:1px solid #eef1f6;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+#bmList small{opacity:.6;flex:none}
+#bmList p{margin:10px 12px}
+#bmZoom{position:absolute;right:calc(10px + var(--sa-r, 0px));bottom:calc(14px + var(--sa-b, 0px));display:flex;flex-direction:column;gap:6px}
+#bmZoom button{width:40px;height:40px;padding:0;font-size:18px}
+#bmCard{position:absolute;left:50%;bottom:calc(14px + var(--sa-b, 0px));transform:translateX(-50%);background:#fff;color:#2d3a55;border-radius:18px;padding:10px 14px;box-shadow:0 4px 0 rgba(30,40,70,.25);display:none;text-align:center;max-width:min(420px,70%)}
+#bmCard.show{display:block}
+#bmCard b{display:block;font-size:16px}
+#bmCard div{display:flex;gap:8px;justify-content:center;margin-top:8px}
+#bmCard button{font-size:15px;padding:8px 16px}
+#bmGo{background:#06b6d4!important;color:#fff!important}
+#bmTp{background:#7c3aed!important;color:#fff!important}
+#bmMsg{display:block;color:#dc2626;font-weight:700}
 #plistBody h3{font-size:16px;margin:10px 0 4px}
 #plistBody .plist{list-style:none;margin:0;padding:0;font-size:15px;line-height:1.75}
 #plistBody .plist li.done{color:#16a34a}
@@ -125,6 +148,14 @@ body.touch #bD.hide{display:none}
     <div id="controls"></div>
     <div id="credit"></div>
   </div>
+  <div id="bigmap" class="modal">
+    <canvas id="bmCanvas"></canvas>
+    <div id="bmTop"><input id="bmQ" type="search" autocomplete="off" enterkeyhint="search"><button class="x" data-close="bigmap">✕</button></div>
+    <div id="bmChips"></div>
+    <div id="bmList"></div>
+    <div id="bmZoom"><button id="bmIn">＋</button><button id="bmOut">－</button><button id="bmMe">◎</button></div>
+    <div id="bmCard"><b></b><small id="bmDist"></small><div><button id="bmGo" data-t="navGo"></button><button id="bmTp" data-t="navTp"></button><button id="bmStop" data-t="navStop"></button></div><small id="bmMsg"></small></div>
+  </div>
   <div id="plist" class="modal">
     <div class="card">
       <h2><span data-t="pList"></span><button class="x" data-close="plist">✕</button></h2>
@@ -166,8 +197,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5e5fc79984","./js/config.js":"./js/config.js?v=5e5fc79984","./js/fire.js":"./js/fire.js?v=5e5fc79984","./js/game.js":"./js/game.js?v=5e5fc79984","./js/geo.js":"./js/geo.js?v=5e5fc79984","./js/glb.js":"./js/glb.js?v=5e5fc79984","./js/hud.js":"./js/hud.js?v=5e5fc79984","./js/i18n.js":"./js/i18n.js?v=5e5fc79984","./js/input.js":"./js/input.js?v=5e5fc79984","./js/main.js":"./js/main.js?v=5e5fc79984","./js/math.js":"./js/math.js?v=5e5fc79984","./js/missions.js":"./js/missions.js?v=5e5fc79984","./js/models.js":"./js/models.js?v=5e5fc79984","./js/orient.js":"./js/orient.js?v=5e5fc79984","./js/poi.js":"./js/poi.js?v=5e5fc79984","./js/pranks.js":"./js/pranks.js?v=5e5fc79984","./js/props.js":"./js/props.js?v=5e5fc79984","./js/renderer.js":"./js/renderer.js?v=5e5fc79984","./js/signals.js":"./js/signals.js?v=5e5fc79984","./js/world.js":"./js/world.js?v=5e5fc79984"}}</script>
-<script type="module" src="js/main.js?v=5e5fc79984"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=ce45f2a61b","./js/bigmap.js":"./js/bigmap.js?v=ce45f2a61b","./js/config.js":"./js/config.js?v=ce45f2a61b","./js/fire.js":"./js/fire.js?v=ce45f2a61b","./js/game.js":"./js/game.js?v=ce45f2a61b","./js/geo.js":"./js/geo.js?v=ce45f2a61b","./js/glb.js":"./js/glb.js?v=ce45f2a61b","./js/hud.js":"./js/hud.js?v=ce45f2a61b","./js/i18n.js":"./js/i18n.js?v=ce45f2a61b","./js/input.js":"./js/input.js?v=ce45f2a61b","./js/main.js":"./js/main.js?v=ce45f2a61b","./js/math.js":"./js/math.js?v=ce45f2a61b","./js/missions.js":"./js/missions.js?v=ce45f2a61b","./js/models.js":"./js/models.js?v=ce45f2a61b","./js/nav.js":"./js/nav.js?v=ce45f2a61b","./js/orient.js":"./js/orient.js?v=ce45f2a61b","./js/poi.js":"./js/poi.js?v=ce45f2a61b","./js/pranks.js":"./js/pranks.js?v=ce45f2a61b","./js/props.js":"./js/props.js?v=ce45f2a61b","./js/renderer.js":"./js/renderer.js?v=ce45f2a61b","./js/signals.js":"./js/signals.js?v=ce45f2a61b","./js/world.js":"./js/world.js?v=ce45f2a61b"}}</script>
+<script type="module" src="js/main.js?v=ce45f2a61b"></script>
 <!-- stamp:end -->
 </body>
 </html>

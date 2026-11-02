@@ -11,7 +11,7 @@ import { t, getLang } from './i18n.js';
 
 const KEY = 'p905.missions.v1';
 const COL = { delivery: [1, 0.8, 0.1], taxi: [0.3, 0.85, 0.35], race: [0.15, 0.85, 1], landmark: [0.68, 0.33, 0.97], target: [1, 0.45, 0.1] };
-const LANDMARKS = {
+export const LANDMARKS = {
   pacific: ['大古广场 Pacifick Mall', 'Pacifick Mall'], markville: ['Markvile Mall', 'Markvile Mall'],
   civic: ['万锦市政厅', 'Civic Centre'], unionville: ['Unionville 老街', 'Old Unionville'],
   cinema: ['Downtown 影城', 'Downtown Cinema'], downtown: ['Downtown Markham', 'Downtown Markham'], pool: ['Toogood 湖', 'Toogood Pond'],

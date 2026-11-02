@@ -2,6 +2,7 @@ import { Renderer } from './renderer.js';
 import { World } from './world.js';
 import { Game } from './game.js';
 import { HUD } from './hud.js';
+import { BigMap } from './bigmap.js';
 import { CFG } from './config.js';
 import { input, layout, initTouch, poll, clearEdges, isTouch } from './input.js';
 import * as sfx from './audio.js';
@@ -126,7 +127,7 @@ async function boot() {
   const [map] = await Promise.all([fetchMap((f) => setBar(0.45 * f)), wantPF ? loadModels(pfKeys, CFG.models.timeoutMs) : null]);
   hud = new HUD(app);
   hud.setMiniOpen(settings.mini);
-  hud.onMiniToggle = (open) => { settings.mini = open; save(); applyTexts(); };
+  hud.onMiniTap = openMap;
   $('loading').textContent = t('building');
   world = await World.load(renderer, map, (f) => setBar(0.45 + 0.55 * f));
   hud.setWorld(world);
@@ -171,8 +172,12 @@ $('setBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
 $('setBtn').addEventListener('click', () => openModal('settings'));
 $('listBtn').addEventListener('click', () => { if (game) game.pranks.render($('plistBody')); openModal('plist'); });
 $('openCredits').addEventListener('click', () => openModal('credits'));
+// the big map (v0.5, D-71): minimap tap or M
+const bigmap = new BigMap(() => closeModal('bigmap'));
+function openMap() { if (!game || anyModal()) return; openModal('bigmap'); bigmap.open(game, W, H); }
 $('titleCredits').addEventListener('click', () => openModal('credits'));
 addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM' && !(e.target && e.target.tagName === 'INPUT')) { if ($('bigmap').classList.contains('show')) closeModal('bigmap'); else openMap(); return; }
   if (e.code !== 'Escape') return;
   if (anyModal()) for (const m of document.querySelectorAll('.modal.show')) closeModal(m.id);
   else if (game) openModal('settings');
