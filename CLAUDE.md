@@ -50,6 +50,7 @@ npm run smoke                        # 三种画面的冒烟测试 + 截图（�
 npm run map:fetch                    # 重新抓 OSM 原始数据（需要联网；之后再跑 npm run map）
 npm run map                          # 重新生成地图（改了 build_map.py 后必须跑并提交 maps/markham.json）
 npm run check:map                    # 确认提交的地图和 build_map.py 一致
+npm run stamp                        # 改了 js/ 或 maps/ 后更新 index.html 的版本号（D-61，不更新单元测试会失败）
 ```
 - 网址参数：`?debug=1` 显示帧率、CPU、draw call、实体数；`?bench=1` 在出生点跑 20 秒基准测试；`?noauto=1` 关掉自动降画质（截图、测试用）。
 - 云端环境里 Playwright 浏览器已预装（1.63.0），**不要**运行 `playwright install`。

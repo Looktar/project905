@@ -16,19 +16,39 @@ const COL = {
 };
 
 export class World {
-  constructor(renderer, map) {
+  // lazy: leave the build to World.load (main.js), which spreads it over several frames
+  constructor(renderer, map, lazy = false) {
     this.r = renderer; this.map = map;
     this.half = map.half;
     this.chunks = new Map();
     this.names = map.names;
+    if (!lazy) { const it = this.build(); while (!it.next().done); }
+  }
+  // the whole build as a generator; yields progress 0..1 between pieces of work
+  *build() {
     this.buildGraph();
     this.buildCollision();
     // traffic signals: after collision (pole spots avoid buildings), before chunks (poles are baked in)
     const sg = buildSignals(this);
     this.signals = sg.list; this.sigAp = sg.byAp; this.sigPoles = sg.poles;
-    this.buildChunks();
+    yield 0.08;
+    yield* this.buildChunks(0.08, 0.95);
     this.buildSigns();
     this.buildMinimap();
+    yield 1;
+  }
+  // async build that hands the main thread back every ~50 ms so a loading bar can move and the
+  // page never looks frozen on a slow phone (spec: playable within 10 s on 4G)
+  static async load(renderer, map, onProgress = () => {}) {
+    const w = new World(renderer, map, true);
+    let t = performance.now();
+    for (const p of w.build()) {
+      if (performance.now() - t < 50 && p < 1) continue;
+      onProgress(p);
+      await new Promise((res) => setTimeout(res, 0));
+      t = performance.now();
+    }
+    return w;
   }
   chunkKey(x, z) { return Math.floor(x / CH) + ',' + Math.floor(z / CH); }
   chunk(x, z) {
@@ -189,6 +209,10 @@ export class World {
     for (const w of this.map.water) this.water.push(w.p);
     for (const lm of this.map.landmarks) if (lm.t === 'pool') this.water.push(lm.p);
     this.rivers = this.map.rivers.map(([big, pts]) => ({ w: big ? 9 : 3.5, pts }));
+    // bounding boxes so inWater (called per character per frame and in bulk placement) skips far water
+    const bb = (pts, pad) => { let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9; for (const [x, z] of pts) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); } return [x0 - pad, z0 - pad, x1 + pad, z1 + pad]; };
+    this.waterBB = this.water.map((p) => bb(p, 0));
+    for (const rv of this.rivers) rv.bb = bb(rv.pts, rv.w);
     propColliders(this); // storefronts, stations, bus stops, gazebo + walkable dock decks
     poiColliders(this);  // gas pump islands + pylons, display cars; gas canopies only as (non-solid) occluders
   }
@@ -249,7 +273,9 @@ export class World {
   }
   inWater(x, z) {
     for (const d of this.decks) if (propPip(x, z, d)) return false; // lookout dock over the pond
-    for (const p of this.water) {
+    for (let w = 0; w < this.water.length; w++) {
+      const p = this.water[w], b = this.waterBB[w];
+      if (x < b[0] || x > b[2] || z < b[1] || z > b[3]) continue;
       let inside = false;
       for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
         const [xi, zi] = p[i], [xj, zj] = p[j];
@@ -257,12 +283,15 @@ export class World {
       }
       if (inside) return !this.onRoad(x, z, 1);
     }
-    for (const rv of this.rivers)
+    for (const rv of this.rivers) {
+      const b = rv.bb;
+      if (x < b[0] || x > b[2] || z < b[1] || z > b[3]) continue;
       for (let k = 0; k < rv.pts.length - 1; k++) {
         const [ax, az] = rv.pts[k], [bx, bz] = rv.pts[k + 1];
         if (Math.abs(ax - x) > 60 && Math.abs(bx - x) > 60) continue;
         if (segDist(x, z, ax, az, bx, bz).d < rv.w / 2) return !this.onRoad(x, z, 1.5);
       }
+    }
     return false;
   }
   // on (or right next to) the railway ballast
@@ -289,8 +318,10 @@ export class World {
   }
 
   // ---------------------------------------------------------------- render chunks
-  buildChunks() {
+  // generator: yields progress (p0..p1) between phases so World.load can let the page breathe
+  *buildChunks(p0 = 0, p1 = 1) {
     const m = this.map;
+    const at = (f) => p0 + (p1 - p0) * f;
     // ground areas
     const areaY = { lot: 0.012, park: 0.008, water: 0.02 };
     for (const a of m.parks) flatPoly(this.polyChunk(a.p).mb, a.p, a.t, areaY.park, COL.park);
@@ -377,6 +408,7 @@ export class World {
           c.mb.add(box(2.2, 7.2, 1.4), M.chain(M.T(px, 3.6, pz), M.RY(ang)), COL.pier);
         }
       }
+    yield at(0.2);
     // OSM buildings
     this.bRange = [];
     this.fade = new Map(); // building index -> current alpha (occlusion fade)
@@ -398,10 +430,12 @@ export class World {
         for (let i = 0; i < 3; i++) c.mb.add(rbox(2.4, 1.2, 2.4, 0.2), M.T(cx + (i - 1) * 4, b.h + 0.6, cz + (i % 2) * 3), '#c9ced8');
       }
       this.bRange.push([c, v0, c.mb.count]);
+      if (this.bRange.length % 400 === 0) yield at(0.2 + 0.35 * this.bRange.length / m.buildings.length);
     }
     // landmarks
     for (const lm of m.landmarks) this.buildLandmark(lm);
     this.heritageVerts = buildHeritage(this); // Unionville Main St storefronts
+    yield at(0.6);
     // parking lots: painted stalls + parked cars (static, solid)
     const lotCars = [];
     let seedL = 1;
@@ -447,6 +481,7 @@ export class World {
           this.chunk(p.x, p.z).lamps.push([p.x, p.z, Math.atan2(p.dz, -p.dx)]);
         }
     }
+    yield at(0.7);
     // hydrants, manhole covers, bus stops (baked into the chunk meshes; needs the lamp positions)
     this.buildStreetSigns();
     this.propStats = buildStreetProps(this);
@@ -481,7 +516,10 @@ export class World {
     const walls = m.houseWalls.map(hex), roofs = m.houseRoofs.map(hex);
     const tg = ['#a6cf3f', '#b9da4c', '#93c13a', '#8fc24a', '#a9d14f'].map(hex);
     bakeSignals(this);
+    yield at(0.8);
+    let nc = 0;
     for (const c of this.chunks.values()) {
+      if (++nc % 60 === 0) yield at(0.8 + 0.2 * nc / this.chunks.size);
       c.static = this.r.mesh(c.mb); c.mb = null;
       if (c.houses.length) {
         const d = new Float32Array(c.houses.length * INST_FLOATS);

@@ -82,6 +82,31 @@ addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 200));
 
 // ---------------- boot
+// cache-busting stamp: index.html loads main.js?v=<hash> (tools/stamp.mjs); the map rides on it too
+const STAMP = new URL(import.meta.url).searchParams.get('v');
+function setBar(f) { $('loadbar').firstElementChild.style.width = Math.round(Math.min(1, f) * 100) + '%'; }
+// map JSON with download progress. Pages gzips it, so Content-Length is the compressed size and
+// the decoded byte count cannot be compared with it: the fallback is the map's rough raw size.
+async function fetchMap(onProgress) {
+  const res = await fetch('maps/markham.json' + (STAMP ? '?v=' + STAMP : ''));
+  if (!res.ok) throw new Error('map ' + res.status);
+  const len = +res.headers.get('content-length') || 0;
+  const total = len && !res.headers.get('content-encoding') ? len : 1.9e6;
+  if (!res.body || !res.body.getReader) return res.json();
+  const reader = res.body.getReader(), parts = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value); got += value.length;
+    onProgress(Math.min(0.97, got / total));
+  }
+  onProgress(1);
+  const all = new Uint8Array(got);
+  let o = 0;
+  for (const p of parts) { all.set(p, o); o += p.length; }
+  return JSON.parse(new TextDecoder().decode(all));
+}
 async function boot() {
   applyTexts();
   resize();
@@ -92,15 +117,19 @@ async function boot() {
   }
   applyQuality();
   $('loading').textContent = t('loading');
-  // map and (optional) Polyfork models load in parallel; models that fail or time out fall back
+  $('loadbar').style.display = 'block';
+  // map and (optional) Polyfork models load in parallel; models that fail or time out fall back.
+  // Bar: download 0..45 %, world build 45..100 %.
   const wantPF = modelsWanted(location.search, CFG.models.polyfork);
-  const [map] = await Promise.all([fetch('maps/markham.json').then((r) => r.json()), wantPF ? loadModels(undefined, CFG.models.timeoutMs) : null]);
+  const [map] = await Promise.all([fetchMap((f) => setBar(0.45 * f)), wantPF ? loadModels(undefined, CFG.models.timeoutMs) : null]);
   hud = new HUD(app);
   hud.setMiniOpen(settings.mini);
   hud.onMiniToggle = (open) => { settings.mini = open; save(); applyTexts(); };
-  world = new World(renderer, map);
+  $('loading').textContent = t('building');
+  world = await World.load(renderer, map, (f) => setBar(0.45 + 0.55 * f));
   hud.setWorld(world);
   $('loading').style.display = 'none';
+  $('loadbar').style.display = 'none';
   $('startBtn').disabled = false;
   // preview camera behind the title screen
   previewCam = map.spawn;
