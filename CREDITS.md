@@ -22,6 +22,9 @@ Polyfork 的免费模型**运行时直接从 polyfork.dev 的 CDN 加载**，模
 | 路灯 | Cobra-Head Street Light · Neighborhood Pathways Kit | https://polyfork.dev/asset/cobra-head-street-light-3e25b8 | 同上 |
 | 消防栓 | Fire Hydrant · NYC City Kit | https://polyfork.dev/asset/fire-hydrant-b68b17 | 同上 |
 | 公交候车亭 | Bus Shelter · NYC City Kit | https://polyfork.dev/asset/bus-shelter-f786b4 | 同上 |
+| 住宅（两层，样板） | Two-Storey Family House · Neighborhood Pathways Kit | https://polyfork.dev/asset/two-storey-family-house-c63c4a | 同上 |
+| 住宅（错层，样板） | Split-Level House · Neighborhood Pathways Kit | https://polyfork.dev/asset/split-level-house-40fe1a | 同上 |
+| 住宅（平房，样板） | Single-Storey Ranch House · Neighborhood Pathways Kit | https://polyfork.dev/asset/single-storey-ranch-house-3880ea | 同上 |
 
 ## 开发工具（不进游戏）
 - `.claude/skills/` 里的 game-feel、performance-optimization、create-game-assets 三个技能来自 [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills)，Apache-2.0 许可。

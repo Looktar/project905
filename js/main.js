@@ -7,7 +7,7 @@ import { input, layout, initTouch, poll, clearEdges, isTouch } from './input.js'
 import * as sfx from './audio.js';
 import { t, setLang, getLang } from './i18n.js';
 import { lerp } from './math.js';
-import { loadModels, modelsWanted } from './models.js';
+import { loadModels, modelsWanted, POLYFORK, HOUSE_MODELS } from './models.js';
 
 const app = document.getElementById('app');
 const canvas = document.getElementById('c');
@@ -121,7 +121,9 @@ async function boot() {
   // map and (optional) Polyfork models load in parallel; models that fail or time out fall back.
   // Bar: download 0..45 %, world build 45..100 %.
   const wantPF = modelsWanted(location.search, CFG.models.polyfork);
-  const [map] = await Promise.all([fetchMap((f) => setBar(0.45 * f)), wantPF ? loadModels(undefined, CFG.models.timeoutMs) : null]);
+  const wantHouses = modelsWanted(location.search, CFG.models.houses, 'ph'); // house sample (D-63)
+  const pfKeys = Object.keys(POLYFORK).filter((k) => wantHouses || !HOUSE_MODELS.includes(k));
+  const [map] = await Promise.all([fetchMap((f) => setBar(0.45 * f)), wantPF ? loadModels(pfKeys, CFG.models.timeoutMs) : null]);
   hud = new HUD(app);
   hud.setMiniOpen(settings.mini);
   hud.onMiniToggle = (open) => { settings.mini = open; save(); applyTexts(); };

@@ -3,7 +3,7 @@
 // the files in our public repo would be redistribution), so they are never committed here.
 // Anything that fails or is slow to load falls back to the procedural models.
 import { parseGLB, glbToTriangles } from './glb.js';
-import { MAT_A, MAT_V } from './geo.js';
+import { MAT_A, MAT_B, MAT_V } from './geo.js';
 
 const CDN = 'https://polyfork.dev/cdn/';
 
@@ -22,13 +22,19 @@ export const POLYFORK = {
   lamp: { id: 'cobra-head-street-light-3e25b8', fit: { height: 6.2 }, origin: 'base', grade: { light: 1.1, sat: 1 } },
   hydrant: { id: 'fire-hydrant-b68b17', fit: { height: 0.85 }, grade: { light: 1.2, sat: 1.3 } },
   shelter: { id: 'bus-shelter-f786b4', fit: { width: 4.2 } },
+  // houses (one kit, sample behind ?ph=1): native size in metres; world.js scales each instance to
+  // its lot. Wall colour -> instance colour A, roof -> B (the map's house palettes, D-63)
+  house2: { id: 'two-storey-family-house-c63c4a', fit: { width: 8 }, tints: [{ col: [0.775, 0.653, 0.483], mat: MAT_A }, { col: [0.296, 0.234, 0.170], mat: MAT_B, tol: 0.04 }] },
+  split: { id: 'split-level-house-40fe1a', fit: { width: 12 }, tints: [{ col: [0.847, 0.783, 0.653], mat: MAT_A }, { col: [0.296, 0.234, 0.170], mat: MAT_B, tol: 0.04 }] },
+  ranch: { id: 'single-storey-ranch-house-3880ea', fit: { width: 12 }, tints: [{ col: [0.847, 0.783, 0.653], mat: MAT_A }, { col: [0.296, 0.234, 0.170], mat: MAT_B, tol: 0.04 }] },
 };
+export const HOUSE_MODELS = ['house2', 'split', 'ranch'];
 
 export const MODELS = {}; // filled by loadModels(): key -> { p, n, c, mat, bounds }
 
 // ?pf=1 turns Polyfork models on, ?pf=0 off; otherwise CFG decides (style sample first, ART-BIBLE 7)
-export function modelsWanted(search, def) {
-  const m = /[?&]pf=([01])/.exec(search);
+export function modelsWanted(search, def, key = 'pf') {
+  const m = new RegExp('[?&]' + key + '=([01])').exec(search);
   return m ? m[1] === '1' : def;
 }
 
@@ -82,6 +88,18 @@ export function fitModel(t, def) {
       isPaint = (i) => paint && key(i) === paint[0];
     }
     for (let i = 0; i < c.length; i += 3) if (isPaint(i)) { c[i] = c[i + 1] = c[i + 2] = 1; mat[i / 3] = MAT_A; }
+  }
+  // tints: [{ col: [r,g,b], mat, tol }] - vertices near col take instance colour A / B (a house's
+  // wall / roof colour); the vertex keeps its brightness relative to col so siding and shingle
+  // stripes survive the recolour
+  for (const T of def.tints || []) {
+    const L = (T.col[0] + T.col[1] + T.col[2]) / 3, tol = T.tol || 0.03;
+    for (let i = 0; i < c.length; i += 3) {
+      if (mat[i / 3] !== MAT_V) continue;
+      if (Math.abs(c0[i] - T.col[0]) > tol || Math.abs(c0[i + 1] - T.col[1]) > tol || Math.abs(c0[i + 2] - T.col[2]) > tol) continue;
+      const g = Math.min(1.25, (c0[i] + c0[i + 1] + c0[i + 2]) / 3 / L);
+      c[i] = c[i + 1] = c[i + 2] = g; mat[i / 3] = T.mat;
+    }
   }
   return { p, n: t.n, c, mat, bounds: { lo: [(lo[0] - cx) * s, 0, (lo[2] - cz) * s], hi: [(hi[0] - cx) * s, (hi[1] - lo[1]) * s, (hi[2] - cz) * s] }, tris: nv / 3 };
 }

@@ -4,7 +4,7 @@ import { M, hex, segDist, rnd } from './math.js';
 import { MeshBuilder, MAT_A, MAT_B, MAT_V, rbox, box, sphere, ico, cyl, torus, roof, ribbon, flatPoly, extrude } from './geo.js';
 import { INST_FLOATS } from './renderer.js';
 import { CFG } from './config.js';
-import { MODELS } from './models.js';
+import { MODELS, HOUSE_MODELS } from './models.js';
 import { propColliders, buildPropLandmark, buildHeritage, buildStreetProps, buildingDetail, propSign, propIcons, propPip, buswayDist } from './props.js';
 import { buildSignals, bakeSignals, signalState, nearPole } from './signals.js';
 import { poiColliders, poiGround, poiDetail, poiWindows, poiSigns, poiIcons, storeSigns, storeIcons, inApron } from './poi.js';
@@ -492,6 +492,17 @@ export class World {
     houseMB.add(box(0.16, 0.6, 0.02), M.T(0, 0.3, 0.505), '#7c2d12');
     for (const sx of [-0.28, 0.28]) houseMB.add(box(0.15, 0.3, 0.02), M.T(sx, 0.55, 0.505), '#dbeafe');
     houseMB.add(box(0.08, 0.5, 0.08), M.T(0.25, 1.25, -0.15), '#9a3412');
+    // Polyfork houses (?ph=1 sample, D-63): one instanced mesh per variant per chunk
+    const houseVar = HOUSE_MODELS.filter((k) => MODELS[k]).map((k) => {
+      const mb = new MeshBuilder(), b = MODELS[k].bounds;
+      mb.addTriangles(MODELS[k], M.I());
+      return { k, mb, W: b.hi[0] - b.lo[0], D: b.hi[2] - b.lo[2] };
+    });
+    const pickHouse = (h) => {
+      const one = h[5] < 4;
+      const want = one ? ((h[0] * 13.7 + h[1] * 7.1) % 2 < 1 ? 'ranch' : 'split') : 'house2';
+      return houseVar.find((v) => v.k === want) || houseVar[0];
+    };
     const treeMB = new MeshBuilder();
     if (MODELS.tree) treeMB.addTriangles(MODELS.tree, M.I()); // Polyfork tree (vertex colours)
     else {
@@ -521,7 +532,24 @@ export class World {
     for (const c of this.chunks.values()) {
       if (++nc % 60 === 0) yield at(0.8 + 0.2 * nc / this.chunks.size);
       c.static = this.r.mesh(c.mb); c.mb = null;
-      if (c.houses.length) {
+      if (c.houses.length && houseVar.length) {
+        // frontage (x) fits the lot; depth may stretch a little; height follows the footprint so
+        // the toy proportions survive (non-uniform squash looks wrong on detailed models)
+        c.houseInst = null; c.houseVars = [];
+        for (const v of houseVar) {
+          const hs = c.houses.filter((h) => pickHouse(h) === v);
+          if (!hs.length) continue;
+          const d = new Float32Array(hs.length * INST_FLOATS);
+          hs.forEach((h, i) => {
+            const o = i * INST_FLOATS, sx = h[3] / v.W, sz = Math.min(Math.max(h[4] / v.D, sx * 0.85), sx * 1.2);
+            writeTRS(d, o, h[0], 0, h[1], h[2], sx, (sx + sz) / 2 * (v.k === 'house2' ? 0.85 : 1), sz);
+            const wc = typeof h[6] === 'number' ? walls[h[6]] : hex(h[6]);
+            const rc = typeof h[7] === 'number' ? roofs[h[7]] : hex(h[7]);
+            d.set(wc, o + 16); d.set(rc, o + 19);
+          });
+          c.houseVars.push(this.r.instanced(v.mb, 0, d));
+        }
+      } else if (c.houses.length) {
         const d = new Float32Array(c.houses.length * INST_FLOATS);
         c.houses.forEach((h, i) => {
           const o = i * INST_FLOATS;
@@ -553,7 +581,7 @@ export class World {
         c.carInst = this.r.instanced(carMB, 0, d);
       }
       // every per-chunk instanced mesh goes into c.inst (drawn in both passes by main.js)
-      c.inst = [c.houseInst, c.treeInst, c.lampInst, c.carInst].filter(Boolean);
+      c.inst = [c.houseInst, ...(c.houseVars || []), c.treeInst, c.lampInst, c.carInst].filter(Boolean);
       c.houses = c.trees = c.lamps = c.lotCars = null;
     }
     // ground plane tiles (large flat quads, one per chunk area incl. outside border)

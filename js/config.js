@@ -54,7 +54,7 @@ export const CFG = {
     stopScale: 0.08, decay: 1.6, squashTime: 0.22, maxOffset: 1.4,
   },
   // Polyfork models (D-42): on since the owner approved the style sample (2026-11-02); ?pf=0 / ?pf=1 override
-  models: { polyfork: true, timeoutMs: 6000 },
+  models: { polyfork: true, houses: false, timeoutMs: 6000 }, // houses: Polyfork house sample (?ph=1, D-63)
   streetSigns: { y: 4.2, h: 2.2, cornerGap: 3.2, res: 0.45 }, // green street-name signs at signalised intersections
   bus: { count: 2, speed: 9, laneCount: 2, laneSpeed: 0.8 }, // laneCount: Viva buses in Hwy 7 traffic
   minimap: { pxPerM: 0.5, radiusM: 170 },

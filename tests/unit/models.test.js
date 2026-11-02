@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { fitModel, modelsWanted, POLYFORK } from '../../js/models.js';
-import { MAT_A, MAT_V } from '../../js/geo.js';
+import { fitModel, modelsWanted, POLYFORK, HOUSE_MODELS } from '../../js/models.js';
+import { MAT_A, MAT_B, MAT_V } from '../../js/geo.js';
 
 // a fake 2 m long "car": 2 triangles of orange paint, 1 dark tyre triangle, raised 1 m off the ground
 const tri = (c, z0) => ({ p: [-1, 1, z0, 1, 1, z0, 0, 2, z0 + 2], c: [...c, ...c, ...c] });
@@ -49,5 +49,15 @@ describe('Polyfork model fitting', () => {
     expect(modelsWanted('?debug=1&pf=0', true)).toBe(false);
     expect(modelsWanted('', true)).toBe(true);
     for (const def of Object.values(POLYFORK)) expect(def.id).toMatch(/^[a-z0-9-]+-[0-9a-f]{6}$/);
+  });
+  it('house tints: wall -> colour A, roof -> colour B, shading kept; ?ph=1 is its own switch', () => {
+    // fake house: wall (orange), a darker roof stripe within tolerance, and dark trim
+    const m = fitModel(fakeCar(), { fit: { len: 4.4 }, tints: [{ col: [0.7, 0.53, 0.26], mat: MAT_A }, { col: [0.12, 0.12, 0.12], mat: MAT_B, tol: 0.04 }] });
+    expect([...m.mat]).toEqual([...Array(6).fill(MAT_A), ...Array(3).fill(MAT_B)]);
+    expect(m.c[0]).toBeCloseTo(1, 5);
+    expect(m.c[18]).toBeCloseTo(0.1 / 0.12, 5); // the stripe stays a little darker than the base
+    expect(modelsWanted('?ph=1', false, 'ph')).toBe(true);
+    expect(modelsWanted('?pf=1', false, 'ph')).toBe(false);
+    for (const k of HOUSE_MODELS) expect(POLYFORK[k].tints.map((t) => t.mat)).toEqual([MAT_A, MAT_B]);
   });
 });
