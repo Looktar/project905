@@ -59,7 +59,7 @@
 ## 8. 性能预算（按 performance-optimization 技能“先测量、定预算”的做法）
 | 项目 | 预算 | 现状（2026-11） |
 |---|---|---|
-| 手机帧率（iPhone 12 / Pixel 6） | ≥ 30 fps | 待总决策用 `?bench=1` 实测 |
+| 手机帧率（iPhone 12 / Pixel 6） | ≥ 30 fps | 总决策 iPhone 实测 60 fps（1% 最差 58.8） |
 | 电脑帧率 | 60 fps | — |
 | draw call（出生点满员） | 手机 ≤ 150 | 约 70 |
 | 每帧 CPU | 手机 ≤ 8 ms | 无头软件渲染约 4 ms |
