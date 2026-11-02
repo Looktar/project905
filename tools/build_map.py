@@ -1744,7 +1744,8 @@ for gen in (False, True):
         # sign row above the building's own name sign; pushed out to the camera-facing front of the building
         y = b['h'] + (3.0 if b.get('n') else 0.3)
         push = max(0.4, max((q[0] - p[0]) * CAM_DIR[0] + (q[1] - p[1]) * CAM_DIR[1] for q in b['p']) + 0.3)
-        stores.append([round(p[0], 2), round(p[1], 2), round(y, 2), round(push, 2), hit[0], hit[1], hit[2]])
+        # pre-round: libm differences between platforms must not flip the last digit (CI map check)
+        stores.append([round(round(p[0], 6), 2), round(round(p[1], 6), 2), round(y, 2), round(push, 2), hit[0], hit[1], hit[2]])
         store_grid.add((p[0], p[1], p[0], p[1]), p)
         host_signs[id(b)].append((sx, hw))
 print('stores:', len(stores), dict(store_skip))
