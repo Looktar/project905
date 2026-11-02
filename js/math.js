@@ -43,10 +43,18 @@ export function trs(out, o, x, y, z, a, sx, sy, sz) {
   out[o + 12] = x; out[o + 13] = y; out[o + 14] = z; out[o + 15] = 1;
 }
 
+// '#rrggbb' -> [r,g,b] in 0..1. Cached (the world build converts the same few hundred colours
+// ~10^6 times); callers must not mutate the returned array.
+const hexCache = new Map();
 export function hex(h) {
   if (Array.isArray(h)) return h;
-  h = h.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255];
+  let c = hexCache.get(h);
+  if (!c) {
+    const s = h.replace('#', '');
+    c = [parseInt(s.slice(0, 2), 16) / 255, parseInt(s.slice(2, 4), 16) / 255, parseInt(s.slice(4, 6), 16) / 255];
+    hexCache.set(h, c);
+  }
+  return c;
 }
 
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

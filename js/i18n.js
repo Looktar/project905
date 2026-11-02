@@ -1,6 +1,6 @@
 const DICT = {
   zh: {
-    start: '开始游戏', subtitle: '万锦 · 玩具城', lang: 'English', loading: '地图加载中…',
+    start: '开始游戏', subtitle: '万锦 · 玩具城', lang: 'English', loading: '地图加载中…', building: '搭建城市…',
     help: '救命啊！', stop: '站住！', pow: '砰！', ouch: '哎哟！', angry: '找打是吧！', master: '你惹错人了！',
     busted: '被抓了！', ko: '被揍晕了…', honk: '嘀嘀！', stolen: '我的车！',
     punch: '拳', enter: '上车', run: '跑', exit: '下车', drift: '漂移', horn: '喇叭',
@@ -18,7 +18,7 @@ const DICT = {
     cDisclaimer: '游戏内店名均为谐音恶搞，与真实商家无关。',
   },
   en: {
-    start: 'Play', subtitle: 'Markham · Toy Town', lang: '中文', loading: 'Loading map…',
+    start: 'Play', subtitle: 'Markham · Toy Town', lang: '中文', loading: 'Loading map…', building: 'Building the town…',
     help: 'Help!', stop: 'Freeze!', pow: 'POW!', ouch: 'Ouch!', angry: 'Wanna fight?!', master: 'Wrong guy, buddy!',
     busted: 'BUSTED!', ko: 'Knocked out…', honk: 'Beep!', stolen: 'My car!',
     punch: 'Punch', enter: 'Enter', run: 'Run', exit: 'Exit', drift: 'Drift', horn: 'Horn',

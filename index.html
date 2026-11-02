@@ -62,6 +62,8 @@ body.touch .btn{display:flex}
 #controls{color:#2d3a55;font-size:13px;font-weight:700;text-align:center;padding:0 16px}
 #credit{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:#2d3a55;font-size:11px;opacity:.8}
 #loading{color:#2d3a55;font-weight:700}
+#loadbar{display:none;width:min(260px,60vw);height:10px;border-radius:5px;background:rgba(255,255,255,.7);overflow:hidden}
+#loadbar i{display:block;height:100%;width:0;background:#ff6b4a;border-radius:5px;transition:width .15s}
 #langBtn{position:absolute;top:14px;right:14px}
 #dbg{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);color:#fff;font:12px monospace;text-shadow:0 1px 2px #000;z-index:30}
 #street small{margin-left:10px;font-size:.62em;font-weight:700;opacity:.65}
@@ -105,6 +107,7 @@ body.touch .btn{display:flex}
     <div id="tagline"></div>
     <button id="startBtn" disabled></button>
     <div id="loading"></div>
+    <div id="loadbar"><i></i></div>
     <div id="controls"></div>
     <div id="credit"></div>
   </div>
@@ -141,6 +144,9 @@ body.touch .btn{display:flex}
   </div>
   <div id="dbg"></div>
 </div>
-<script type="module" src="js/main.js"></script>
+<!-- stamp:begin (npm run stamp) -->
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=eb40975a13","./js/config.js":"./js/config.js?v=eb40975a13","./js/game.js":"./js/game.js?v=eb40975a13","./js/geo.js":"./js/geo.js?v=eb40975a13","./js/glb.js":"./js/glb.js?v=eb40975a13","./js/hud.js":"./js/hud.js?v=eb40975a13","./js/i18n.js":"./js/i18n.js?v=eb40975a13","./js/input.js":"./js/input.js?v=eb40975a13","./js/main.js":"./js/main.js?v=eb40975a13","./js/math.js":"./js/math.js?v=eb40975a13","./js/models.js":"./js/models.js?v=eb40975a13","./js/orient.js":"./js/orient.js?v=eb40975a13","./js/poi.js":"./js/poi.js?v=eb40975a13","./js/props.js":"./js/props.js?v=eb40975a13","./js/renderer.js":"./js/renderer.js?v=eb40975a13","./js/signals.js":"./js/signals.js?v=eb40975a13","./js/world.js":"./js/world.js?v=eb40975a13"}}</script>
+<script type="module" src="js/main.js?v=eb40975a13"></script>
+<!-- stamp:end -->
 </body>
 </html>
