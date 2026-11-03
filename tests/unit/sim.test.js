@@ -399,9 +399,9 @@ describe('pedestrians and the player', () => {
   it('a pedestrian walks smoothly around the player standing in its way (no shaking, no getting stuck)', async () => {
     for (const seed of [81, 82, 83]) {
       const sim = await newSim(seed);
-      sim.step(30);
-      const g = sim.game, p = g.player;
-      const ped = g.chars.find((c) => c.kind === 'ped' && c.state === 'walk' && c.path && c.path.e.len - c.path.s > 25);
+      const g = sim.game, p = g.player, pick = () => g.chars.find((c) => c.kind === 'ped' && c.state === 'walk' && c.path && c.path.e.len - c.path.s > 25);
+      let ped = null;
+      for (let i = 0; i < 20 && !ped; i++) { sim.step(30); ped = pick(); } // (some seeds need a few seconds)
       expect(ped, 'a walking pedestrian with room ahead').toBeTruthy();
       for (const c of g.chars) if (c !== p && c !== ped) c.x += 1000; // just the two of them
       g.cars.length = 0;

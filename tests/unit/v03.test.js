@@ -12,8 +12,11 @@ describe('fire', () => {
     const sim = await newSim(31), g = sim.game, p = g.player;
     sim.step(30);
     sim.removePolice(); sim.freezeSpawning(); // (no arrest in the middle of the test)
-    const car = g.cars.find((c) => !c.bus && c.type !== 'police');
+    const car = g.cars.find((c) => c.parked && !c.bus && c.type !== 'police') || g.cars.find((c) => !c.bus && c.type !== 'police');
+    car.speed = 0; car.ai = null; car.parked = true; // a moving one could knock the player down
     p.x = car.x + 2.2; p.z = car.z; p.face = Math.atan2(car.x - p.x, car.z - p.z);
+    p.state = 'walk'; p.hp = CFG.player.hp; // (whatever happened in the first 30 s, e.g. a fight)
+    g.cars = g.cars.filter((c) => c === car || Math.hypot(c.x - car.x, c.z - car.z) > 8); // no other car within reach
     sim.press('fire').step();
     expect(car.fire).toBeTruthy();
     sim.step(30 * (CFG.fire.carBoom + 1));

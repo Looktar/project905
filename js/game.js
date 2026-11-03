@@ -20,6 +20,9 @@ const SKIN = ['#f3c9a2', '#e2ad84', '#c68b62', '#f6d5b8', '#a8714d'];
 const SHIRT = ['#ef4444', '#f59e0b', '#22c3a6', '#a78bfa', '#60a5fa', '#f472b6', '#fde047', '#fb923c', '#34d399', '#e5e7eb', '#38bdf8', '#c084fc'];
 const PANTS = ['#2f3b59', '#5b4a8a', '#3b4a6b', '#334155', '#475569', '#1e3a8a', '#374151', '#6b4f3a'];
 const HAIR = ['#2b2320', '#6b4429', '#d9a441', '#1f1f1f', '#5b3a29', '#111111', '#9ca3af'];
+const SHOES = ['#f8fafc', '#1f2937', '#78350f', '#ef4444', '#334155', '#f8fafc', '#2563eb'];
+// blocky hairstyles (style B, D-72); grey hair is often 'bald' (side tufts)
+const HAIRDO = ['short', 'short', 'bob', 'bob', 'long', 'curls', 'spiky'];
 // South Asian residents: skin, hair and outfit colours (kurta / salwar kameez, dupatta, dastar)
 const SA_SKIN = ['#c68642', '#a86b3c', '#8d5524', '#b5774a', '#9c6644'];
 const SA_HAIR = ['#141010', '#1f1612', '#2b1d16', '#111111'];
@@ -84,7 +87,7 @@ export class Game {
       const sp = world.edgePoint(sn.e, s0, 1, sn.e.w / 2 + 2.2);
       const res = world.collide(sp.x, sp.z, 0.6); sx = res.x; sz = res.z;
     }
-    this.player = this.makeChar('player', sx, sz, { shirt: '#ef4444', pants: '#2f3b59', skin: SKIN[0], hair: '#2b2320' });
+    this.player = this.makeChar('player', sx, sz, { shirt: '#ef4444', pants: '#2f3b59', skin: SKIN[0], hair: '#2b2320', shoes: '#f8fafc', hs: 'spiky' });
     this.player.hp = CFG.player.hp; this.player.face = -Math.PI / 2;
     this.inCar = null;
     this.camPos = [sx, 0, sz]; this.camDist = CFG.camera.distWalk;
@@ -107,10 +110,11 @@ export class Game {
   buildBatches() {
     const mk = (g, mat = MAT_A, col = '#ffffff', em = 0, cap = 700) => { const mb = new MeshBuilder(); mb.add(g, M.I(), col, mat, em); return this.r.instanced(mb, cap); };
     this.B = {
-      head: mk(sphere(0.56, 6)), hair: mk(sphere(0.56, 5)), body: mk(rbox(0.82, 0.72, 0.56, 0.22, 1)),
-      limb: mk(rbox(0.27, 0.57, 0.28, 0.11, 1), MAT_A, '#ffffff', 0, 1400), hand: mk(sphere(0.15, 3), MAT_A, '#ffffff', 0, 1400),
-      eye: mk(sphere(0.07, 3), MAT_V, '#1d2233', 0, 1400), mouth: mk(sphere(0.1, 3), MAT_V, '#7a2b2b'),
-      cap: mk(cyl(0.5, 0.54, 0.28, 10)), brim: mk(box(0.7, 0.08, 0.4)), badge: mk(box(0.16, 0.14, 0.05), MAT_V, '#ffd23f', 0.3),
+      // characters: blocky toy style (D-72). hair is a unit rounded cube scaled into caps, fringes, sides, beards
+      head: mk(rbox(1.08, 1.0, 0.98, 0.2, 2)), hair: mk(rbox(1, 1, 1, 0.1, 1), MAT_A, '#ffffff', 0, 2100), body: mk(rbox(0.9, 0.78, 0.6, 0.13, 1)),
+      limb: mk(rbox(0.3, 0.57, 0.3, 0.07, 1), MAT_A, '#ffffff', 0, 2100), hand: mk(sphere(0.15, 4), MAT_A, '#ffffff', 0, 1400),
+      eye: mk(rbox(0.11, 0.16, 0.06, 0.03, 1), MAT_V, '#1d2233', 0, 1400), mouth: mk(box(0.22, 0.05, 0.04), MAT_V, '#5b2121'),
+      cap: mk(rbox(1.16, 0.32, 1.1, 0.08, 1)), brim: mk(box(0.96, 0.07, 0.42)), badge: mk(box(0.16, 0.14, 0.05), MAT_V, '#ffd23f', 0.3),
       star: mk(star(0.38), MAT_V, '#ffd23f', 0.6, 300),
       carBody: mk(rbox(2.1, 0.85, 4.4, 0.32), MAT_A, '#ffffff', 0, 120), carCabin: mk(rbox(1.8, 0.78, 2.3, 0.3), MAT_V, '#9fd3f2', 0, 120),
       carRoof: mk(rbox(1.86, 0.14, 2.0, 0.06), MAT_A, '#ffffff', 0, 120), wheel: mk(cyl(0.42, 0.42, 0.34, 8), MAT_V, '#262a35', 0, 480),
@@ -148,18 +152,19 @@ export class Game {
     const c = {
       id: uid++, kind, x, z, y: 0, vy: 0, vx: 0, vz: 0, face: rr(0, 6.28), speed: 0, r: CFG.peds.radius,
       shirt: hexc(cols.shirt || pick(SHIRT)), pants: hexc(cols.pants || pick(PANTS)), skin: hexc(cols.skin || pick(SKIN)), hair: hexc(cols.hair || pick(HAIR)),
-      cap: cols.cap ? hexc(cols.cap) : null,
+      cap: cols.cap ? hexc(cols.cap) : null, shoes: hexc(cols.shoes || pick(SHOES)),
       hp: 60, maxhp: 60, power: 1, temper: 'normal', state: 'walk', timer: 0, phase: rr(0, 6), punchT: 0, cd: 0,
       path: null, bubbleT: 0, mouth: false, ...extra,
     };
     if (kind === 'player') c.r = CFG.player.radius;
+    c.hs = cols.hs || (c.hair[0] > 0.55 && c.hair[2] > 0.55 ? (Math.random() < 0.6 ? 'bald' : 'short') : pick(HAIRDO));
     this.chars.push(c);
     return c;
   }
   makeChar2(kind, x, z) {
     const P = CFG.peds;
     if (kind === 'cop') {
-      const c = this.makeChar('cop', x, z, { shirt: '#1e3a8a', pants: '#172554', cap: '#172554', hair: '#222222' });
+      const c = this.makeChar('cop', x, z, { shirt: '#1e3a8a', pants: '#172554', cap: '#172554', hair: '#222222', shoes: '#0f172a', hs: 'short' });
       c.hp = c.maxhp = CFG.police.hp; c.power = 1.4; c.state = 'patrol';
       return c;
     }
@@ -172,8 +177,8 @@ export class Game {
     if (sa) {
       // half dressed traditionally: a kurta (long tunic); some men wear a dastar, some women a dupatta + braid
       if (Math.random() < P.kurta) c.kurta = true;
-      if (Math.random() < 0.5) { if (Math.random() < P.turban) c.turban = hexc(pick(SA_WRAP)); }
-      else { c.braid = true; if (Math.random() < P.dupatta) { c.dupatta = hexc(pick(SA_WRAP)); c.kurta = true; } }
+      if (Math.random() < 0.5) { c.hs = 'short'; if (Math.random() < P.turban) { c.turban = hexc(pick(SA_WRAP)); c.beard = true; } }
+      else { c.braid = true; c.hs = 'long'; if (Math.random() < P.dupatta) { c.dupatta = hexc(pick(SA_WRAP)); c.kurta = true; } }
     }
     c.temper = temper;
     c.hp = c.maxhp = temper === 'master' ? 220 : rr(P.hp[0], P.hp[1]);
@@ -1276,7 +1281,10 @@ export class Game {
     const A = (m, batch, col) => this.put(batch, M.mul(base, m), col);
     c.phase += (c.speed || 0) * 0.016 * 3.2;
     const sw = lying ? 0 : Math.sin(c.phase) * Math.min(1, (c.speed || 0) / 4) * 0.7;
-    for (const [sx, s] of [[1, sw], [-1, -sw]]) A(M.chain(M.T(sx * 0.17, 0.55, 0), M.RX(s), M.T(0, -0.27, 0)), B.limb, c.pants);
+    for (const [sx, s] of [[1, sw], [-1, -sw]]) {
+      A(M.chain(M.T(sx * 0.18, 0.55, 0), M.RX(s), M.T(0, -0.27, 0)), B.limb, c.pants);
+      A(M.chain(M.T(sx * 0.18, 0.55, 0), M.RX(s), M.T(0, -0.5, 0.06), M.S(1.16, 0.22, 1.35)), B.limb, c.shoes); // shoe
+    }
     A(M.T(0, 0.95, 0), B.body, c.shirt);
     if (c.kurta) A(M.chain(M.T(0, 0.6, 0), M.S(1.04, 0.62, 1.02)), B.body, c.shirt); // long tunic over the thighs
     if (c.dupatta) A(M.chain(M.T(0, 1.0, 0.02), M.RZ(0.75), M.S(0.9, 1.75, 2.15)), B.limb, c.dupatta); // scarf across the chest
@@ -1289,18 +1297,37 @@ export class Game {
       A(M.chain(M.T(sx * 0.5, 1.2, 0), M.RZ(rzz), M.RX(rx), M.T(0, -0.6, 0)), B.hand, c.skin);
     }
     A(M.T(0, 1.85, 0), B.head, c.skin);
-    if (c.turban) A(M.chain(M.T(0, 2.06, -0.02), M.S(1.13, 0.9, 1.13)), B.hair, c.turban); // dastar
-    else A(M.chain(M.T(0, 1.98, -0.06), M.S(1.06, 0.78, 1.06)), B.hair, c.hair);
+    this.drawHair(c, A);
     if (c.braid) A(M.chain(M.T(0, 1.42, -0.5), M.RX(0.15), M.S(0.55, 1.05, 0.55)), B.limb, c.hair);
-    for (const sx of [-1, 1]) A(M.T(sx * 0.18, 1.83, 0.52), B.eye);
-    if (c.mouth || c.state === 'fight') A(M.chain(M.T(0, 1.66, 0.53), M.S(1, 0.7, 0.4)), B.mouth);
-    if (c.cap) { A(M.T(0, 2.3, 0), B.cap, c.cap); A(M.T(0, 2.18, 0.42), B.brim, c.cap); A(M.T(0, 2.38, 0.47), B.badge); }
+    const blink = (this.time + c.id * 0.37) % 4 < 0.12; // a quick blink every few seconds
+    for (const sx of [-1, 1]) A(blink ? M.chain(M.T(sx * 0.21, 1.86, 0.5), M.S(1.2, 0.2, 1)) : M.T(sx * 0.21, 1.88, 0.5), B.eye);
+    const shout = c.mouth || c.state === 'fight' || c.state === 'flee';
+    A(shout ? M.chain(M.T(0, 1.62, 0.51), M.S(0.9, 3.2, 1)) : M.T(0, 1.64, 0.51), B.mouth);
+    if (c.cap) { A(M.T(0, 2.44, -0.01), B.cap, c.cap); A(M.T(0, 2.3, 0.6), B.brim, c.cap); A(M.T(0, 2.46, 0.57), B.badge); }
     if (c.state === 'down' || c.state === 'ko') {
       for (let i = 0; i < 3; i++) {
         const a = this.time * 3 + (i / 3) * Math.PI * 2;
         this.put(B.star, M.chain(M.T(c.x + Math.cos(a) * 0.9 + Math.sin(c.face) * -2.1, 1.4 + Math.sin(a * 2) * 0.15, c.z + Math.sin(a) * 0.9 + Math.cos(c.face) * -2.1), M.RY(CFG.camera.azimuth)));
       }
     }
+  }
+  // hair / dastar / beard as rounded blocks around the head (head: 1.08 x 1.0 x 0.98 at y 1.85)
+  drawHair(c, A) {
+    const H = this.B.hair, col = c.hair, P = (x, y, z, sx, sy, sz, cc = col) => A(M.chain(M.T(x, y, z), M.S(sx, sy, sz)), H, cc);
+    if (c.turban) {
+      P(0, 2.33, -0.02, 1.18, 0.52, 1.1, c.turban); P(0, 2.5, 0.12, 0.5, 0.36, 0.86, c.turban); // wrap + the peak in front
+    } else if (c.hs === 'bald') {
+      for (const s of [-1, 1]) P(s * 0.55, 1.86, -0.12, 0.1, 0.3, 0.55);
+    } else {
+      const curls = c.hs === 'curls', big = curls ? 1.12 : 1, longBack = c.hs === 'bob' || c.hs === 'long' || curls;
+      if (!c.cap) P(0, curls ? 2.38 : 2.32, -0.02, 1.16 * big, curls ? 0.38 : 0.24, 1.08 * big); // top
+      P(0, longBack ? 1.78 : 1.98, -0.46, 1.16 * big, longBack ? 1.0 : 0.62, 0.2); // back
+      if (longBack) for (const s of [-1, 1]) P(s * 0.56 * big, c.hs === 'long' ? 1.66 : 1.82, -0.06, 0.12, c.hs === 'long' ? 1.0 : 0.72, 0.88); // sides
+      if (c.hs === 'long') P(0, 1.36, -0.5, 1.0, 0.6, 0.16); // down the back
+      if (!c.cap && !curls) P(0.08, 2.2, 0.47, c.hs === 'spiky' ? 0.9 : 1.1, 0.16, 0.1); // fringe
+      if (c.hs === 'spiky' && !c.cap) for (const x of [-0.3, 0, 0.3]) A(M.chain(M.T(x, 2.48, 0.05), M.RZ(x * 0.8), M.RX(-0.25), M.S(0.24, 0.3, 0.5)), H, col);
+    }
+    if (c.beard) { P(0, 1.52, 0.1, 1.1, 0.42, 0.84); for (const s of [-1, 1]) P(s * 0.5, 1.75, 0.05, 0.12, 0.5, 0.6); }
   }
   // Viva bus (rapidway buses and the ones running in Hwy 7 traffic)
   drawBus(m) {
