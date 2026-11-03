@@ -36,6 +36,8 @@ js/config.js          所有可调数值
 js/i18n.js            中英文案
 tools/fetch_osm.py    从 Overpass 抓原始数据（两段查询：地图 + 店铺，自动重试多个镜像）→ data/raw/
 tools/build_map.py    OSM 原始数据 → maps/markham.json（纯 Python 标准库）
+tools/concept_chars.mjs  人物风格概念图（2D SVG → PNG，docs/concept/characters/）
+tools/char_closeup.mjs   人物近景截图（美术检查，要先 npm run serve）
 data/raw/markham_osm.json.gz   Overpass 导出的原始数据（已提交，构建不需联网）
 maps/markham.json     游戏地图（构建产物，已提交）
 docs/                 规格、概念图、进度、决策；docs/ART-BIBLE.md 美术规范和性能预算；docs/PLAYTEST.md 试玩反馈表；docs/screenshots/ 截图

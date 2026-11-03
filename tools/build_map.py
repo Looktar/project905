@@ -1718,7 +1718,7 @@ STORES = [   # (regex on name / brand / name:zh, sign, style, kind)
     (r"Wendy's", "Wendee's", 'wendee', 'food'),
     (r'Pizzaville', 'Pizzavil', 'pizzavil', 'food'),
     (r'^Cora\b', 'Kora 早餐 Breakfast', 'kora', 'food'),
-    (r'^A&W', 'A+W Burgers', 'aw', 'food'),
+    (r'^A&W', 'A+Dub Burgerz', 'aw', 'food'),
     (r"Osmow's", "Osmo's", 'osmo', 'food'),
     (r'Boston Pizza', 'Bostin Pizza', 'bpizza', 'food'),
     (r"Kelsey's", "Kelsee's", 'kelsee', 'food'),
