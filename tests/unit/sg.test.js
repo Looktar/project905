@@ -3,10 +3,11 @@ import { describe, it, expect } from 'vitest';
 import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
-  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets,
+  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
+import { SITES, PARKS } from '../../js/sg_sites.js';
 import { readFileSync } from 'node:fs';
 import { CFG } from '../../js/config.js';
 
@@ -171,6 +172,59 @@ describe('relay stations and supply depots (v0.8.2)', () => {
     expect(supplied(s, 0).has('esn')).toBe(true);
     s.cities.pac.owner = 1;
     expect(supplied(s, 0).has('esn')).toBe(false);
+  });
+});
+
+describe('random boards (v0.9)', () => {
+  const map = JSON.parse(readFileSync(new URL('../../maps/markham.json', import.meta.url), 'utf8'));
+  const rouge = map.rivers.filter((r) => r[0] === 1).map((r) => r[1]);
+  const cross = (p, q, r, t) => { const d = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); return d(p, q, r) * d(p, q, t) < 0 && d(r, t, p) * d(r, t, q) < 0; };
+  it('every seed draws a valid board of real places; the same seed draws the same board', () => {
+    const sets = new Set();
+    for (let seed = 1; seed <= 25; seed++) {
+      const m = genMap(seed * 977);
+      expect(JSON.stringify(genMap(seed * 977))).toBe(JSON.stringify(m));
+      const cities = m.nodes.filter((n) => !n[6]), passes = m.nodes.filter((n) => n[6]);
+      expect(cities.length).toBe(CFG.sg.cityCount);
+      expect(passes.length).toBeGreaterThanOrEqual(1); expect(passes.length).toBeLessThanOrEqual(CFG.sg.passCount);
+      expect(passes.filter((n) => n[7]).length).toBe(1); // exactly one 虎牢关
+      for (const c of cities) expect(SITES.some((x) => x[0] === c[0])).toBe(true);
+      for (const p of passes) expect(PARKS.some(([n, x, z]) => x === p[3] && z === p[4] && p[2].startsWith(n))).toBe(true);
+      for (let i = 0; i < cities.length; i++) for (let j = i + 1; j < cities.length; j++) expect(Math.hypot(cities[i][3] - cities[j][3], cities[i][4] - cities[j][4])).toBeGreaterThanOrEqual(CFG.sg.siteSpacing);
+      // connected, and the river flags match the real Rouge
+      const at = Object.fromEntries(m.nodes.map((n) => [n[0], [n[3], n[4]]]));
+      const seen = new Set([m.nodes[0][0]]), q = [m.nodes[0][0]];
+      while (q.length) { const c = q.shift(); for (const [a, b] of m.links) { const n = a === c ? b : b === c ? a : null; if (n && !seen.has(n)) { seen.add(n); q.push(n); } } }
+      expect(seen.size).toBe(m.nodes.length);
+      for (const [a, b, , river, st] of m.links) {
+        expect([a, b, rouge.some((l) => l.some((pt, k) => k > 0 && cross(at[a], at[b], l[k - 1], pt)))]).toEqual([a, b, !!river]);
+        if (st) { expect(st[1]).toBeGreaterThanOrEqual(0); expect(st[1]).toBeLessThanOrEqual(1); }
+      }
+      sets.add(cities.map((c) => c[0]).sort().join());
+    }
+    expect(sets.size).toBeGreaterThan(20); // new combinations every game
+  });
+  it('a random game plays, saves and resumes on its own board, even next to another game', () => {
+    const a = newGame(4242, { map: 'random' }), other = newGame(7, { map: 'random' });
+    expect(a.map.key).not.toBe(other.map.key);
+    for (let i = 0; i < 8; i++) { runTurn(a, autoPlayer(a)); runTurn(other, autoPlayer(other)); }
+    const b = JSON.parse(JSON.stringify(a));
+    newGame(3); // switch the tables to the classic map
+    for (let i = 0; i < 8; i++) { runTurn(a, autoPlayer(a)); runTurn(b, autoPlayer(b)); }
+    delete a.events; delete b.events;
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a));
+    loadMap(a); check(a);
+    expect(Object.keys(a.cities).sort()).toEqual([...NODE_IDS].sort());
+  });
+  it('computer-vs-computer games on random boards stay consistent and usually end', () => {
+    let ended = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = newGame(seed * 31, { map: 'random' });
+      for (let t = 0; t < 200 && !s.over && s.factions.filter((f) => f.alive).length > 1; t++) { runTurn(s, autoPlayer(s)); if (t % 10 === 0) check(s); }
+      check(s);
+      if (s.over || s.factions.filter((f) => f.alive).length === 1) ended++;
+    }
+    expect(ended).toBeGreaterThanOrEqual(9);
   });
 });
 

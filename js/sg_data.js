@@ -145,7 +145,7 @@ export const RIVALS = [
   { a: ['lvbu'], b: ['dongzhuo'], zh: '凤仪亭', en: 'Phoenix Pavilion' },
 ];
 
-// the 12 cities and the passes: [id, zh, en, game x, game z] (positions in maps/markham.json game
+// the classic map. The 12 cities and the passes: [id, zh, en, game x, game z] (positions in maps/markham.json game
 // metres). v0.8 (D-74): real terrain. `elev` is the real ground height (js/sg_elev.js, Copernicus DEM),
 // `valley` marks the cities on the Rouge River (胭脂河) flats: rich farmland (more food), low ground.
 const C = [
@@ -185,19 +185,11 @@ export const DEPOTS = {
   btv: ['王府景 Kingz Square', 'Kingz Square'], wdb: ['Costgo', 'Costgo'],
   mkv: ['Markvile Mall', 'Markvile Mall'], pac: ['大古广场 Pacifick Mall', 'Pacifick Mall'],
 };
-export const CITIES = Object.fromEntries([
-  ...C.map(([id, zh, en, x, z, v]) => [id, { id, zh, en, x, z, valley: !!v, pass: false, elev: Math.round(elevAt(x, z)), depot: DEPOTS[id] || null }]),
-  ...P.map(([id, zh, en, x, z, big]) => [id, { id, zh, en, x, z, valley: false, pass: true, big: !!big, elev: Math.round(elevAt(x, z)) }]),
-]);
-export const CITY_IDS = C.map((c) => c[0]);   // what you need to unite Markham
-export const PASS_IDS = P.map((c) => c[0]);
-export const NODE_IDS = [...CITY_IDS, ...PASS_IDS];
-
 // links = supply lines along real roads: [a, b, road, crosses the Rouge River (渡河), 驿站]. The river flags
 // are checked against maps/markham.json by tests/unit/sg.test.js.
 // v0.8.2 (D-76): 驿站 relay stations = real gas stations (OSM amenity=fuel) on that road, partway between the
 // two ends: [pun brand name, where along the road 0..1]. Armies on a relay road arrive fed and fuelled.
-export const LINKS = [
+const CLASSIC_LINKS = [
   ['btv', 'wdb', 'Woodbine Ave', 1], ['btv', 'p_jb', '16th Ave', 0], ['p_jb', 'civ', '16th Ave', 0], ['wdb', 'civ', 'Hwy 7', 1],
   ['wdb', 'esn', 'Woodbine Ave', 0, ['Ezzo', 0.22]], ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'p_tg', 'Hwy 7', 0], ['p_tg', 'unv', 'Hwy 7', 0],
   ['dtm', 'unv', 'Main St Unionville', 1], ['dtm', 'hag', 'Kennedy Rd', 0], ['dtm', 'esn', 'Warden Ave', 0],
@@ -206,14 +198,48 @@ export const LINKS = [
   ['unv', 'p_ad', 'Hwy 7', 0, ['Petro-Kanada', 0.75]], ['p_ad', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
   ['ray', 'p_md', 'Markham Rd', 0], ['p_md', 'arm', 'Markham Rd', 1, ['Canadian Tyre Gas', 0.56]],
 ];
-export const ADJ = (() => {
-  const a = Object.fromEntries(NODE_IDS.map((c) => [c, []]));
-  for (const [x, y, road, river, st] of LINKS) {
-    const station = st ? st[0] : null;
-    a[x].push({ c: y, road, river: !!river, station }); a[y].push({ c: x, road, river: !!river, station });
+export const CLASSIC = {
+  key: 'classic',
+  nodes: [
+    ...C.map(([id, zh, en, x, z, v]) => [id, zh, en, x, z, v, 0, 0, DEPOTS[id] || null]),
+    ...P.map(([id, zh, en, x, z, big]) => [id, zh, en, x, z, 0, 1, big, null]),
+  ],
+  links: CLASSIC_LINKS,
+};
+
+// v0.9 (D-77): the board is part of the game. Every new game builds its own map (js/sg_engine.js genMap,
+// drawing real places from js/sg_sites.js); the layout above is the fixed "classic" map (tests, old saves).
+// The tables below always describe the map in play: useMap() refills them in place, so every module that
+// imported them sees the current board.
+export const CITIES = {};
+export const CITY_IDS = [];   // what you need to unite Markham
+export const PASS_IDS = [];
+export const NODE_IDS = [];
+export const LINKS = [];
+export const ADJ = {};
+let mapKey = null;
+export const currentMapKey = () => mapKey;
+// def = { key, nodes: [[id, zh, en, x, z, valley, pass, big, depot [zh, en] | null]], links: [[a, b, road, river, station | null]] }
+export function useMap(def) {
+  if (def.key === mapKey) return;
+  for (const k of Object.keys(CITIES)) delete CITIES[k];
+  for (const k of Object.keys(ADJ)) delete ADJ[k];
+  CITY_IDS.length = 0; PASS_IDS.length = 0; NODE_IDS.length = 0; LINKS.length = 0;
+  for (const [id, zh, en, x, z, valley, pass, big, depot] of def.nodes) {
+    CITIES[id] = { id, zh, en, x, z, valley: !!valley, pass: !!pass, big: !!big, depot: depot || null, elev: Math.round(elevAt(x, z)) };
+    (pass ? PASS_IDS : CITY_IDS).push(id);
+    ADJ[id] = [];
   }
-  return a;
-})();
+  NODE_IDS.push(...CITY_IDS, ...PASS_IDS);
+  for (const l of def.links) {
+    const [x, y, road, river, st] = l;
+    LINKS.push(l);
+    const station = st ? st[0] : null;
+    ADJ[x].push({ c: y, road, river: !!river, station }); ADJ[y].push({ c: x, road, river: !!river, station });
+  }
+  mapKey = def.key;
+}
+useMap(CLASSIC);
 
 // faction colours (player first), chosen so they also differ in lightness
 export const FACTION_COLORS = ['#2f7de1', '#d64545', '#7c55c9', '#e8892b'];

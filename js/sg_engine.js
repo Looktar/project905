@@ -4,6 +4,7 @@
 // v0.8: every officer (not every city) gets one order a month; passes (关) are real parks across
 // a road; real terrain (ground height, the Rouge River) helps the defender.
 // v0.8.1: seasons (autumn harvest, winter snow), stratagems (流言 rumour / 火计 fire), random events.
+// v0.9: every game draws its own map of real places (genMap); the map travels in the save (s.map).
 //
 // A month:  beginTurn(s, playerOrders)  -> domestic orders of every faction run, armies queue up
 //           nextBattle(s)               -> the next army arrives: { m, duel } (duel may be null)
@@ -12,9 +13,10 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS } from './sg_data.js';
+import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
+import { SITES, PARKS, PAIRS } from './sg_sites.js';
 
-export const SAVE_V = 2;
+export const SAVE_V = 3;
 const K = () => CFG.sg;
 export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
 export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
@@ -29,6 +31,61 @@ export function rnd(s) {
 }
 const pick = (s, a) => a[Math.floor(rnd(s) * a.length)];
 function shuffle(s, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(s) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------------------------------------------------------------- the board of this game
+// The data tables (CITIES, ADJ, ...) describe one map at a time; every entry point switches them to the
+// map of the state it is given, so several games (tests, a save next to a new game) never mix up.
+export function loadMap(s) { if (s.map && s.map.key !== currentMapKey()) useMap(s.map); return s; }
+
+// a random board (v0.9, D-77): `cityCount` real places at least `siteSpacing` apart, linked to their
+// natural neighbours (Gabriel graph: a and b are linked when no other city sits inside the circle on a-b),
+// then `passCount` of the parks lying across those roads become passes, one of them the big 虎牢关
+export function genMap(seed) {
+  const k = K(), g = { r: seed >>> 0 };
+  rnd(g);
+  const pair = (a, b) => PAIRS[a + '|' + b] || (PAIRS[b + '|' + a] && flip(PAIRS[b + '|' + a]));
+  const flip = ([road, river, st, ps]) => [road, river, st && [st[0], Math.round((1 - st[1]) * 100) / 100], ps.map(([p, t, ra, rb]) => [p, Math.round((1 - t) * 100) / 100, rb, ra])];
+  const S = Object.fromEntries(SITES.map((x) => [x[0], x]));
+  let cities = null, links = null;
+  for (let tries = 0; tries < 60 && !links; tries++) {
+    const pick1 = [];
+    for (const site of shuffle(g, [...SITES])) {
+      if (pick1.length >= k.cityCount) break;
+      if (pick1.every((o) => Math.hypot(o[3] - site[3], o[4] - site[4]) >= k.siteSpacing)) pick1.push(site);
+    }
+    if (pick1.length < k.cityCount) continue;
+    const ids = pick1.map((x) => x[0]), L = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = S[ids[i]], b = S[ids[j]], p = pair(ids[i], ids[j]);
+      if (!p) continue;
+      const mx = (a[3] + b[3]) / 2, mz = (a[4] + b[4]) / 2, r2 = ((a[3] - b[3]) ** 2 + (a[4] - b[4]) ** 2) / 4;
+      if (ids.some((c) => c !== ids[i] && c !== ids[j] && (S[c][3] - mx) ** 2 + (S[c][4] - mz) ** 2 < r2)) continue;
+      L.push([ids[i], ids[j], p]);
+    }
+    // connected?
+    const seen = new Set([ids[0]]), q = [ids[0]];
+    while (q.length) { const c = q.shift(); for (const [a, b] of L) { const n = a === c ? b : b === c ? a : null; if (n && !seen.has(n)) { seen.add(n); q.push(n); } } }
+    if (seen.size === ids.length) { cities = pick1; links = L; }
+  }
+  if (!links) return CLASSIC;
+  // passes: parks across roads, at most one per road and one per city
+  const out = [], nodes = cities.map(([id, zh, en, x, z, valley, depot]) => [id, zh, en, x, z, valley, 0, 0, depot ? [depot, depot] : null]);
+  const used = new Set(), busy = new Set();
+  let passes = 0;
+  for (const [a, b, p] of shuffle(g, [...links])) {
+    const [road, river, st, ps] = p, cand = ps.filter(([pk]) => !used.has(pk) && cities.every((c) => Math.hypot(c[3] - PARKS[pk][1], c[4] - PARKS[pk][2]) >= k.passClear));
+    if (passes < k.passCount && cand.length && !busy.has(a) && !busy.has(b)) {
+      const [pk, t, ra, rb] = cand[Math.floor(rnd(g) * cand.length)], [name, x, z] = PARKS[pk], id = 'p' + pk, big = passes === 0;
+      nodes.push([id, name + (big ? ' 虎牢关' : ' 关'), name + (big ? ' Tiger Pass' : ' Pass'), x, z, 0, 1, big ? 1 : 0, null]);
+      // the relay station stays on whichever half of the road it was on
+      out.push([a, id, road, ra, st && st[1] < t ? [st[0], Math.round(st[1] / t * 100) / 100] : null]);
+      out.push([id, b, road, rb, st && st[1] >= t ? [st[0], Math.round((st[1] - t) / (1 - t) * 100) / 100] : null]);
+      used.add(pk); busy.add(a); busy.add(b); passes++;
+    } else out.push([a, b, road, river, st]);
+  }
+  if (!passes) return genMap((seed + 0x9e3779b9) >>> 0); // every board gets at least its 虎牢关
+  return { key: 'r' + (seed >>> 0), nodes, links: out };
+}
 
 // ---------------------------------------------------------------- helpers
 export const PLAYER = 0;
@@ -53,6 +110,7 @@ function hops(a) { // graph distance from city a to every node
 
 // cities and passes of f connected to its capital, or to one of its 补给站 supply depots, through its own nodes
 export function supplied(s, f) {
+  loadMap(s);
   const fa = s.factions[f], out = new Set();
   if (!fa) return out;
   const q = [fa.cap, ...CITY_IDS.filter((c) => CITIES[c].depot)].filter((c) => s.cities[c]?.owner === f);
@@ -102,9 +160,12 @@ export function isAlly(s, f, g) { // coalition partners (never the leader); ever
 export const defenders = (s, c) => (s.cities[c].owner >= 0 ? gensIn(s, c, s.cities[c].owner) : guardsIn(s, c));
 
 // ---------------------------------------------------------------- new game
-export function newGame(seed = Date.now(), names = {}) {
-  const k = K();
-  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {} };
+// opts.map: 'classic' (the fixed map, default: tests) or 'random' (a new board from the seed: the real game)
+export function newGame(seed = Date.now(), opts = {}) {
+  const k = K(), names = opts.names || {};
+  const map = opts.map === 'random' ? genMap(seed) : CLASSIC;
+  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {}, map };
+  loadMap(s);
   rnd(s);
   // starting cities: four, pairwise at least 2 roads apart
   let starts = null;
@@ -156,6 +217,7 @@ export const orderCost = (o) => (o && COST[o.cmd] ? K()[COST[o.cmd]] : 0);
 // where an officer in c may move: a neighbouring node of ours, or one road further when the first road
 // has a 驿站 relay station (the node in between must be ours too)
 export function moveTargets(s, f, c) {
+  loadMap(s);
   const out = new Set();
   for (const { c: n, station } of ADJ[c]) {
     if (s.cities[n].owner !== f) continue;
@@ -165,6 +227,7 @@ export function moveTargets(s, f, c) {
   return [...out];
 }
 export function validOrder(s, f, id, o) {
+  loadMap(s);
   const G = s.gens[id];
   if (!o || !G || G.f !== f || G.hidden || !G.c) return false;
   const c = G.c, city = s.cities[c], fa = s.factions[f], k = K();
@@ -239,6 +302,7 @@ const armyPower = (troops, ids) => {
 // opts.war = false: domestic only (the player's "auto-assign"); opts.skip: officers that already have orders;
 // opts.gold: gold left to spend
 export function aiOrders(s, f, opts = {}) {
+  loadMap(s);
   const k = K(), out = {}, sup = supplied(s, f), skip = opts.skip || new Set(), war = opts.war !== false;
   let gold = opts.gold ?? s.factions[f].gold;
   const free = (c) => byLead(gensIn(s, c, f).filter((g) => !out[g] && !skip.has(g)));
@@ -317,6 +381,7 @@ export function aiOrders(s, f, opts = {}) {
 
 // ---------------------------------------------------------------- the month
 export function beginTurn(s, playerOrders = {}) {
+  loadMap(s);
   s.events = []; s.queue = [];
   const all = [];
   for (const fa of s.factions) {
@@ -343,6 +408,7 @@ export function beginTurn(s, playerOrders = {}) {
 }
 
 export function nextBattle(s) {
+  loadMap(s);
   while (s.queue.length) {
     const m = s.queue.shift(), T = s.cities[m.to];
     if (!s.factions[m.f].alive) continue; // the lord fell earlier this month: the army breaks up (its officers already scattered)
@@ -398,6 +464,7 @@ function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
 }
 
 export function resolveBattle(s, m, duelWin = null, duel = null) {
+  loadMap(s);
   const k = K(), T = s.cities[m.to], o = T.owner, dGens = defenders(s, m.to);
   let aMul = (m.terr ?? 1) * (isWinter(s) ? 1 - k.snowPen : 1), dMul = 1;
   if (duel) {
@@ -488,7 +555,7 @@ function checkFaction(s, f) {
 // one random Markham event most months, plus the fixed ones (Lunar New Year fair, the harvest)
 const owned = (s) => CITY_IDS.filter((c) => s.cities[c].owner >= 0);
 export const EVENTS = {
-  nightmarket: (s) => { const o = s.cities.pac.owner; if (o < 0) return null; const n = Math.round(150 + rnd(s) * 100); s.factions[o].gold += n; return { c: 'pac', f: o, n }; },
+  nightmarket: (s) => { const c = pick(s, CITY_IDS.filter((x) => CITIES[x].depot && s.cities[x].owner >= 0)); if (!c) return null; const o = s.cities[c].owner, n = Math.round(150 + rnd(s) * 100); s.factions[o].gold += n; return { c, f: o, n }; },
   bumper: (s) => { const c = pick(s, owned(s)); if (!c) return null; const o = s.cities[c].owner; s.factions[o].food += 400; return { c, f: o, n: 400 }; },
   volunteers: (s) => { const c = pick(s, owned(s)); if (!c) return null; const C = s.cities[c], n = Math.min(300, capOf(C) - C.troops); if (n <= 0) return null; C.troops += n; return { c, f: C.owner, n }; },
   merchant: (s) => { const fs = s.factions.filter((x) => x.alive); const fa = pick(s, fs); fa.gold += 120; return { f: fa.id, n: 120 }; },
@@ -510,6 +577,7 @@ function randomEvents(s) {
 }
 
 export function endTurn(s) {
+  loadMap(s);
   const k = K();
   randomEvents(s);
   for (const fa of s.factions) {

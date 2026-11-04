@@ -28,7 +28,9 @@ js/nav.js             v0.5 地点索引、容错搜索、GPS 导航路线、传�
 js/bigmap.js          v0.5 全城大地图界面：点小地图或按 M，拖动 / 缩放 / 搜索 / 导航 / 传送
 js/sg_data.js         v0.7 万锦三国志数据：48 位武将、特技、羁绊、宿敌、12 座城和粮道（D-73）
 js/sg_engine.js       v0.7 万锦三国志规则：回合、每位武将一个命令（v0.8）、公园隘口、地形、季节、计略、随机事件（v0.8.1）、驿站和补给站（v0.8.2）、粮道、战斗、单挑、俘虏、电脑君主、反联盟（纯函数，种子随机）
-js/sg_elev.js         v0.8 真实海拔网格（tools/fetch_elev.py 生成，Copernicus DEM）：三国地形、关隘、仰攻（D-74）
+js/sg_sites.js        v0.9 随机地图的地点池：27 个真实地点、35 个公园、每两城之间的真实路名 / 渡河 / 驿站 / 公园（tools/build_sg_sites.py 生成，D-77）
+js/sg_elev.js         v0.8 真实海拔网格（tools/build_sg_sites.py  maps/markham.json + OSM 原始数据 → js/sg_sites.js（改了地图后重跑并提交）
+tools/fetch_elev.py 生成，Copernicus DEM）：三国地形、关隘、仰攻（D-74）
 js/sg_ui.js           v0.7 万锦三国志界面：策略地图、城池面板、急报、盲盒翻牌、单挑；存档在 localStorage p905sg
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）

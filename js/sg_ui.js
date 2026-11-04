@@ -6,7 +6,7 @@ import { CFG } from './config.js';
 import { t, getLang, extend } from './i18n.js';
 import { toGamePoint } from './input.js';
 import * as E from './sg_engine.js';
-import { GENERALS, TRAITS, CITIES, NODE_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
+import { GENERALS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
 
 extend({
@@ -23,13 +23,13 @@ extend({
   sgDuel: '单挑！', sgDuelVs: '{a} 对 {d}', sgAtk: '猛攻', sgDefM: '防守', sgSkill: '必杀', sgDuelRule: '猛攻克必杀 · 必杀破防守 · 防守挡猛攻',
   sgDuelWin: '{g} 赢了单挑！', sgDuelDraw: '不分胜负！', sgRound: '第 {n} 回合', sgMoves: '你：{a} · 对方：{d}', sgHit: '{g} 受到 {n} 伤害', sgRival: '宿敌相见：{r}',
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
-  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。几座真实公园成了隘口，Toogood 虎牢关有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
-  sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：Unionville 的 Toogood 公园，最坚固的隘口',
+  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
+  sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
   sgTargets: '目标（也可以点地图）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
-  ev_nightmarket: '大古广场夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
+  ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
   ev_blizzard: '{c} 暴风雪，冻跑了 {n} 兵', ev_icestorm: '{c} 遭遇冰暴，城防 −{n}', ev_flood: '胭脂河涨水淹了 {c}：开发 −4，兵 −{n}', ev_riot: '{c} 民变，兵 −{n}',
   ev_sighting: '传闻：{g} 藏在 {c}', ev_cny: '春节庙会！各家每座城多收 {n} 金', evHarvest: '九月秋收，粮仓满了！', evFound: '{c}：{by} 找到了在野武将 {g}！', evFoundAI: '{f} 在 {c} 找到了 {g}',
   evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}',
@@ -37,7 +37,7 @@ extend({
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n隘口是真实的公园：John Button、Toogood、Austin Drive、Milne Dam、Milliken，卡在城和城之间的路上。隘口没有百姓，但城防极高；Toogood 虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）：Buttonville、Woodbine、Markvile Mall、大古广场。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：大古广场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgContinue: 'Continue',
@@ -52,13 +52,13 @@ extend({
   sgDuel: 'Duel!', sgDuelVs: '{a} vs {d}', sgAtk: 'Strike', sgDefM: 'Guard', sgSkill: 'Special', sgDuelRule: 'Strike beats Special · Special breaks Guard · Guard stops Strike',
   sgDuelWin: '{g} wins the duel!', sgDuelDraw: 'A draw!', sgRound: 'Round {n}', sgMoves: 'You: {a} · Them: {d}', sgHit: '{g} takes {n}', sgRival: 'Rivals meet: {r}',
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
-  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. Real parks are passes; a mighty officer holds the Toogood Tiger Pass.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
-  sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: Toogood Park in Unionville, the strongest pass",
+  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
+  sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
   sgTargets: 'Targets (or tap the map)', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
-  ev_nightmarket: 'The Pacifick Mall night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
+  ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
   ev_blizzard: 'Blizzard in {c}: {n} troops slip away', ev_icestorm: 'Ice storm in {c}: walls −{n}', ev_flood: 'The Rouge floods {c}: dev −4, troops −{n}', ev_riot: 'Unrest in {c}: troops −{n}',
   ev_sighting: 'Rumour: {g} is hiding in {c}', ev_cny: 'Lunar New Year fair! Every lord earns {n} more gold per city', evHarvest: 'September harvest: the granaries are full!', evFound: '{c}: {by} found {g}!', evFoundAI: '{f} found {g} in {c}',
   evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops',
@@ -66,7 +66,7 @@ extend({
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nPasses are real parks across the roads between cities: John Button, Toogood, Austin Drive, Milne Dam and Milliken. They have no people but huge walls; a mighty officer guards the Toogood Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”): Buttonville, Woodbine, Markvile Mall and Pacifick Mall. A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: the Pacifick Mall night market, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -131,7 +131,8 @@ export class Sanguo {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
     const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
-    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0);
+    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random' }); // a new board every game (D-77)
+    E.loadMap(s);
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
     this.resize(W, H, true);
@@ -147,7 +148,7 @@ export class Sanguo {
     // the map area: right of the panel, below the top bar
     this.ox = this.panelW + (W - this.panelW) / 2; this.oy = 48 + (H - 48 - 50) / 2; // 50 px kept free for the end-month button
     const xs = NODE_IDS.map((c) => CITIES[c].x), zs = NODE_IDS.map((c) => CITIES[c].z);
-    const fitS = Math.min((W - this.panelW - 30) / (Math.max(...xs) - Math.min(...xs) + 220), (H - 48 - 50 - 24) / (Math.max(...zs) - Math.min(...zs) + 200));
+    const fitS = Math.min((W - this.panelW - 30) / (Math.max(...xs) - Math.min(...xs) + 380), (H - 48 - 50 - 24) / (Math.max(...zs) - Math.min(...zs) + 200));
     this.sMin = fitS * 0.8; this.sMax = fitS * 4;
     if (fit || !this.s0) { this.k = fitS; this.s0 = fitS; this.cx = (Math.max(...xs) + Math.min(...xs)) / 2; this.cz = (Math.max(...zs) + Math.min(...zs)) / 2 + 20; }
   }
@@ -268,13 +269,16 @@ export class Sanguo {
       const C = st.cities[id], col = this.fColor(C.owner);
       const [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z);
       const short = CITIES[id].pass && this.k < this.s0 * 1.4; // zoomed out: the gate icon names the pass, the label only counts troops
+      const hide = short && W < 1000 && id !== this.sel && C.owner !== E.PLAYER; // small screens: tap the gate to see it
       const lab = short ? kNum(C.troops) : `${cName(id)} · ${kNum(C.troops)}`, ly = short ? y - 4 * ts : y + 18 * ts + 9;
       c.font = `700 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
       const tw = c.measureText(lab).width + 20, lh = fs + 7;
       const lx = short ? x + passSide(id) * (34 * ts + tw / 2) : x; // a pass label sits beside the gate, away from the nearest city
-      c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : CITIES[id].pass ? 'rgba(70,52,38,.92)' : 'rgba(38,29,22,.88)'; rr(c, lx - tw / 2, ly - lh / 2, tw, lh, lh / 2); c.fill();
-      c.fillStyle = col; c.beginPath(); c.arc(lx - tw / 2 + 9, ly, 3.5, 0, 7); c.fill();
-      c.fillStyle = '#fff'; c.fillText(lab, lx + 5, ly + 0.5);
+      if (!hide) {
+        c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : CITIES[id].pass ? 'rgba(70,52,38,.92)' : 'rgba(38,29,22,.88)'; rr(c, lx - tw / 2, ly - lh / 2, tw, lh, lh / 2); c.fill();
+        c.fillStyle = col; c.beginPath(); c.arc(lx - tw / 2 + 9, ly, 3.5, 0, 7); c.fill();
+        c.fillStyle = '#fff'; c.fillText(lab, lx + 5, ly + 0.5);
+      }
       if (C.owner === E.PLAYER && !sup.has(id)) badge(c, x - 26 * ts, y - 30 * ts, '#d64545', zh() ? '断' : '!');
       if (C.owner === E.PLAYER) { // officers with orders / officers here
         const gs = E.gensIn(st, id, E.PLAYER);
@@ -502,7 +506,7 @@ export class Sanguo {
     await this.reveal(E.factionGens(st, E.PLAYER)[1], t('sgBlindStart'), F('sgJoined', { g: gName(E.factionGens(st, E.PLAYER)[1]) }));
     const [a, b, c] = [1, 2, 3].map((f) => this.fName(f));
     await this.layer(`<h2>${t('sgRivals')}</h2><div class="sgRivals">${[1, 2, 3].map((f) => `<div>${portrait(st.factions[f].lord, 56)}<b style="color:${st.factions[f].color}">${esc(this.fName(f))}</b><small>📍 ${esc(cName(st.factions[f].cap))}</small></div>`).join('')}</div>
-      <p>${esc(F('sgIntro', { a, b, c }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
+      <p>${esc(F('sgIntro', { a, b, c, p: cName(PASS_IDS.find((x) => CITIES[x].big) || PASS_IDS[0]) }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
     this.sel = st.factions[E.PLAYER].cap; this.render();
   }
   duelUI(d) {

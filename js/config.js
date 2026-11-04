@@ -122,6 +122,8 @@ export const CFG = {
     eventChance: 0.55, cnyGold: 40,
     // v0.8.2 (D-76): 驿站 relay roads (gas stations) and 补给站 supply depots (malls)
     stationAtk: 0.1, depotFood: 0.3,
+    // v0.9 (D-77): random boards
+    cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
