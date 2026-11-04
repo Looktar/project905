@@ -1,5 +1,8 @@
-// 万锦三国志 rules engine (D-73). Pure and deterministic: all randomness comes from the seeded
-// generator kept in the state, so a saved game (JSON) resumes exactly. No DOM, unit-tested.
+// 万锦三国志 rules engine (D-73, v0.8 D-74). Pure and deterministic: all randomness comes from the
+// seeded generator kept in the state, so a saved game (JSON) resumes exactly. No DOM, unit-tested.
+//
+// v0.8: every officer (not every city) gets one order a month; Hwy 407 is crossed only through four
+// passes (关); real terrain (ground height, the Rouge River) helps the defender.
 //
 // A month:  beginTurn(s, playerOrders)  -> domestic orders of every faction run, armies queue up
 //           nextBattle(s)               -> the next army arrives: { m, duel } (duel may be null)
@@ -8,10 +11,12 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, ADJ, FACTION_COLORS } from './sg_data.js';
+import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS } from './sg_data.js';
 
+export const SAVE_V = 2;
 const K = () => CFG.sg;
-export const capOf = (city) => Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev));
+export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
+export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
 
 // ---------------------------------------------------------------- random (mulberry32 in the state)
 export function rnd(s) {
@@ -29,19 +34,23 @@ export const PLAYER = 0;
 export const gen = (id) => GENERALS[id];
 export const fx = (id, k) => (TRAIT_FX[gen(id).trait] || {})[k] || 0;
 export const gensIn = (s, c, f) => Object.values(s.gens).filter((g) => g.c === c && g.f === f && !g.hidden).map((g) => g.id);
-export const ownedBy = (s, f) => CITY_IDS.filter((c) => s.cities[c].owner === f);
-export const factionGens = (s, f) => Object.values(s.gens).filter((g) => g.f === f && !g.hidden).map((g) => g.id);
+export const guardsIn = (s, c) => Object.values(s.gens).filter((g) => g.guard && g.c === c).map((g) => g.id);
+export const ownedBy = (s, f) => NODE_IDS.filter((c) => s.cities[c].owner === f);      // cities and passes
+export const citiesOf = (s, f) => CITY_IDS.filter((c) => s.cities[c].owner === f);    // cities only
+export const factionGens = (s, f) => Object.values(s.gens).filter((g) => g.f === f && !g.hidden && f >= 0).map((g) => g.id);
 export const byLead = (ids) => [...ids].sort((a, b) => gen(b).lead - gen(a).lead);
 const best = (ids, k) => ids.reduce((m, id) => (m && gen(m)[k] >= gen(id)[k] ? m : id), null);
 export const dateOf = (s) => ({ year: K().startYear + Math.floor(s.turn / 12), month: (s.turn % 12) + 1 });
+export const adjacent = (a, b) => ADJ[a].some((x) => x.c === b);
+export const linkOf = (a, b) => ADJ[a].find((x) => x.c === b) || null;
 
-function hops(a) { // graph distance from city a to every city
+function hops(a) { // graph distance from city a to every node
   const d = { [a]: 0 }, q = [a];
   while (q.length) { const c = q.shift(); for (const { c: n } of ADJ[c]) if (d[n] === undefined) { d[n] = d[c] + 1; q.push(n); } }
   return d;
 }
 
-// cities of f connected to its capital through its own cities (the supply lines)
+// cities and passes of f connected to its capital through its own nodes (the supply lines)
 export function supplied(s, f) {
   const fa = s.factions[f], out = new Set();
   if (!fa || s.cities[fa.cap]?.owner !== f) return out;
@@ -50,8 +59,23 @@ export function supplied(s, f) {
   return out;
 }
 
+// ---------------------------------------------------------------- terrain (v0.8, D-74)
+// attacking from `from` into `to`: crossing the Rouge costs, attacking uphill costs, downhill helps a little
+export function terrain(from, to) {
+  const k = K(), link = linkOf(from, to), dh = CITIES[to].elev - CITIES[from].elev;
+  let m = 1;
+  const why = [];
+  if (link && link.river) { m -= k.riverPen; why.push('river'); }
+  if (dh > 0) { const p = Math.min(k.hillMax, dh * k.hillPerM); m -= p; if (p >= 0.04) why.push('uphill'); }
+  else if (dh < 0) { const p = Math.min(k.hillMax / 2, -dh * k.hillPerM / 2); m += p; if (p >= 0.04) why.push('downhill'); }
+  return { m, why };
+}
+// walls: a pass is worth more than a city wall of the same number
+export const wallMul = (city) => (1 + city.def / K().defDiv) * (city.pass ? K().passMul : 1);
+
 // bonds active for a set of generals (army) of faction f
 export function activeBonds(s, f, ids) {
+  if (f < 0) return [];
   const fac = new Set(factionGens(s, f)), army = new Set(ids || []);
   return BONDS.filter((b) => b.m.filter((m) => (b.scope === 'army' ? army : fac).has(m)).length >= b.need);
 }
@@ -68,11 +92,13 @@ export function isAlly(s, f, g) { // coalition partners (never the leader); ever
   const L = s.coalition;
   return L !== null && L !== undefined && f !== L && g !== L && g >= 0 && f > 0; // AI members leave each other (and the player) alone
 }
+// who defends a node: the owner's officers there, or the guard of a neutral pass
+export const defenders = (s, c) => (s.cities[c].owner >= 0 ? gensIn(s, c, s.cities[c].owner) : guardsIn(s, c));
 
 // ---------------------------------------------------------------- new game
 export function newGame(seed = Date.now(), names = {}) {
   const k = K();
-  const s = { v: 1, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders' };
+  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {} };
   rnd(s);
   // starting cities: four, pairwise at least 2 roads apart
   let starts = null;
@@ -84,6 +110,11 @@ export function newGame(seed = Date.now(), names = {}) {
   for (const c of CITY_IDS) {
     s.cities[c] = { id: c, owner: -1, troops: Math.round(k.neutralTroops[0] + rnd(s) * (k.neutralTroops[1] - k.neutralTroops[0])), dev: Math.round(30 + rnd(s) * 30), def: Math.round(35 + rnd(s) * 25) };
   }
+  for (const c of PASS_IDS) {
+    const big = CITIES[c].big;
+    s.cities[c] = { id: c, owner: -1, pass: true, dev: 0, def: big ? k.passBigDef : k.passDef,
+      troops: big ? k.passBigTroops : Math.round(k.passTroops[0] + rnd(s) * (k.passTroops[1] - k.passTroops[0])) };
+  }
   const pool = shuffle(s, [...GEN_IDS]);
   for (let f = 0; f < 4; f++) {
     const drawn = [pool.pop(), pool.pop()], cap = starts[f];
@@ -91,9 +122,13 @@ export function newGame(seed = Date.now(), names = {}) {
     Object.assign(s.cities[cap], { owner: f, troops: k.startTroops, dev: 50, def: 60 });
     for (const id of drawn) s.gens[id] = { id, f, c: cap, hidden: false, loyal: 85 + fx(id, 'loyal') };
   }
-  // everyone else hides somewhere in Markham: the blind boxes found by searching
+  // everyone else hides somewhere in Markham (cities only): the blind boxes found by searching
   const order = shuffle(s, [...CITY_IDS]);
   pool.forEach((id, i) => { s.gens[id] = { id, f: -1, c: order[i % order.length], hidden: true, loyal: 70 }; });
+  // the strongest officer still at large holds 407 虎牢关 for nobody (like Lü Bu at Hulao)
+  const big = PASS_IDS.find((c) => CITIES[c].big);
+  const guard = pool.reduce((m, id) => (m && gen(m).war >= gen(id).war ? m : id), null);
+  if (big && guard) Object.assign(s.gens[guard], { c: big, hidden: false, guard: true });
   return s;
 }
 
@@ -101,112 +136,144 @@ const ev = (s, e) => { e.t = s.turn; s.log.push(e); if (s.log.length > 60) s.log
 export const hiddenIn = (s, c) => Object.values(s.gens).filter((g) => g.hidden && g.c === c).map((g) => g.id);
 
 // ---------------------------------------------------------------- orders
-// order: { cmd: 'dev' | 'draft' | 'search' | 'move' | 'march' | 'rest', to, gens, frac }
-export function validOrder(s, f, c, o) {
-  const city = s.cities[c], gs = gensIn(s, c, f), fa = s.factions[f];
-  if (!o || city.owner !== f) return false;
+// one order per officer: orders = { [general id]: { cmd, to, n } }
+// cmd: 'dev' | 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
+export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost' };
+export const orderCost = (o) => (o && COST[o.cmd] ? K()[COST[o.cmd]] : 0);
+export function validOrder(s, f, id, o) {
+  const G = s.gens[id];
+  if (!o || !G || G.f !== f || G.hidden || !G.c) return false;
+  const c = G.c, city = s.cities[c], fa = s.factions[f], k = K();
+  if (city.owner !== f) return false;
   switch (o.cmd) {
-    case 'dev': return fa.gold >= K().devCost && city.dev < 100;
-    case 'draft': return fa.gold >= K().draftCost && city.troops < capOf(city);
-    case 'search': return gs.length > 0;
-    case 'move': return ADJ[c].some((a) => a.c === o.to) && s.cities[o.to].owner === f;
-    case 'march': return ADJ[c].some((a) => a.c === o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= 200;
-    default: return true;
+    case 'dev': return !city.pass && fa.gold >= k.devCost && city.dev < 100;
+    case 'draft': return !city.pass && fa.gold >= k.draftCost && city.troops < capOf(city);
+    case 'search': return !city.pass;
+    case 'fort': return fa.gold >= k.fortCost && city.def < defMaxOf(city);
+    case 'move': return adjacent(c, o.to) && s.cities[o.to].owner === f;
+    case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    default: return false;
   }
 }
 
-function runOrder(s, f, c, o) {
-  const k = K(), city = s.cities[c], fa = s.factions[f], gs = gensIn(s, c, f);
-  if (!validOrder(s, f, c, o)) return;
-  const pickGens = (want) => { const ok = (want || []).filter((g) => gs.includes(g)); return ok.length ? ok.slice(0, 3) : byLead(gs).slice(0, 3); };
+function runOrder(s, f, id, o) {
+  const k = K(), fa = s.factions[f];
+  if (!validOrder(s, f, id, o)) { if (s.gens[id] && s.gens[id].f === f) ev(s, { k: 'skip', f, g: id, cmd: o && o.cmd }); return; }
+  const c = s.gens[id].c, city = s.cities[c], G = gen(id);
   if (o.cmd === 'dev') {
-    const g = best(gs, 'pol'), pol = g ? gen(g).pol : 40;
-    const amt = Math.round((k.devBase + pol * k.devPerPol) * (1 + (g ? fx(g, 'dev') : 0) + bondFx(s, f, gs, 'dev')));
+    const amt = Math.round((k.devBase + G.pol * k.devPerPol) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev')));
     fa.gold -= k.devCost; city.dev = Math.min(100, city.dev + amt);
-    ev(s, { k: 'dev', f, c, g, n: amt });
+    ev(s, { k: 'dev', f, c, g: id, n: amt });
   } else if (o.cmd === 'draft') {
-    const g = best(gs, 'lead'), lead = g ? gen(g).lead : 40;
-    const amt = Math.min(capOf(city) - city.troops, Math.round((k.draftBase + lead * k.draftPerLead) * (1 + (g ? fx(g, 'draft') : 0))));
+    const amt = Math.min(capOf(city) - city.troops, Math.round((k.draftBase + G.lead * k.draftPerLead) * (1 + fx(id, 'draft'))));
     fa.gold -= k.draftCost; city.troops += amt;
-    ev(s, { k: 'draft', f, c, g, n: amt });
+    ev(s, { k: 'draft', f, c, g: id, n: amt });
   } else if (o.cmd === 'search') {
-    const g = best(gs, 'int'), hid = hiddenIn(s, c);
-    const p = k.searchBase + gen(g).int * k.searchPerInt + fx(g, 'search') + gs.reduce((a, x) => Math.max(a, fx(x, 'search')), 0) * 0.5 + bondFx(s, f, gs, 'search');
+    const hid = hiddenIn(s, c);
+    const p = k.searchBase + G.int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search');
     if (hid.length && rnd(s) < p) {
-      const id = pick(s, hid), G = s.gens[id];
-      Object.assign(G, { f, c, hidden: false, loyal: 75 + fx(id, 'loyal') });
-      ev(s, { k: 'found', f, c, g: id, by: g });
+      const nid = pick(s, hid);
+      Object.assign(s.gens[nid], { f, c, hidden: false, loyal: 75 + fx(nid, 'loyal') });
+      ev(s, { k: 'found', f, c, g: nid, by: id });
     } else if (rnd(s) < k.treasure[0]) {
       const n = Math.round(k.treasure[1] + rnd(s) * (k.treasure[2] - k.treasure[1]));
-      fa.gold += n; ev(s, { k: 'treasure', f, c, g, n });
-    } else ev(s, { k: 'nothing', f, c, g, left: hid.length });
+      fa.gold += n; ev(s, { k: 'treasure', f, c, g: id, n });
+    } else ev(s, { k: 'nothing', f, c, g: id, left: hid.length });
+  } else if (o.cmd === 'fort') {
+    const amt = Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0));
+    fa.gold -= k.fortCost; city.def = Math.min(defMaxOf(city), city.def + amt);
+    ev(s, { k: 'fort', f, c, g: id, n: amt });
   } else if (o.cmd === 'move') {
-    const ids = (o.gens && o.gens.length) ? o.gens.filter((g) => gs.includes(g)) : [];
-    const n = Math.floor(city.troops * (o.frac ?? 0.5));
-    for (const id of ids) s.gens[id].c = o.to;
+    const n = Math.max(0, Math.min(city.troops, Math.floor(o.n || 0)));
+    s.gens[id].c = o.to;
     city.troops -= n; s.cities[o.to].troops = Math.min(k.maxTroops, s.cities[o.to].troops + n);
-    ev(s, { k: 'move', f, c, to: o.to, n, gens: ids });
+    ev(s, { k: 'move', f, c, to: o.to, n, gens: [id] });
   } else if (o.cmd === 'march') {
-    const ids = pickGens(o.gens), n = Math.floor(city.troops * Math.min(1, o.frac ?? k.marchFrac));
-    for (const id of ids) s.gens[id].c = null; // on the road
+    const n = Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac));
+    if (n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march' }); return; }
+    s.gens[id].c = null; // on the road
     city.troops -= n;
-    s.queue.push({ f, from: c, to: o.to, gens: ids, troops: n });
-    ev(s, { k: 'march', f, c, to: o.to, n, gens: ids });
+    s.queue.push({ f, from: c, to: o.to, gens: [id], troops: n, terr: terrain(c, o.to).m });
+    ev(s, { k: 'march', f, c, to: o.to, n, gens: [id] });
   }
 }
 
-// ---------------------------------------------------------------- computer lords
-export function aiOrders(s, f) {
-  const k = K(), out = {}, sup = supplied(s, f), fa = s.factions[f];
-  let gold = fa.gold;
-  const power = (troops, ids, defending, def) => {
-    const g = ids.length ? best(ids, 'lead') : null, lead = g ? gen(g).lead : k.neutralStat;
-    const war = ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat;
-    return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100) * (defending ? 1 + def / k.defDiv : 1);
-  };
+// ---------------------------------------------------------------- computer lords (and 委任 for the player)
+const armyPower = (troops, ids) => {
+  const k = K(), g = ids.length ? best(ids, 'lead') : null, lead = g ? gen(g).lead : k.neutralStat;
+  const war = ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat;
+  return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100);
+};
+// opts.war = false: domestic only (the player's "auto-assign"); opts.skip: officers that already have orders;
+// opts.gold: gold left to spend
+export function aiOrders(s, f, opts = {}) {
+  const k = K(), out = {}, sup = supplied(s, f), skip = opts.skip || new Set(), war = opts.war !== false;
+  let gold = opts.gold ?? s.factions[f].gold;
+  const free = (c) => byLead(gensIn(s, c, f).filter((g) => !out[g] && !skip.has(g)));
+  const mine = ownedBy(s, f);
+  const hostile = (o) => o >= 0 && o !== f && !isAlly(s, f, o);
   const enemy = (o) => o !== f && !isAlly(s, f, o) && !(o === PLAYER && s.turn < k.truce);
-  const threatOf = (c) => Math.max(0, ...ADJ[c].map(({ c: n }) => { const o = s.cities[n].owner; return o >= 0 && o !== f && !isAlly(s, f, o) ? s.cities[n].troops : 0; }));
-  const mineAll = ownedBy(s, f);
-  for (const c of mineAll) if (!sup.has(c)) { // cut off: pull back towards the supplied cities
+  const threatOf = (c) => Math.max(0, ...ADJ[c].map(({ c: n }) => (hostile(s.cities[n].owner) ? s.cities[n].troops : 0)));
+  const isFront = (c) => ADJ[c].some(({ c: n }) => s.cities[n].owner !== f && !isAlly(s, f, s.cities[n].owner));
+  // cut off: everybody walks back towards the supplied cities, the first one brings the troops
+  for (const c of mine) if (!sup.has(c)) {
     const home = ADJ[c].find(({ c: n }) => s.cities[n].owner === f && sup.has(n));
-    out[c] = home ? { cmd: 'move', to: home.c, gens: gensIn(s, c, f), frac: 0.8 } : { cmd: 'dev' };
+    if (home) free(c).forEach((g, i) => { out[g] = { cmd: 'move', to: home.c, n: i === 0 ? Math.floor(s.cities[c].troops * 0.8) : 0 }; });
   }
-  // attacks: every neighbouring city of ours may join in (armies merge), up to two targets a month
-  for (let n = 0; n < 2; n++) {
+  // attacks: every neighbouring node of ours may join in (armies merge), up to two targets a month
+  const used = new Set();
+  // a rich lord, or one of the last two, gets bolder (no endless stand-offs between full cities)
+  const thr = k.aiAttack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
+  for (let n = 0; war && n < 2; n++) {
     let pick1 = null;
     const targets = new Set();
-    for (const c of mineAll) if (sup.has(c) && !out[c]) for (const { c: t } of ADJ[c]) if (enemy(s.cities[t].owner)) targets.add(t);
+    for (const c of mine) if (sup.has(c) && !used.has(c) && free(c).length) for (const { c: t } of ADJ[c]) if (s.cities[t].owner !== f && enemy(s.cities[t].owner)) targets.add(t);
     for (const t of targets) {
-      const T = s.cities[t], o = T.owner;
-      const from = ADJ[t].map((a) => a.c).filter((c) => s.cities[c].owner === f && sup.has(c) && !out[c] && s.cities[c].troops >= 800);
+      const T = s.cities[t];
+      const from = ADJ[t].map((a) => a.c).filter((c) => s.cities[c].owner === f && sup.has(c) && !used.has(c) && free(c).length && s.cities[c].troops >= 800);
       if (!from.length) continue;
-      const ids = from.flatMap((c) => byLead(gensIn(s, c, f)).slice(0, 2));
-      const troops = from.reduce((a, c) => a + s.cities[c].troops * k.marchFrac, 0);
-      let sc = power(troops, ids, false, 0) / Math.max(1, power(T.troops, o >= 0 ? gensIn(s, t, o) : [], true, T.def));
-      if (!ids.length) sc *= 0.8;
-      if (o === -1) sc += 0.1;
-      if (s.coalition !== null && o === s.coalition) sc += 0.3;
-      if (sc >= k.aiAttack && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc };
+      const ids = from.flatMap((c) => free(c).slice(0, 2));
+      let troops = 0, tw = 0;
+      for (const c of from) { const x = s.cities[c].troops * k.marchFrac; troops += x; tw += x * terrain(c, t).m; }
+      let sc = armyPower(troops, ids) * (tw / troops) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
+      if (T.owner === -1) sc += 0.1;
+      if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
+      if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc };
     }
     if (!pick1) break;
-    for (const c of pick1.from) out[c] = { cmd: 'march', to: pick1.t, gens: byLead(gensIn(s, c, f)).slice(0, 2), frac: k.marchFrac };
+    for (const c of pick1.from) {
+      const ld = free(c).slice(0, 2), x = Math.floor(s.cities[c].troops * k.marchFrac / ld.length);
+      for (const g of ld) out[g] = { cmd: 'march', to: pick1.t, n: x };
+      used.add(c);
+    }
   }
-  for (const c of mineAll) {
-    if (out[c]) continue;
-    const city = s.cities[c], gs = gensIn(s, c, f);
-    const foes = ADJ[c].filter(({ c: n }) => s.cities[n].owner !== f && !isAlly(s, f, s.cities[n].owner));
-    const threat = threatOf(c);
-    const canDraft = gold >= k.draftCost && city.troops < capOf(city);
-    if (city.troops < threat * 1.2 && canDraft) { out[c] = { cmd: 'draft' }; gold -= k.draftCost; }
-    else if (gs.length && hiddenIn(s, c).length && rnd(s) < 0.6) out[c] = { cmd: 'search' };
-    else if (city.troops < k.aiSafe && canDraft) { out[c] = { cmd: 'draft' }; gold -= k.draftCost; }
-    else if (!foes.length && city.troops > 2000) {
-      // interior city: feed the most threatened neighbour (and lend it a general if it has none)
-      const front = ADJ[c].filter(({ c: n }) => s.cities[n].owner === f).sort((a, b) => threatOf(b.c) - threatOf(a.c))[0];
-      if (front && ADJ[front.c].some(({ c: n }) => s.cities[n].owner !== f)) out[c] = { cmd: 'move', to: front.c, frac: 0.6, gens: gs.length > 1 && !gensIn(s, front.c, f).length ? [byLead(gs)[0]] : [] };
-      else if (city.dev < 90 && gold >= k.devCost) { out[c] = { cmd: 'dev' }; gold -= k.devCost; }
-    } else if (city.dev < 90 && gold >= k.devCost) { out[c] = { cmd: 'dev' }; gold -= k.devCost; }
-    else if (gold >= k.draftCost && city.troops < capOf(city)) { out[c] = { cmd: 'draft' }; gold -= k.draftCost; }
+  // everyone else: one job each, most urgent first
+  const incoming = {};
+  for (const c of mine) {
+    const C = s.cities[c];
+    let gs = free(c), searched = false, fed = false;
+    const take = (key) => { const g = best(gs, key); gs = gs.filter((x) => x !== g); return g; };
+    const threat = threatOf(c), front = isFront(c);
+    const canDraft = () => !C.pass && gold >= k.draftCost && C.troops < capOf(C);
+    while (gs.length) {
+      if (canDraft() && (C.troops < threat * 1.2 || C.troops < k.aiSafe)) { out[take('lead')] = { cmd: 'draft' }; gold -= k.draftCost; continue; }
+      if (!C.pass && !searched && hiddenIn(s, c).length && rnd(s) < 0.7) { out[take('int')] = { cmd: 'search' }; searched = true; continue; }
+      if (front && gold >= k.fortCost && C.def < (C.pass ? defMaxOf(C) : 60) && (C.pass || threat > C.troops * 0.6)) { out[take('pol')] = { cmd: 'fort' }; gold -= k.fortCost; continue; }
+      if (!C.pass && C.dev < 90 && gold >= k.devCost) { out[take('pol')] = { cmd: 'dev' }; gold -= k.devCost; continue; }
+      // a spare officer goes where there is nobody, so every city can act
+      if (gs.length >= 2 || !front) {
+        const need = ADJ[c].map((a) => a.c).filter((n) => s.cities[n].owner === f && sup.has(n) && !gensIn(s, n, f).length && !incoming[n]);
+        if (need.length) { const to = need[0]; out[take('pol')] = { cmd: 'move', to, n: !front && C.troops > 2000 ? Math.floor(C.troops * 0.4) : 0 }; incoming[to] = 1; continue; }
+      }
+      // interior: feed the most threatened neighbour
+      if (!front && !fed && C.troops > 2000) {
+        const fr = ADJ[c].filter(({ c: n }) => s.cities[n].owner === f && isFront(n)).sort((a, b) => threatOf(b.c) - threatOf(a.c))[0];
+        if (fr) { out[take('lead')] = { cmd: 'move', to: fr.c, n: Math.floor(C.troops * 0.6) }; fed = true; continue; }
+      }
+      if (canDraft()) { out[take('lead')] = { cmd: 'draft' }; gold -= k.draftCost; continue; }
+      if (!C.pass && searched === false && hiddenIn(s, c).length) { out[take('int')] = { cmd: 'search' }; searched = true; continue; }
+      break;
+    }
   }
   return out;
 }
@@ -218,16 +285,20 @@ export function beginTurn(s, playerOrders = {}) {
   for (const fa of s.factions) {
     if (!fa.alive) continue;
     const ords = fa.player ? playerOrders : aiOrders(s, fa.id);
-    for (const c of Object.keys(ords)) all.push([fa.id, c, ords[c]]);
+    for (const id of Object.keys(ords)) all.push([fa.id, id, ords[id]]);
   }
   // domestic first (in a shuffled order so no faction always goes first), armies queue up
-  for (const [f, c, o] of shuffle(s, all.filter(([, , o]) => o.cmd !== 'march'))) runOrder(s, f, c, o);
-  for (const [f, c, o] of shuffle(s, all.filter(([, , o]) => o.cmd === 'march'))) runOrder(s, f, c, o);
-  // armies of one lord heading for the same city join up and fight as one
+  for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd !== 'march'))) runOrder(s, f, id, o);
+  for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd === 'march'))) runOrder(s, f, id, o);
+  // armies of one lord heading for the same place join up and fight as one (terrain: troop-weighted)
   const merged = [];
   for (const m of s.queue) {
     const j = merged.find((x) => x.f === m.f && x.to === m.to);
-    if (j) { j.troops += m.troops; j.gens.push(...m.gens); j.froms.push(m.from); } else merged.push({ ...m, gens: [...m.gens], froms: [m.from] });
+    if (j) {
+      j.terr = (j.terr * j.troops + m.terr * m.troops) / Math.max(1, j.troops + m.troops);
+      j.troops += m.troops; j.gens.push(...m.gens); if (!j.froms.includes(m.from)) j.froms.push(m.from);
+      j.home[m.gens[0]] = m.from;
+    } else merged.push({ ...m, gens: [...m.gens], froms: [m.from], home: { [m.gens[0]]: m.from } });
   }
   s.queue = merged;
   s.phase = 'battles';
@@ -238,7 +309,7 @@ export function nextBattle(s) {
   while (s.queue.length) {
     const m = s.queue.shift(), T = s.cities[m.to];
     if (T.owner === m.f) { enterCity(s, m); continue; } // a friend got there first: just move in
-    const dGens = T.owner >= 0 ? gensIn(s, m.to, T.owner) : [];
+    const dGens = defenders(s, m.to);
     let duel = null;
     if (m.gens.length && dGens.length) {
       const a = best(m.gens, 'war'), d = best(dGens, 'war'), riv = rivalry(m.gens, dGens);
@@ -278,18 +349,18 @@ export function duelRound(s, d, mA = null, mD = null) {
 }
 export function autoDuel(s, d) { while (!d.done) duelRound(s, d); return d.win; }
 
-function sidePower(s, f, ids, troops, { attacking, outnumbered, def }) {
+function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
   const k = K(), g = ids.length ? best(ids, 'lead') : null, lead = g ? gen(g).lead : k.neutralStat;
   const war = ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat;
   let m = 1;
   for (const id of ids) m += (fx(id, 'atk') + (attacking ? fx(id, 'raid') : 0) + (outnumbered ? fx(id, 'few') : 0)) * (id === g ? 1 : 0.5) + (attacking ? 0 : fx(id, 'def') * (id === g ? 1 : 0.5));
   if (f >= 0) m += bondFx(s, f, ids, 'atk') + (attacking ? 0 : bondFx(s, f, ids, 'def'));
-  return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100) * m * (attacking ? 1 : 1 + def / k.defDiv);
+  return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100) * m;
 }
 
 export function resolveBattle(s, m, duelWin = null, duel = null) {
-  const k = K(), T = s.cities[m.to], o = T.owner, dGens = o >= 0 ? gensIn(s, m.to, o) : [];
-  let aMul = 1, dMul = 1;
+  const k = K(), T = s.cities[m.to], o = T.owner, dGens = defenders(s, m.to);
+  let aMul = m.terr ?? 1, dMul = 1;
   if (duel) {
     const loser = duelWin === 'a' ? duel.d : duelWin === 'd' ? duel.a : null;
     ev(s, { k: 'duel', f: m.f, c: m.to, a: duel.a, d: duel.d, win: duelWin, fd: o, rival: duel.rival });
@@ -299,26 +370,28 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
       const capF = duelWin === 'a' ? m.f : o;
       if (duelWin === 'a') dGens.splice(dGens.indexOf(loser), 1); else m.gens.splice(m.gens.indexOf(loser), 1);
       capture(s, loser, capF, m.to);
+      if (duelWin === 'd' && o >= 0 && s.gens[loser].f === o) dGens.push(loser); // won over by the defenders: he now stands on the walls
     }
   }
   let A = m.troops, D = T.troops;
+  const walls = wallMul(T);
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {
     const pa = sidePower(s, m.f, m.gens, A, { attacking: true, outnumbered: A < D }) * aMul;
-    const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A, def: T.def }) * dMul;
+    const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A }) * dMul * walls;
     A = Math.max(0, Math.round(A - pd * k.roundLoss * (0.8 + 0.4 * rnd(s))));
     D = Math.max(0, Math.round(D - pa * k.roundLoss * (0.8 + 0.4 * rnd(s))));
     T.def = Math.max(20, T.def - 2);
     if (D > 0 && D < m.troops * 0.12 && A > D * 3) D = 0; // the garrison gives up
   }
   const won = D <= 0 && A > 0;
-  ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A });
+  ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A, pass: !!T.pass });
   if (won) {
     T.owner = m.f; T.troops = Math.min(k.maxTroops, A); T.def = Math.max(20, T.def - k.siegeDef);
     for (const id of m.gens) s.gens[id].c = m.to;
     for (const id of dGens) {
-      const home = ADJ[m.to].find(({ c }) => s.cities[c].owner === o);
+      const home = o >= 0 ? ADJ[m.to].find(({ c }) => s.cities[c].owner === o) : null;
       if (home && (fx(id, 'safe') || rnd(s) < k.flee)) { s.gens[id].c = home.c; ev(s, { k: 'flee', f: o, g: id, c: home.c, by: m.f }); }
-      else if (fx(id, 'safe')) hide(s, id, m.to);
+      else if (fx(id, 'safe')) hide(s, id, pick(s, CITY_IDS));
       else capture(s, id, m.f, m.to);
     }
     checkFaction(s, o);
@@ -334,22 +407,23 @@ function enterCity(s, m) {
   for (const id of m.gens) s.gens[id].c = m.to;
 }
 function retreat(s, m, troops) {
-  let home = s.cities[m.from].owner === m.f ? m.from : null;
-  if (!home) home = ownedBy(s, m.f).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0] || null;
-  if (!home) { for (const id of m.gens) hide(s, id, m.from); return; }
-  s.cities[home].troops = Math.min(K().maxTroops, s.cities[home].troops + troops);
-  for (const id of m.gens) s.gens[id].c = home;
+  // every officer goes back where he came from (if still ours); the troops go with the first one
+  const back = (c) => (c && s.cities[c].owner === m.f ? c : null);
+  const fallback = back(m.from) || ownedBy(s, m.f).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0] || null;
+  if (!fallback) { for (const id of m.gens) hide(s, id, pick(s, CITY_IDS)); return; }
+  s.cities[fallback].troops = Math.min(K().maxTroops, s.cities[fallback].troops + troops);
+  for (const id of m.gens) s.gens[id].c = back(m.home && m.home[id]) || fallback;
 }
-function hide(s, id, c) { Object.assign(s.gens[id], { f: -1, c, hidden: true }); }
+function hide(s, id, c) { Object.assign(s.gens[id], { f: -1, c: CITIES[c] && !CITIES[c].pass ? c : CITY_IDS[0], hidden: true, guard: false }); }
 // a captured officer: the captor tries to win him over, otherwise lets him go (he hides somewhere)
 function capture(s, id, byF, c) {
   const k = K(), from = s.gens[id].f;
-  if (byF < 0) { hide(s, id, c); return; }
+  if (byF < 0) { hide(s, id, pick(s, CITY_IDS)); return; }
   const mine = factionGens(s, byF);
   let p = k.recruit + Math.max(0, ...mine.map((x) => fx(x, 'recruit')));
   if (BONDS.some((b) => b.m.includes(id) && b.m.some((x) => x !== id && mine.includes(x)))) p += k.recruitBond;
   if (from >= 0 && s.factions[from] && s.factions[from].lord === id) p += k.recruitLord;
-  if (rnd(s) < p) { Object.assign(s.gens[id], { f: byF, c: ownedBy(s, byF).includes(c) ? c : ownedBy(s, byF)[0], hidden: false, loyal: 60 }); ev(s, { k: 'recruit', f: byF, g: id, from }); }
+  if (rnd(s) < p) { Object.assign(s.gens[id], { f: byF, c: ownedBy(s, byF).includes(c) ? c : ownedBy(s, byF)[0], hidden: false, guard: false, loyal: 60 }); ev(s, { k: 'recruit', f: byF, g: id, from }); }
   else { hide(s, id, pick(s, CITY_IDS)); ev(s, { k: 'release', f: byF, g: id, from }); }
   if (from >= 0) fixLord(s, from);
 }
@@ -360,11 +434,13 @@ function fixLord(s, f) {
   const next = byLead(factionGens(s, f))[0];
   if (next) { fa.lord = next; ev(s, { k: 'newlord', f, g: next }); }
 }
+// a lord with no city left is gone, even if he still holds a pass (the pass goes back to nobody)
 function checkFaction(s, f) {
   if (f < 0) return;
   const fa = s.factions[f];
-  if (!fa.alive || ownedBy(s, f).length) { fixLord(s, f); return; }
+  if (!fa.alive || citiesOf(s, f).length) { fixLord(s, f); return; }
   fa.alive = false;
+  for (const c of ownedBy(s, f)) s.cities[c].owner = -1;
   for (const id of factionGens(s, f)) hide(s, id, s.gens[id].c || pick(s, CITY_IDS));
   ev(s, { k: 'fall', f });
 }
@@ -374,29 +450,35 @@ export function endTurn(s) {
   for (const fa of s.factions) {
     if (!fa.alive) continue;
     if (s.cities[fa.cap].owner !== fa.id) { // capital lost: the strongest city becomes the new one
-      const c = ownedBy(s, fa.id).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0];
+      const c = citiesOf(s, fa.id).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0];
       if (c) { fa.cap = c; ev(s, { k: 'capital', f: fa.id, c }); }
     }
     const sup = supplied(s, fa.id);
     let troops = 0;
     for (const c of ownedBy(s, fa.id)) {
       const C = s.cities[c];
-      C.def = Math.min(k.defMax, C.def + k.defRegen);
-      if (sup.has(c)) { fa.gold += Math.round(k.goldBase + C.dev * k.goldPerDev); fa.food += Math.round(k.foodBase + C.dev * k.foodPerDev); }
-      else { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
+      C.def = Math.min(defMaxOf(C), C.def + (C.pass ? k.passDefRegen : k.defRegen));
+      if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
+      else if (!C.pass) {
+        fa.gold += Math.round(k.goldBase + C.dev * k.goldPerDev);
+        fa.food += Math.round((k.foodBase + C.dev * k.foodPerDev) * (CITIES[c].valley ? 1 + k.valleyFood : 1));
+      }
       troops += C.troops;
     }
     fa.food -= Math.round(troops * k.foodPerTroop);
     if (fa.food < 0) { fa.food = 0; for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.hungerLoss)); ev(s, { k: 'hunger', f: fa.id }); }
     fixLord(s, fa.id);
   }
-  for (const c of CITY_IDS) { const C = s.cities[c]; if (C.owner === -1 && C.troops < k.neutralMax) C.troops = Math.min(k.neutralMax, C.troops + k.neutralRegen); }
+  for (const c of NODE_IDS) {
+    const C = s.cities[c], max = C.pass ? (CITIES[c].big ? k.passBigTroops : k.passTroops[1]) : k.neutralMax;
+    if (C.owner === -1 && C.troops < max) C.troops = Math.min(max, C.troops + k.neutralRegen);
+  }
   // the coalition: when one lord holds half of Markham, the others stop fighting each other
   const alive = s.factions.filter((f) => f.alive);
-  const lead = alive.find((f) => ownedBy(s, f.id).length >= k.coalitionAt);
+  const lead = alive.find((f) => citiesOf(s, f.id).length >= k.coalitionAt);
   const L = lead && alive.length >= 3 ? lead.id : null;
   if (L !== s.coalition) { ev(s, { k: L === null ? 'coalitionEnd' : 'coalition', f: L === null ? s.coalition : L }); s.coalition = L; }
-  const mine = ownedBy(s, PLAYER).length;
+  const mine = citiesOf(s, PLAYER).length;
   if (mine === CITY_IDS.length) s.over = 'win';
   else if (!mine) s.over = 'lose';
   if (s.over) ev(s, { k: s.over });
@@ -413,6 +495,11 @@ export function runTurn(s, orders = {}) {
 
 // a computer plays the player's side too (tests / balance)
 export function autoPlayer(s) { return aiOrders(s, PLAYER); }
+// 委任: give every officer without an order a peaceful job (develop, draft, search, fortify, spread out)
+export function autoAssign(s, orders = {}) {
+  const spent = Object.values(orders).reduce((a, o) => a + orderCost(o), 0);
+  return { ...aiOrders(s, PLAYER, { war: false, skip: new Set(Object.keys(orders)), gold: s.factions[PLAYER].gold - spent }), ...orders };
+}
 export function factionName(s, f, zh = true) {
   if (f < 0) return zh ? '空城' : 'Unclaimed';
   const fa = s.factions[f];

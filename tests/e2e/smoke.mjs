@@ -168,6 +168,7 @@ async function runViewport(browser, base, vp) {
     await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
     for (let i = 0; i < 3; i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
     await tap('.sgCmd[data-cmd="search"]');
+    await tap('#sgAuto');
     await tap('#sgEnd');
     for (let i = 0; i < 12; i++) {
       await sleep(300);

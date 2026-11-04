@@ -27,7 +27,8 @@ js/pranks.js          v0.4 万锦恶作剧清单（game.ev 事件）+ 30 个金�
 js/nav.js             v0.5 地点索引、容错搜索、GPS 导航路线、传送（D-71）
 js/bigmap.js          v0.5 全城大地图界面：点小地图或按 M，拖动 / 缩放 / 搜索 / 导航 / 传送
 js/sg_data.js         v0.7 万锦三国志数据：48 位武将、特技、羁绊、宿敌、12 座城和粮道（D-73）
-js/sg_engine.js       v0.7 万锦三国志规则：回合、命令、粮道、战斗、单挑、俘虏、电脑君主、反联盟（纯函数，种子随机）
+js/sg_engine.js       v0.7 万锦三国志规则：回合、每位武将一个命令（v0.8）、关隘、地形、粮道、战斗、单挑、俘虏、电脑君主、反联盟（纯函数，种子随机）
+js/sg_elev.js         v0.8 真实海拔网格（tools/fetch_elev.py 生成，Copernicus DEM）：三国地形、关隘、仰攻（D-74）
 js/sg_ui.js           v0.7 万锦三国志界面：策略地图、城池面板、急报、盲盒翻牌、单挑；存档在 localStorage p905sg
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
@@ -37,6 +38,7 @@ js/hud.js             小地图、路名、血条、气泡、横幅、被抓画�
 js/audio.js           WebAudio 合成音效（无音频文件）
 js/config.js          所有可调数值
 js/i18n.js            中英文案
+tools/fetch_elev.py   抓真实海拔 → js/sg_elev.js（需要联网，结果已提交）
 tools/fetch_osm.py    从 Overpass 抓原始数据（两段查询：地图 + 店铺，自动重试多个镜像）→ data/raw/
 tools/build_map.py    OSM 原始数据 → maps/markham.json（纯 Python 标准库）
 tools/concept_chars.mjs  人物风格概念图（2D SVG → PNG，docs/concept/characters/）

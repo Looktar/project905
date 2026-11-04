@@ -112,7 +112,11 @@ export const CFG = {
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelSkill: 0.4, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
     rounds: 8, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
-    aiAttack: 1.35, aiSafe: 2500, coalitionAt: 6,
+    aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
+    // v0.8 (D-74): one order per officer a month; passes on Hwy 407; real terrain
+    minMarch: 100, fortCost: 60, fortBase: 6, fortPerStat: 1 / 8,
+    passTroops: [1400, 2000], passBigTroops: 2600, passDef: 80, passBigDef: 100, passDefMax: 120, passDefRegen: 2, passCap: 6000, passMul: 1.15,
+    hillPerM: 0.012, hillMax: 0.24, riverPen: 0.15, valleyFood: 0.4,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
