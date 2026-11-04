@@ -148,13 +148,14 @@ async function runViewport(browser, base, vp) {
       notes.push('keyboard W -> my 1');
     }
     notes.push('hud: ' + (await page.locator('#dbg').textContent()).trim());
-    // the big map (v0.5): tap the minimap, search, pick the first result, screenshot, close
+    // the big map (v0.5): tap the minimap, search, pick the first result, screenshot, close. CI runners draw at
+    // 1-2 fps here, so UI waits get the same 15 s as the keyboard check above
     const tap = (sel) => (ctxOpts.hasTouch ? page.tap(sel) : page.click(sel));
     await tap('#mini');
-    await page.waitForSelector('#bigmap.show', { timeout: 5000 });
+    await page.waitForSelector('#bigmap.show', { timeout: 15000 });
     await page.fill('#bmQ', 'pacific mall');
     await tap('#bmList [data-i="0"]');
-    await page.waitForSelector('#bmCard.show', { timeout: 5000 });
+    await page.waitForSelector('#bmCard.show', { timeout: 15000 });
     await sleep(500);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-map.png`) });
     notes.push('big map: ' + (await page.locator('#bmCard b').textContent()).trim());
@@ -163,7 +164,7 @@ async function runViewport(browser, base, vp) {
     await page.evaluate(() => localStorage.removeItem('p905sg'));
     await tap('#setBtn');
     await tap('#openSg');
-    await page.waitForSelector('#sgLayer.show', { timeout: 5000 });
+    await page.waitForSelector('#sgLayer.show', { timeout: 15000 });
     await sleep(700);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
     for (let i = 0; i < 3; i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
@@ -180,7 +181,7 @@ async function runViewport(browser, base, vp) {
     if ((await page.locator('#sgDate').textContent()).trim() === '') throw new Error('sg: no date');
     await tap('#sgMenuBtn');
     await tap('#sgLayer [data-ok="back"]');
-    await page.waitForFunction(() => !document.getElementById('sg').classList.contains('show'), null, { timeout: 5000 });
+    await page.waitForFunction(() => !document.getElementById('sg').classList.contains('show'), null, { timeout: 15000 });
   } catch (e) {
     problems.push(e.message.split('\n')[0]);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-failure.png`) }).catch(() => {});
