@@ -25,7 +25,7 @@ extend({
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。几座真实公园成了隘口，Toogood 虎牢关有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：Unionville 的 Toogood 公园，最坚固的隘口',
-  sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
+  sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
   sgTargets: '目标（也可以点地图）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
@@ -37,7 +37,7 @@ extend({
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n隘口是真实的公园：John Button、Toogood、Austin Drive、Milne Dam、Milliken，卡在城和城之间的路上。隘口没有百姓，但城防极高；Toogood 虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：大古广场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n隘口是真实的公园：John Button、Toogood、Austin Drive、Milne Dam、Milliken，卡在城和城之间的路上。隘口没有百姓，但城防极高；Toogood 虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）：Buttonville、Woodbine、Markvile Mall、大古广场。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：大古广场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgContinue: 'Continue',
@@ -54,7 +54,7 @@ extend({
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. Real parks are passes; a mighty officer holds the Toogood Tiger Pass.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: Toogood Park in Unionville, the strongest pass",
-  sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
+  sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
   sgTargets: 'Targets (or tap the map)', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
@@ -66,7 +66,7 @@ extend({
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nPasses are real parks across the roads between cities: John Button, Toogood, Austin Drive, Milne Dam and Milliken. They have no people but huge walls; a mighty officer guards the Toogood Tiger Pass at the start, and you may win him over if you take it.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: the Pacifick Mall night market, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nPasses are real parks across the roads between cities: John Button, Toogood, Austin Drive, Milne Dam and Milliken. They have no people but huge walls; a mighty officer guards the Toogood Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”): Buttonville, Woodbine, Markvile Mall and Pacifick Mall. A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: the Pacifick Mall night market, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -220,7 +220,7 @@ export class Sanguo {
     if (E.isWinter(st)) { c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, 0, W, H); } // snow
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
-    for (const [a, b, road, river] of LINKS) {
+    for (const [a, b, road, river, station] of LINKS) {
       const [ax, ay] = this.toScreen(CITIES[a].x, CITIES[a].z), [bx, by] = this.toScreen(CITIES[b].x, CITIES[b].z);
       const oa = st.cities[a].owner, ob = st.cities[b].owner;
       c.setLineDash(oa === ob && oa >= 0 ? [] : [10, 8]);
@@ -229,6 +229,10 @@ export class Sanguo {
       c.setLineDash([]);
       const mx = (ax + bx) / 2, my = (ay + by) / 2;
       if (river) badge(c, mx, my, '#2e6ed6', zh() ? '渡' : '≈', '#fff', 9);
+      if (station) { // 驿站: a real gas station, nudged off the river badge in the middle
+        const t0 = station[1], tt = river && Math.abs(t0 - 0.5) < 0.18 ? (t0 >= 0.5 ? t0 + 0.2 : t0 - 0.2) : t0;
+        badge(c, ax + (bx - ax) * tt, ay + (by - ay) * tt, '#e8892b', zh() ? '驿' : 'G', '#fff', 9);
+      }
       if (this.k > this.s0 * 1.5) {
         c.font = '700 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
         const tw = c.measureText(road).width + 10, ly = my + (river ? 18 : 0);
@@ -257,6 +261,7 @@ export class Sanguo {
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
       else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].zh.slice(-1) : '', ts);
+      if (CITIES[id].depot) badge(c, x - 30 * ts, y + 2 * ts, '#2f8f4e', zh() ? '补' : 'S', '#fff', 9); // 补给站: a big mall
     }
     const ordered = new Set(Object.keys(st.orders || {}));
     for (const id of NODE_IDS) {
@@ -307,6 +312,7 @@ export class Sanguo {
     const tr = E.terrain(from, to), d = CITIES[to].elev - CITIES[from].elev, k = CFG.sg, out = [];
     if (tr.why.includes('river')) out.push(F('sgTerrRiver', { n: Math.round(k.riverPen * 100) }));
     if (tr.why.includes('uphill')) out.push(F('sgTerrUp', { n: Math.round(Math.min(k.hillMax, d * k.hillPerM) * 100) }));
+    if (tr.why.includes('station')) out.push(F('sgTerrStation', { n: Math.round(k.stationAtk * 100) }));
     if (tr.why.includes('downhill')) out.push(F('sgTerrDown', { n: Math.round(Math.min(k.hillMax / 2, -d * k.hillPerM / 2) * 100) }));
     return out;
   }
@@ -321,12 +327,13 @@ export class Sanguo {
     if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
     if (info.pass) h += `<p class="sgHint">${t('sgPassNote')}</p>`;
     if (info.valley) h += `<p class="sgHint">🌾 ${t('sgValley')}</p>`;
+    if (info.depot) h += `<p class="sgHint">🛒 ${esc(F('sgDepot', { n: zh() ? info.depot[0] : info.depot[1], f: Math.round(CFG.sg.depotFood * 100) }))}</p>`;
     const rum = E.hiddenIn(st, c).filter((g) => st.gens[g].rumor);
     if (rum.length) h += `<p class="sgHint">🗣 ${esc(F('sgRumoured', { g: rum.map(gName).join('、') }))}</p>`;
     if (mine && !E.supplied(st, E.PLAYER).has(c)) h += `<p class="sgWarn">${t('sgCut')}</p>`;
     if (mine) h += this.orderBlock(c, gs);
     else h += `<h4>${C.owner === -1 && gs.length ? t('sgGuard') : t('sgGarrison')}</h4>${gs.length ? gs.map((g) => genCard(g)).join('') : `<p class="sgHint">${t('sgNone')}</p>`}`;
-    h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}${this.terrTags(n, c).length ? ' · ' + esc(this.terrTags(n, c).join(' ')) : ''}</small></div>`).join('')}`;
+    h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}${ADJ[c].find((x) => x.c === n).station ? ' · ⛽ ' + esc(F('sgStation', { n: ADJ[c].find((x) => x.c === n).station })) : ''}${this.terrTags(n, c).length ? ' · ' + esc(this.terrTags(n, c).join(' ')) : ''}</small></div>`).join('')}`;
     return h;
   }
   orderText(o) {
@@ -344,7 +351,7 @@ export class Sanguo {
       const can = (cmd) => {
         if (cur === cmd) return true;
         if (cmd === 'march') return ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
-        if (cmd === 'move') return ADJ[c].some(({ c: n }) => st.cities[n].owner === E.PLAYER);
+        if (cmd === 'move') return E.moveTargets(st, E.PLAYER, c).length > 0;
         if (cmd === 'plot') return gold + E.orderCost(o) >= E.orderCost({ cmd }) && ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n }));
         return E.validOrder(st, E.PLAYER, id, { cmd }) && gold + E.orderCost(o) >= E.orderCost({ cmd });
       };
@@ -384,7 +391,7 @@ export class Sanguo {
         delete st.orders[id];
         this.mode = { id, c, cmd, kind: null, targets: ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n })) };
       } else if (cmd === 'march' || cmd === 'move') {
-        const targets = ADJ[c].map((a) => a.c).filter((n) => (cmd === 'march' ? E.validOrder(st, E.PLAYER, id, { cmd, to: n }) : st.cities[n].owner === E.PLAYER));
+        const targets = cmd === 'march' ? ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n })) : E.moveTargets(st, E.PLAYER, c);
         delete st.orders[id];
         this.mode = { id, c, cmd, targets };
         if (targets.length === 1) { this.setTarget(targets[0]); return; }

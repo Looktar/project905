@@ -145,7 +145,7 @@ export const RIVALS = [
   { a: ['lvbu'], b: ['dongzhuo'], zh: '凤仪亭', en: 'Phoenix Pavilion' },
 ];
 
-// the 12 cities and the 4 passes: [id, zh, en, game x, game z] (positions in maps/markham.json game
+// the 12 cities and the passes: [id, zh, en, game x, game z] (positions in maps/markham.json game
 // metres). v0.8 (D-74): real terrain. `elev` is the real ground height (js/sg_elev.js, Copernicus DEM),
 // `valley` marks the cities on the Rouge River (胭脂河) flats: rich farmland (more food), low ground.
 const C = [
@@ -179,28 +179,39 @@ export function elevAt(x, z) { // bilinear in the real elevation grid
   const i = Math.floor(fx), j = Math.floor(fz), tx = fx - i, tz = fz - j, h = (a, b) => ELEV.h[b * ELEV.nx + a];
   return (h(i, j) * (1 - tx) + h(i + 1, j) * tx) * (1 - tz) + (h(i, j + 1) * (1 - tx) + h(i + 1, j + 1) * tx) * tz;
 }
+// v0.8.2 (D-76): 补给站 supply depots = the cities with a real big mall or warehouse store (OSM shop=mall /
+// wholesale within ~250 game m, names are the town's puns). A depot feeds its own supply line like a capital.
+export const DEPOTS = {
+  btv: ['王府景 Kingz Square', 'Kingz Square'], wdb: ['Costgo', 'Costgo'],
+  mkv: ['Markvile Mall', 'Markvile Mall'], pac: ['大古广场 Pacifick Mall', 'Pacifick Mall'],
+};
 export const CITIES = Object.fromEntries([
-  ...C.map(([id, zh, en, x, z, v]) => [id, { id, zh, en, x, z, valley: !!v, pass: false, elev: Math.round(elevAt(x, z)) }]),
+  ...C.map(([id, zh, en, x, z, v]) => [id, { id, zh, en, x, z, valley: !!v, pass: false, elev: Math.round(elevAt(x, z)), depot: DEPOTS[id] || null }]),
   ...P.map(([id, zh, en, x, z, big]) => [id, { id, zh, en, x, z, valley: false, pass: true, big: !!big, elev: Math.round(elevAt(x, z)) }]),
 ]);
 export const CITY_IDS = C.map((c) => c[0]);   // what you need to unite Markham
 export const PASS_IDS = P.map((c) => c[0]);
 export const NODE_IDS = [...CITY_IDS, ...PASS_IDS];
 
-// links = supply lines along real roads: [a, b, road, crosses the Rouge River (渡河)]. The river flags
+// links = supply lines along real roads: [a, b, road, crosses the Rouge River (渡河), 驿站]. The river flags
 // are checked against maps/markham.json by tests/unit/sg.test.js.
+// v0.8.2 (D-76): 驿站 relay stations = real gas stations (OSM amenity=fuel) on that road, partway between the
+// two ends: [pun brand name, where along the road 0..1]. Armies on a relay road arrive fed and fuelled.
 export const LINKS = [
   ['btv', 'wdb', 'Woodbine Ave', 1], ['btv', 'p_jb', '16th Ave', 0], ['p_jb', 'civ', '16th Ave', 0], ['wdb', 'civ', 'Hwy 7', 1],
-  ['wdb', 'esn', 'Woodbine Ave', 0], ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'p_tg', 'Hwy 7', 0], ['p_tg', 'unv', 'Hwy 7', 0],
+  ['wdb', 'esn', 'Woodbine Ave', 0, ['Ezzo', 0.22]], ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'p_tg', 'Hwy 7', 0], ['p_tg', 'unv', 'Hwy 7', 0],
   ['dtm', 'unv', 'Main St Unionville', 1], ['dtm', 'hag', 'Kennedy Rd', 0], ['dtm', 'esn', 'Warden Ave', 0],
-  ['esn', 'pac', 'Steeles Ave E', 0], ['esn', 'p_mm', '14th Ave', 0], ['p_mm', 'hag', '14th Ave', 0], ['hag', 'pac', 'Kennedy Rd', 0],
-  ['hag', 'mil', '14th Ave', 0], ['pac', 'mil', 'Steeles Ave E', 0], ['mil', 'arm', 'Denison St', 0], ['mil', 'mkv', 'McCowan Rd', 1],
-  ['unv', 'p_ad', 'Hwy 7', 0], ['p_ad', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
-  ['ray', 'p_md', 'Markham Rd', 0], ['p_md', 'arm', 'Markham Rd', 1],
+  ['esn', 'pac', 'Steeles Ave E', 0, ['Petro-Kanada', 0.4]], ['esn', 'p_mm', '14th Ave', 0], ['p_mm', 'hag', '14th Ave', 0], ['hag', 'pac', 'Kennedy Rd', 0],
+  ['hag', 'mil', '14th Ave', 0], ['pac', 'mil', 'Steeles Ave E', 0, ['Globle Gas', 0.5]], ['mil', 'arm', 'Denison St', 0], ['mil', 'mkv', 'McCowan Rd', 1, ['Petro-Kanada', 0.37]],
+  ['unv', 'p_ad', 'Hwy 7', 0, ['Petro-Kanada', 0.75]], ['p_ad', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
+  ['ray', 'p_md', 'Markham Rd', 0], ['p_md', 'arm', 'Markham Rd', 1, ['Canadian Tyre Gas', 0.56]],
 ];
 export const ADJ = (() => {
   const a = Object.fromEntries(NODE_IDS.map((c) => [c, []]));
-  for (const [x, y, road, river] of LINKS) { a[x].push({ c: y, road, river: !!river }); a[y].push({ c: x, road, river: !!river }); }
+  for (const [x, y, road, river, st] of LINKS) {
+    const station = st ? st[0] : null;
+    a[x].push({ c: y, road, river: !!river, station }); a[y].push({ c: x, road, river: !!river, station });
+  }
   return a;
 })();
 

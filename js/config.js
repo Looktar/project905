@@ -120,6 +120,8 @@ export const CFG = {
     // v0.8.1 (D-75): seasons, stratagems (计略) and random events
     snowPen: 0.1, harvest: 3, plotCost: 80, plotBase: 0.45, plotInt: 1 / 100, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
     eventChance: 0.55, cnyGold: 40,
+    // v0.8.2 (D-76): 驿站 relay roads (gas stations) and 补给站 supply depots (malls)
+    stationAtk: 0.1, depotFood: 0.3,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p

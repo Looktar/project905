@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
-  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS,
+  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -143,6 +143,34 @@ describe('seasons, stratagems, random events (v0.8.1)', () => {
     expect(seen.has('cny')).toBe(true);
     expect(seen.size).toBeGreaterThanOrEqual(7);
     for (const id of seen) if (id !== 'cny') expect(EVENT_IDS).toContain(id);
+  });
+});
+
+describe('relay stations and supply depots (v0.8.2)', () => {
+  it('驿站 roads (gas stations) help attackers and let an officer move two roads in a month', () => {
+    const st = LINKS.filter((l) => l[4]);
+    expect(st.length).toBeGreaterThanOrEqual(4);
+    for (const l of st) { expect(l[4][1]).toBeGreaterThan(0.15); expect(l[4][1]).toBeLessThan(0.85); }
+    expect(terrain('wdb', 'esn').why).toContain('station');
+    expect(terrain('wdb', 'esn').m).toBeGreaterThan(terrain('esn', 'p_mm').m - 0.2);
+    const s = newGame(2);
+    for (const c of ['wdb', 'esn', 'pac', 'dtm']) s.cities[c].owner = 0;
+    expect(moveTargets(s, 0, 'wdb')).toContain('pac');  // Woodbine Ave has a relay, then Steeles Ave E
+    expect(moveTargets(s, 0, 'wdb')).toContain('dtm');  // ... or Warden Ave
+    s.cities.esn.owner = 1;
+    expect(moveTargets(s, 0, 'wdb')).not.toContain('pac'); // the middle city must be ours
+    expect(moveTargets(s, 0, 'dtm')).not.toContain('pac'); // Warden Ave has no relay
+  });
+  it('补给站 (malls) feed their own supply line', () => {
+    expect(CITY_IDS.filter((c) => CITIES[c].depot).sort()).toEqual(['btv', 'mkv', 'pac', 'wdb']);
+    const s = newGame(6);
+    for (const c of NODE_IDS) s.cities[c].owner = 1;
+    s.factions[1].cap = 'arm';
+    for (const c of ['pac', 'esn']) s.cities[c].owner = 0;
+    s.factions[0].cap = 'hag';                                // capital lost, but the depot still feeds its neighbours
+    expect(supplied(s, 0).has('esn')).toBe(true);
+    s.cities.pac.owner = 1;
+    expect(supplied(s, 0).has('esn')).toBe(false);
   });
 });
 
