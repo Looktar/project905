@@ -11,7 +11,7 @@ import { ELEV } from './sg_elev.js';
 
 extend({
   sgStart: '⚔ 万锦三国志', sgTitle: '万锦三国志', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
-  sgLog: '战报', sgMenu: '菜单', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgContinue: '继续',
+  sgLog: '战报', sgMenu: '菜单', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgHide: '收起面板，看全图', sgContinue: '继续',
   sgYou: '你', sgUnclaimed: '空城', sgArmy: '{n}军',
   sgCmdDev: '内政', sgCmdDevS: '开发 +金粮', sgCmdDraft: '征兵', sgCmdDraftS: '花金换兵', sgCmdSearch: '搜索', sgCmdSearchS: '找在野武将', sgCmdMove: '调动', sgCmdMoveS: '兵将去邻城',
   sgCmdMarch: '出征', sgCmdMarchS: '攻打邻城', sgCmdRest: '待命', sgCmdFort: '筑城', sgCmdFortS: '城防 +', sgCmdPlot: '计略', sgRumor: '流言', sgRumorS: '敌兵逃散', sgFire: '火计', sgFireS: '烧城防', sgChance: '成功 {n}%', sgPickKind: '选计略，再选目标', sgRumoured: '传闻在这里：{g}', sgWinter: '冬天下雪：进攻 −10%', sgHarvestNote: '九月秋收：粮翻几倍', sgOrder: '本月命令', sgPickTarget: '点地图上发光的城池选目标', sgCancel: '取消',
@@ -40,10 +40,10 @@ extend({
   sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
-  sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgContinue: 'Continue',
+  sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
   sgYou: 'You', sgUnclaimed: 'Unclaimed', sgArmy: "{n}'s army",
-  sgCmdDev: 'Develop', sgCmdDevS: '+gold & food', sgCmdDraft: 'Draft', sgCmdDraftS: 'gold → troops', sgCmdSearch: 'Search', sgCmdSearchS: 'find free officers', sgCmdMove: 'Move', sgCmdMoveS: 'to a city of yours',
-  sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgCmdFort: 'Fortify', sgCmdFortS: 'walls +', sgCmdPlot: 'Plot', sgRumor: 'Rumour', sgRumorS: 'troops desert', sgFire: 'Fire', sgFireS: 'burn the walls', sgChance: '{n}% chance', sgPickKind: 'Pick a plot, then a target', sgRumoured: 'Rumoured to be here: {g}', sgWinter: 'Winter snow: attacking −10%', sgHarvestNote: 'September harvest: food several times over', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
+  sgCmdDev: 'Build', sgCmdDevS: '+gold & food', sgCmdDraft: 'Draft', sgCmdDraftS: 'gold → troops', sgCmdSearch: 'Seek', sgCmdSearchS: 'find free officers', sgCmdMove: 'Move', sgCmdMoveS: 'to a city of yours',
+  sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgCmdFort: 'Walls', sgCmdFortS: 'walls +', sgCmdPlot: 'Plot', sgRumor: 'Rumour', sgRumorS: 'troops desert', sgFire: 'Fire', sgFireS: 'burn the walls', sgChance: '{n}% chance', sgPickKind: 'Pick a plot, then a target', sgRumoured: 'Rumoured to be here: {g}', sgWinter: 'Winter snow: attacking −10%', sgHarvestNote: 'September harvest: food several times over', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
   sgTroopsSend: 'Troops', sgGensSend: 'Officers going', sgNoGen: 'No officers here, so no orders. Move an officer in from next door.', sgCut: 'Cut off from your capital: no income, troops desert',
   sgCap: 'Capital', sgDev: 'Dev', sgDef: 'Walls', sgGarrison: 'Officers', sgNone: 'none', sgRumour: 'Rumoured free officers', sgRumourN: '{n}', sgRoad: 'Supply road',
   sgOwner: 'Owner', sgYourSide: 'Your forces', sgPickCity: 'Tap a city to see it and give orders. Only cities linked to your capital are supplied and can attack.',
@@ -66,7 +66,7 @@ extend({
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -102,6 +102,7 @@ export class Sanguo {
     this.sel = null; this.mode = null; this.busy = false; this.pulse = 0;
     $('sgEnd').addEventListener('click', () => this.endMonth());
     $('sgAuto').addEventListener('click', () => this.autoAssign());
+    $('sgPanelTab').addEventListener('click', () => this.togglePanel(false));
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
@@ -111,7 +112,7 @@ export class Sanguo {
       const p = this.ptrs.get(e.pointerId);
       if (!p) return;
       const [x, y] = toGamePoint(e.clientX, e.clientY);
-      if (this.ptrs.size === 1) { this.cx -= (x - p.x) / this.k; this.cz -= (y - p.y) / this.k; if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true; }
+      if (this.ptrs.size === 1) { this.cx -= (x - p.x) / this.k; this.cz -= (y - p.y) / this.k; this.clamp(); if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true; }
       else {
         const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
         p.x = x; p.y = y;
@@ -136,6 +137,7 @@ export class Sanguo {
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
     this.resize(W, H, true);
+    if (this.small) this.focus(s.factions[E.PLAYER].cap);
     this.render(); this.loop();
     if (fresh) this.intro();
   }
@@ -144,14 +146,35 @@ export class Sanguo {
     this.W = W; this.H = H;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.cv.width = Math.round(W * dpr); this.cv.height = Math.round(H * dpr); this.dpr = dpr;
-    this.panelW = Math.min(300, Math.max(240, W * 0.3));
-    // the map area: right of the panel, below the top bar
-    this.ox = this.panelW + (W - this.panelW) / 2; this.oy = 48 + (H - 48 - 50) / 2; // 50 px kept free for the end-month button
+    const small = H < 520; // phones in landscape
+    this.small = small; $('sg').classList.toggle('small', small);
+    // the panel floats on the left (it can be tucked away); the map uses the rest, below the top bar
+    this.panelW = this.panelHidden ? 0 : small ? Math.min(250, Math.max(210, W * 0.27)) : Math.min(300, Math.max(240, W * 0.3));
+    $('sgPanel').classList.toggle('hide', !!this.panelHidden); $('sgPanelTab').classList.toggle('show', !!this.panelHidden);
+    const top = $('sgTop').offsetHeight || 48, bottom = small ? 6 : 50, aw = W - this.panelW, ah = H - top - bottom;
+    this.ox = this.panelW + aw / 2; this.oy = top + ah / 2;
     const xs = NODE_IDS.map((c) => CITIES[c].x), zs = NODE_IDS.map((c) => CITIES[c].z);
-    const fitS = Math.min((W - this.panelW - 30) / (Math.max(...xs) - Math.min(...xs) + 380), (H - 48 - 50 - 24) / (Math.max(...zs) - Math.min(...zs) + 200));
-    this.sMin = fitS * 0.8; this.sMax = fitS * 4;
+    const fitW = (aw - 30) / (Math.max(...xs) - Math.min(...xs) + 380), fitH = (ah - 24) / (Math.max(...zs) - Math.min(...zs) + 200);
+    // a phone is wide and short: rather than a postage stamp, zoom in so the map fills the width and pan up and down
+    const fitS = small ? Math.min(fitW, fitH * 1.7) : Math.min(fitW, fitH);
+    this.sMin = Math.min(fitW, fitH) * 0.85; this.sMax = fitS * 4;
     if (fit || !this.s0) { this.k = fitS; this.s0 = fitS; this.cx = (Math.max(...xs) + Math.min(...xs)) / 2; this.cz = (Math.max(...zs) + Math.min(...zs)) / 2 + 20; }
+    this.k = Math.min(this.sMax, Math.max(this.sMin, this.k));
+    this.clamp();
   }
+  // keep the cities on screen: the view centre stays inside the box around them
+  // keep the board on screen: the view may not wander past the cities (plus a margin for their labels),
+  // and when zoomed in it never shows the empty table beyond them
+  clamp() {
+    const xs = NODE_IDS.map((c) => CITIES[c].x), zs = NODE_IDS.map((c) => CITIES[c].z), [HW, HH] = this.w.half;
+    const x0 = Math.max(-HW, Math.min(...xs) - 240), x1 = Math.min(HW, Math.max(...xs) + 240);
+    const z0 = Math.max(-HH, Math.min(...zs) - 160), z1 = Math.min(HH, Math.max(...zs) + 120);
+    const top = $('sgTop').offsetHeight || 48, vw = (this.W - this.panelW) / 2 / this.k, vh = (this.H - top) / 2 / this.k;
+    const lim = (v, lo, hi, half) => (hi - lo < 2 * half ? (lo + hi) / 2 : Math.min(hi - half, Math.max(lo + half, v)));
+    this.cx = lim(this.cx, x0, x1, vw); this.cz = lim(this.cz, z0, z1, vh);
+  }
+  focus(c) { if (!CITIES[c]) return; this.cx = CITIES[c].x; this.cz = CITIES[c].z; this.clamp(); }
+  togglePanel(hide) { this.panelHidden = hide; this.resize(this.W, this.H, false); this.render(); }
   loop() {
     if (!$('sg').classList.contains('show')) return;
     this.pulse += 1 / 60; this.draw();
@@ -160,7 +183,7 @@ export class Sanguo {
   zoomAt(f, x = this.ox, y = this.oy) {
     const s = Math.min(this.sMax, Math.max(this.sMin, this.k * f));
     const wx = this.cx + (x - this.ox) / this.k, wz = this.cz + (y - this.oy) / this.k;
-    this.k = s; this.cx = wx - (x - this.ox) / s; this.cz = wz - (y - this.oy) / s;
+    this.k = s; this.cx = wx - (x - this.ox) / s; this.cz = wz - (y - this.oy) / s; this.clamp();
   }
   toScreen(x, z) { return [this.ox + (x - this.cx) * this.k, this.oy + (z - this.cz) * this.k]; }
 
@@ -180,7 +203,9 @@ export class Sanguo {
     if (!bestC) return;
     if (this.mode && this.mode.targets.includes(bestC)) { this.setTarget(bestC); return; }
     if (this.mode && bestC !== this.mode.c) this.mode = null;
-    this.sel = bestC; this.render();
+    this.sel = bestC;
+    if (this.panelHidden) { this.togglePanel(false); return; }
+    this.render();
   }
   // real ground height (js/sg_elev.js) as a terraced, hill-shaded relief laid over the minimap
   relief() {
@@ -205,20 +230,24 @@ export class Sanguo {
   draw() {
     const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, S = CFG.minimap.pxPerM, st = this.s;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    c.fillStyle = '#9fd067'; c.fillRect(0, 0, W, H);
-    const [x0, y0] = this.toScreen(-HW, -HH);
+    c.fillStyle = '#241b14'; c.fillRect(0, 0, W, H); // the table the map lies on
+    const [x0, y0] = this.toScreen(-HW, -HH), mw = HW * 2 * s, mh = HH * 2 * s;
+    c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 24; c.fillStyle = '#9fd067'; c.fillRect(x0, y0, mw, mh); c.restore();
+    c.save(); c.beginPath(); c.rect(x0, y0, mw, mh); c.clip();
     c.drawImage(w.minimap, x0, y0, HW * 2 * S * (s / S), HH * 2 * S * (s / S));
     // relief on top (the town map shows through faintly)
     const [rx, ry] = this.toScreen(ELEV.x0, ELEV.z0);
     c.globalAlpha = 0.72; c.drawImage(this.relief(), rx, ry, (ELEV.nx - 1) * ELEV.step * s, (ELEV.nz - 1) * ELEV.step * s); c.globalAlpha = 1;
-    c.fillStyle = 'rgba(70,45,20,.12)'; c.fillRect(0, 0, W, H); // a warm, old-map wash
+    c.fillStyle = 'rgba(70,45,20,.12)'; c.fillRect(x0, y0, mw, mh); // a warm, old-map wash
     const line = (pts, col, wd) => { c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = this.toScreen(x, z); if (i) c.lineTo(a, b); else c.moveTo(a, b); }); c.stroke(); };
     c.lineCap = 'round'; c.lineJoin = 'round';
     // the Rouge River and its streams
     for (const [big, pts] of w.map.rivers) line(pts, big ? 'rgba(46,110,214,.9)' : 'rgba(60,120,210,.45)', big ? Math.max(3, 16 * s) : 1.5);
     // Hwy 407: just a highway (landmark), the passes are parks
     for (const pts of w.map.overpass) line(pts, 'rgba(90,90,96,.55)', Math.max(3, 12 * s));
-    if (E.isWinter(st)) { c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, 0, W, H); } // snow
+    if (E.isWinter(st)) { c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(x0, y0, mw, mh); } // snow
+    c.restore();
+    c.strokeStyle = '#8a6a3a'; c.lineWidth = 3; c.strokeRect(x0 - 1.5, y0 - 1.5, mw + 3, mh + 3);
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
     for (const [a, b, road, river, station] of LINKS) {
@@ -229,10 +258,11 @@ export class Sanguo {
       c.strokeStyle = oa === ob && oa >= 0 ? this.fColor(oa) : '#f5ebdd'; c.lineWidth = 5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
       c.setLineDash([]);
       const mx = (ax + bx) / 2, my = (ay + by) / 2;
-      if (river) badge(c, mx, my, '#2e6ed6', zh() ? '渡' : '≈', '#fff', 9);
+      const br = this.k < this.s0 * 1.3 ? 7 : 9; // little terrain marks, bigger when zoomed in
+      if (river) badge(c, mx, my, '#2e6ed6', zh() ? '渡' : '≈', '#fff', br);
       if (station) { // 驿站: a real gas station, nudged off the river badge in the middle
         const t0 = station[1], tt = river && Math.abs(t0 - 0.5) < 0.18 ? (t0 >= 0.5 ? t0 + 0.2 : t0 - 0.2) : t0;
-        badge(c, ax + (bx - ax) * tt, ay + (by - ay) * tt, '#e8892b', zh() ? '驿' : 'G', '#fff', 9);
+        badge(c, ax + (bx - ax) * tt, ay + (by - ay) * tt, '#e8892b', zh() ? '驿' : 'G', '#fff', br);
       }
       if (this.k > this.s0 * 1.5) {
         c.font = '700 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -262,31 +292,65 @@ export class Sanguo {
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
       else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].zh.slice(-1) : '', ts);
-      if (CITIES[id].depot) badge(c, x - 30 * ts, y + 2 * ts, '#2f8f4e', zh() ? '补' : 'S', '#fff', 9); // 补给站: a big mall
     }
+    // labels: the most important first (selected, yours, cities, then passes), each in the first free spot
+    // around its castle (below, above, right, left); when nothing is free a city shows just its troops
     const ordered = new Set(Object.keys(st.orders || {}));
-    for (const id of NODE_IDS) {
-      const C = st.cities[id], col = this.fColor(C.owner);
-      const [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z);
-      const short = CITIES[id].pass && this.k < this.s0 * 1.4; // zoomed out: the gate icon names the pass, the label only counts troops
-      const hide = short && W < 1000 && id !== this.sel && C.owner !== E.PLAYER; // small screens: tap the gate to see it
-      const lab = short ? kNum(C.troops) : `${cName(id)} · ${kNum(C.troops)}`, ly = short ? y - 4 * ts : y + 18 * ts + 9;
-      c.font = `700 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      const tw = c.measureText(lab).width + 20, lh = fs + 7;
-      const lx = short ? x + passSide(id) * (34 * ts + tw / 2) : x; // a pass label sits beside the gate, away from the nearest city
-      if (!hide) {
-        c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : CITIES[id].pass ? 'rgba(70,52,38,.92)' : 'rgba(38,29,22,.88)'; rr(c, lx - tw / 2, ly - lh / 2, tw, lh, lh / 2); c.fill();
-        c.fillStyle = col; c.beginPath(); c.arc(lx - tw / 2 + 9, ly, 3.5, 0, 7); c.fill();
-        c.fillStyle = '#fff'; c.fillText(lab, lx + 5, ly + 0.5);
+    const pos = Object.fromEntries(NODE_IDS.map((id) => [id, this.toScreen(CITIES[id].x, CITIES[id].z)]));
+    const taken = NODE_IDS.map((id) => ({ id, r: [pos[id][0] - 20 * ts, pos[id][1] - 30 * ts, pos[id][0] + 20 * ts, pos[id][1] + 10 * ts] }));
+    const top = $('sgTop').offsetHeight || 48, inside = (r) => r[1] >= Math.max(y0, top) && r[3] <= Math.min(y0 + mh, H) && r[0] >= x0 && r[2] <= x0 + mw;
+    const free = (r, id) => inside(r) && !taken.some((q) => q.id !== id && r[0] < q.r[2] && r[2] > q.r[0] && r[1] < q.r[3] && r[3] > q.r[1]);
+    // the panel, the buttons and the compass sit on top of the map: labels keep clear of them too
+    const box = (el) => (el && el.offsetWidth ? [el.offsetLeft - 4, el.offsetTop - 4, el.offsetLeft + el.offsetWidth + 4, el.offsetTop + el.offsetHeight + 4] : null);
+    for (const r of [this.panelHidden ? box($('sgPanelTab')) : [0, 0, this.panelW + 12, H], box($('sgAuto')), box($('sgEnd')), [this.panelW, H - 60, this.panelW + 110, H]]) if (r) taken.push({ id: '', r });
+    const prio = (id) => (id === this.sel ? 0 : st.cities[id].owner === E.PLAYER ? 1 : CITIES[id].pass ? 3 : 2);
+    c.font = `700 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const lh = fs + 7, tag = 16;
+    for (const id of [...NODE_IDS].sort((a, b) => prio(a) - prio(b))) {
+      const C = st.cities[id], col = this.fColor(C.owner), [x, y] = pos[id], P = CITIES[id];
+      const zoomedOut = this.k < this.s0 * 1.4, dep = !!P.depot;
+      const texts = P.pass && zoomedOut ? [kNum(C.troops)] : [`${cName(id)} · ${kNum(C.troops)}`, kNum(C.troops)];
+      const spots = (w) => {
+        const below = [x, y + 18 * ts + 9], above = [x, y - 44 * ts], right = [x + 26 * ts + w / 2, y - 6 * ts], left = [x - 26 * ts - w / 2, y - 6 * ts];
+        return P.pass ? [right, left, above, below] : [below, above, right, left];
+      };
+      let pick = null;
+      for (const tx of texts) {
+        const w = c.measureText(tx).width + 20 + (dep ? tag : 0);
+        for (const [lx, ly] of spots(w)) { const r = [lx - w / 2, ly - lh / 2, lx + w / 2, ly + lh / 2]; if (free(r, id)) { pick = { tx, w, lx, ly, r }; break; } }
+        if (pick) break;
       }
+      if (!pick) {
+        if (P.pass && prio(id) > 1) continue; // a crowded pass: tap it to see it
+        const tx = texts[texts.length - 1], w = c.measureText(tx).width + 20 + (dep ? tag : 0), [lx, ly] = spots(w)[0];
+        pick = { tx, w, lx, ly, r: [lx - w / 2, ly - lh / 2, lx + w / 2, ly + lh / 2] };
+      }
+      taken.push({ id: '', r: pick.r });
+      const { tx, w, lx, ly } = pick;
+      c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : P.pass ? 'rgba(70,52,38,.92)' : 'rgba(38,29,22,.88)'; rr(c, lx - w / 2, ly - lh / 2, w, lh, lh / 2); c.fill();
+      c.fillStyle = col; c.beginPath(); c.arc(lx - w / 2 + 9, ly, 3.5, 0, 7); c.fill();
+      c.fillStyle = '#fff'; c.fillText(tx, lx + 5 - (dep ? tag / 2 : 0), ly + 0.5);
+      if (dep) { // 补给站: a big mall next door
+        const bx = lx + w / 2 - tag - 2;
+        c.fillStyle = '#2f8f4e'; rr(c, bx, ly - lh / 2 + 3, tag, lh - 6, 4); c.fill();
+        c.fillStyle = '#fff'; c.font = `900 ${Math.round(fs * 0.8)}px system-ui, sans-serif`; c.fillText(zh() ? '补' : 'S', bx + tag / 2, ly + 0.5);
+        c.font = `700 ${fs}px system-ui, sans-serif`;
+      }
+    }
+    for (const id of NODE_IDS) {
+      const C = st.cities[id], [x, y] = pos[id];
       if (C.owner === E.PLAYER && !sup.has(id)) badge(c, x - 26 * ts, y - 30 * ts, '#d64545', zh() ? '断' : '!');
       if (C.owner === E.PLAYER) { // officers with orders / officers here
         const gs = E.gensIn(st, id, E.PLAYER);
-        if (gs.length) { const n = gs.filter((g) => ordered.has(g)).length; pill(c, x + 30 * ts, y - (short ? 32 : 6) * ts, n === gs.length ? '#f2c14e' : '#fff', `${n}/${gs.length}`); }
+        if (gs.length) { const n = gs.filter((g) => ordered.has(g)).length; pill(c, x + 28 * ts, y - 28 * ts, n === gs.length ? '#f2c14e' : '#fff', `${n}/${gs.length}`); }
       }
       if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].zh.slice(-1));
     }
-    c.fillStyle = 'rgba(43,33,26,.8)'; c.font = '900 14px system-ui, sans-serif'; c.textAlign = 'left'; c.fillText('N ↑', this.panelW + 14, H - 16);
+    // compass, bottom left of the map area (the corners on the right hold the buttons)
+    const nx = this.panelW + (this.panelHidden ? 70 : 32), ny = H - 30;
+    c.fillStyle = 'rgba(38,29,22,.85)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.arc(nx, ny, 15, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = '#f2c14e'; c.beginPath(); c.moveTo(nx, ny - 11); c.lineTo(nx + 5, ny + 2); c.lineTo(nx - 5, ny + 2); c.closePath(); c.fill();
+    c.fillStyle = '#f5ebdd'; c.font = '900 9px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', nx, ny + 8);
   }
 
   // ---------------------------------------------------------------- side panel
@@ -308,7 +372,7 @@ export class Sanguo {
     const st = this.s, gs = E.byLead(E.factionGens(st, E.PLAYER)), bonds = E.activeBonds(st, E.PLAYER, []);
     const n = gs.filter((g) => st.orders[g]).length;
     const season = E.isWinter(st) ? `<p class="sgHint">❄ ${t('sgWinter')}</p>` : E.dateOf(st).month === 9 ? `<p class="sgHint">🌾 ${t('sgHarvestNote')}</p>` : '';
-    return `<h3>${t('sgYourSide')}</h3>${season}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
+    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
       ${bonds.length ? `<h4>${t('sgBonds')}</h4>${bonds.map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)} · ${t('sgBondOn')}</div>`).join('')}` : ''}
       <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">📍 ${esc(cName(st.gens[g].c))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}</div>`).join('')}`;
   }
@@ -323,7 +387,7 @@ export class Sanguo {
   cityPanel(c) {
     const st = this.s, C = st.cities[c], mine = C.owner === E.PLAYER, gs = C.owner >= 0 ? E.byLead(E.gensIn(st, c, C.owner)) : E.guardsIn(st, c), info = CITIES[c];
     const cap = C.owner >= 0 && st.factions[C.owner].cap === c;
-    let h = `<h3><span class="sgDot" style="background:${this.fColor(C.owner)}"></span>${esc(cName(c))}<button class="sgX" data-a="close">✕</button></h3>
+    let h = `<h3><span class="sgDot" style="background:${this.fColor(C.owner)}"></span>${esc(cName(c))}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button><button class="sgX" data-a="close">✕</button></h3>
       <div class="sgSub">${esc(this.fName(C.owner))}${cap ? ' · ' + t('sgCap') : ''}${info.pass ? ' · ' + t('sgPass') : ''} · ${t('sgElev')} ${info.elev} m</div>
       <div class="sgGrid"><div><small>${t('sgTroops')}</small><b>${C.troops.toLocaleString()}</b></div><div><small>${t('sgDef')}</small><b>${C.def}</b></div>
       ${info.pass ? `<div><small>${t('sgWalls')}</small><b>×${E.wallMul(C).toFixed(2)}</b></div><div><small>${t('sgGarrison')}</small><b>${gs.length}</b></div>`
@@ -382,6 +446,7 @@ export class Sanguo {
     const st = this.s, c = this.sel, b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.a === 'close') { this.sel = null; this.mode = null; this.render(); return; }
+    if (b.dataset.a === 'hide') { this.togglePanel(true); return; }
     if (b.dataset.a === 'cancel') { this.mode = null; this.render(); return; }
     const id = b.dataset.g;
     if (!c || !id || !st.gens[id]) return;
@@ -507,7 +572,7 @@ export class Sanguo {
     const [a, b, c] = [1, 2, 3].map((f) => this.fName(f));
     await this.layer(`<h2>${t('sgRivals')}</h2><div class="sgRivals">${[1, 2, 3].map((f) => `<div>${portrait(st.factions[f].lord, 56)}<b style="color:${st.factions[f].color}">${esc(this.fName(f))}</b><small>📍 ${esc(cName(st.factions[f].cap))}</small></div>`).join('')}</div>
       <p>${esc(F('sgIntro', { a, b, c, p: cName(PASS_IDS.find((x) => CITIES[x].big) || PASS_IDS[0]) }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
-    this.sel = st.factions[E.PLAYER].cap; this.render();
+    this.sel = st.factions[E.PLAYER].cap; this.focus(this.sel); this.render();
   }
   duelUI(d) {
     const st = this.s, mineA = d.fa === E.PLAYER, me = mineA ? d.a : d.d, foe = mineA ? d.d : d.a;
@@ -624,11 +689,4 @@ function gate(c, x, y, col, big, ts = 1) {
     c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('关', 10, -43);
   }
   c.restore();
-}
-// which side of a pass its label goes: away from the nearest other node (-1 west, 1 east)
-function passSide(id) {
-  const P = CITIES[id];
-  let near = null, bd = Infinity;
-  for (const n of NODE_IDS) if (n !== id) { const d = Math.hypot(CITIES[n].x - P.x, CITIES[n].z - P.z); if (d < bd) { bd = d; near = CITIES[n]; } }
-  return near && near.x > P.x ? -1 : 1;
 }

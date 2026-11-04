@@ -203,7 +203,24 @@ body.touch #bD.hide{display:none}
 .sgO .sgCmds{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
 .sgO .sgCmd{min-height:32px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden}
 .sgO .sgSeg,.sgO .sgChips{margin-top:6px}.sgO .sgPick{margin:6px 0 4px}
-.sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}.sgChips button.on small{color:#7a2b1f}
+.sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
+#sgPanel.hide{display:none}
+#sgPanelTab{position:absolute;left:calc(8px + var(--sa-l,0px));top:60px;width:36px;height:44px;display:none;background:rgba(38,29,22,.94);color:#f2c14e;border:1.5px solid #8a6a3a;border-radius:10px;font:900 18px inherit;font-family:inherit;cursor:pointer}
+#sgPanelTab.show{display:block}
+#sgPanel h3 .sgX+.sgX{margin-left:6px}
+.sgRoadRow{flex-wrap:wrap;row-gap:0}.sgRoadRow small{flex-basis:100%;margin-left:16px;text-align:left}
+/* phones in landscape (also when the page is rotated): js/sg_ui.js sets #sg.small */
+#sg.small #sgTop{height:40px}#sg.small #sgTitle{font-size:16px}#sg.small #sgDate{font-size:12px;padding:2px 8px}#sg.small #sgRes span{font-size:12px;padding:1px 7px 1px 2px}#sg.small #sgTop button{height:30px;padding:0 10px;font-size:12px}
+#sg.small #sgPanel{top:46px;width:min(250px,max(210px,27%));padding:8px 8px 10px;border-radius:12px}
+#sg.small #sgPanelTab{top:50px}
+#sg.small #sgPanel h3{font-size:15px}#sg.small #sgPanel h4{font-size:14px;margin:8px 0 4px}#sg.small .sgSub{font-size:11px;margin-bottom:5px}
+#sg.small .sgGrid{gap:4px}#sg.small .sgGrid div{padding:3px 6px}#sg.small .sgGrid small{font-size:10px}#sg.small .sgGrid b{font-size:13px}
+#sg.small .sgHint{font-size:11px;margin:3px 0}#sg.small .sgX{width:28px;height:28px;font-size:12px}
+#sg.small .sgO{padding:5px;margin-bottom:5px}#sg.small .sgOh{margin-bottom:4px}#sg.small .sgOh b{font-size:13px}#sg.small .sgO .sgCmd{min-height:28px;font-size:11px}
+#sg.small .sgG{padding:6px;gap:6px}#sg.small .sgGi>b{font-size:13px}#sg.small .sgSt{font-size:9px}
+#sg.small .sgRoadRow{font-size:12px;padding:2px 0}
+#sg.small #sgEnd{height:42px;padding:0 18px;font-size:15px}#sg.small #sgAuto{bottom:calc(62px + var(--sa-b,0px));height:36px;font-size:14px}
+.sgChips button.on small{color:#7a2b1f}
 </style>
 </head>
 <body>
@@ -247,6 +264,7 @@ body.touch #bD.hide{display:none}
     <canvas id="sgMap"></canvas>
     <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
     <div id="sgPanel"></div>
+    <button id="sgPanelTab">»</button>
     <button id="sgAuto"></button>
     <button id="sgEnd"></button>
     <div id="sgToast"></div>
@@ -295,8 +313,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=15ef72c8af","./js/bigmap.js":"./js/bigmap.js?v=15ef72c8af","./js/config.js":"./js/config.js?v=15ef72c8af","./js/fire.js":"./js/fire.js?v=15ef72c8af","./js/game.js":"./js/game.js?v=15ef72c8af","./js/geo.js":"./js/geo.js?v=15ef72c8af","./js/glb.js":"./js/glb.js?v=15ef72c8af","./js/hud.js":"./js/hud.js?v=15ef72c8af","./js/i18n.js":"./js/i18n.js?v=15ef72c8af","./js/input.js":"./js/input.js?v=15ef72c8af","./js/main.js":"./js/main.js?v=15ef72c8af","./js/math.js":"./js/math.js?v=15ef72c8af","./js/missions.js":"./js/missions.js?v=15ef72c8af","./js/models.js":"./js/models.js?v=15ef72c8af","./js/nav.js":"./js/nav.js?v=15ef72c8af","./js/orient.js":"./js/orient.js?v=15ef72c8af","./js/poi.js":"./js/poi.js?v=15ef72c8af","./js/pranks.js":"./js/pranks.js?v=15ef72c8af","./js/props.js":"./js/props.js?v=15ef72c8af","./js/renderer.js":"./js/renderer.js?v=15ef72c8af","./js/sg_data.js":"./js/sg_data.js?v=15ef72c8af","./js/sg_elev.js":"./js/sg_elev.js?v=15ef72c8af","./js/sg_engine.js":"./js/sg_engine.js?v=15ef72c8af","./js/sg_sites.js":"./js/sg_sites.js?v=15ef72c8af","./js/sg_ui.js":"./js/sg_ui.js?v=15ef72c8af","./js/signals.js":"./js/signals.js?v=15ef72c8af","./js/world.js":"./js/world.js?v=15ef72c8af"}}</script>
-<script type="module" src="js/main.js?v=15ef72c8af"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=153f3f4414","./js/bigmap.js":"./js/bigmap.js?v=153f3f4414","./js/config.js":"./js/config.js?v=153f3f4414","./js/fire.js":"./js/fire.js?v=153f3f4414","./js/game.js":"./js/game.js?v=153f3f4414","./js/geo.js":"./js/geo.js?v=153f3f4414","./js/glb.js":"./js/glb.js?v=153f3f4414","./js/hud.js":"./js/hud.js?v=153f3f4414","./js/i18n.js":"./js/i18n.js?v=153f3f4414","./js/input.js":"./js/input.js?v=153f3f4414","./js/main.js":"./js/main.js?v=153f3f4414","./js/math.js":"./js/math.js?v=153f3f4414","./js/missions.js":"./js/missions.js?v=153f3f4414","./js/models.js":"./js/models.js?v=153f3f4414","./js/nav.js":"./js/nav.js?v=153f3f4414","./js/orient.js":"./js/orient.js?v=153f3f4414","./js/poi.js":"./js/poi.js?v=153f3f4414","./js/pranks.js":"./js/pranks.js?v=153f3f4414","./js/props.js":"./js/props.js?v=153f3f4414","./js/renderer.js":"./js/renderer.js?v=153f3f4414","./js/sg_data.js":"./js/sg_data.js?v=153f3f4414","./js/sg_elev.js":"./js/sg_elev.js?v=153f3f4414","./js/sg_engine.js":"./js/sg_engine.js?v=153f3f4414","./js/sg_sites.js":"./js/sg_sites.js?v=153f3f4414","./js/sg_ui.js":"./js/sg_ui.js?v=153f3f4414","./js/signals.js":"./js/signals.js?v=153f3f4414","./js/world.js":"./js/world.js?v=153f3f4414"}}</script>
+<script type="module" src="js/main.js?v=153f3f4414"></script>
 <!-- stamp:end -->
 </body>
 </html>
