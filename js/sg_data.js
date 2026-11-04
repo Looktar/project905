@@ -1,6 +1,7 @@
 // 万锦三国志 (Three Kingdoms mode, D-73): static data. Generals, their signature traits, bonds and
 // rivalries, and the 12 Markham "cities" with the real roads that link them (the supply lines).
 // Stats are our own estimates (统率 lead, 武力 war, 智力 int, 政治 pol), not copied from any game.
+import { ELEV } from './sg_elev.js';
 
 // trait key -> [zh name, en name, zh desc, en desc]
 export const TRAITS = {
@@ -142,35 +143,63 @@ export const RIVALS = [
   { a: ['lvbu'], b: ['dongzhuo'], zh: '凤仪亭', en: 'Phoenix Pavilion' },
 ];
 
-// the 12 cities: [id, zh, en, game x, game z] (positions in maps/markham.json game metres)
+// the 12 cities and the 4 passes: [id, zh, en, game x, game z] (positions in maps/markham.json game
+// metres). v0.8 (D-74): real terrain. `elev` is the real ground height (js/sg_elev.js, Copernicus DEM),
+// `valley` marks the cities on the Rouge River (胭脂河) flats: rich farmland (more food), low ground.
 const C = [
-  ['btv', 'Buttonville', 'Buttonville', -1450, -1050],
-  ['wdb', 'Woodbine', 'Woodbine', -1450, -300],
-  ['civ', '万锦市政厅', 'Civic Centre', -741, -386],
-  ['dtm', 'Downtown Markham', 'Downtown Markham', -499, -14],
-  ['unv', 'Unionville', 'Unionville', 171, -632],
-  ['mkv', 'Markvile Mall', 'Markvile Mall', 907, -493],
-  ['ray', 'Raymerville', 'Raymerville', 1420, -880],
-  ['esn', 'Esna Park', 'Esna Park', -1100, 800],
-  ['hag', 'Hagerman', 'Hagerman', 120, 380],
-  ['pac', '大古广场', 'Pacifick Mall', -145, 1165],
-  ['mil', 'Milliken Mills', 'Milliken Mills', 600, 900],
-  ['arm', 'Armadale', 'Armadale', 1420, 1020],
+  ['btv', 'Buttonville', 'Buttonville', -1450, -1050, 1],
+  ['wdb', 'Woodbine', 'Woodbine', -1450, -300, 0],
+  ['civ', '万锦市政厅', 'Civic Centre', -741, -386, 0],
+  ['dtm', 'Downtown Markham', 'Downtown Markham', -499, -14, 1],
+  ['unv', 'Unionville', 'Unionville', 171, -632, 1],
+  ['mkv', 'Markvile Mall', 'Markvile Mall', 907, -493, 1],
+  ['ray', 'Raymerville', 'Raymerville', 1420, -880, 0],
+  ['esn', 'Esna Park', 'Esna Park', -1100, 800, 0],
+  ['hag', 'Hagerman', 'Hagerman', 120, 380, 0],
+  ['pac', '大古广场', 'Pacifick Mall', -145, 1165, 0],
+  ['mil', 'Milliken Mills', 'Milliken Mills', 600, 900, 0],
+  ['arm', 'Armadale', 'Armadale', 1420, 1020, 0],
 ];
-export const CITIES = Object.fromEntries(C.map(([id, zh, en, x, z]) => [id, { id, zh, en, x, z }]));
-export const CITY_IDS = C.map((c) => c[0]);
+// Hwy 407 runs right across Markham like a great wall: the only ways over it are the real
+// interchanges, and each one is a pass (关). Passes have no people (no development, drafting or
+// searching) but very high walls; troops get there by moving in. The Kennedy Rd one is the big
+// one, "407 虎牢关", guarded at the start by the strongest officer still at large.
+const P = [
+  ['g_wdb', 'Woodbine 关', 'Woodbine Gate', -1490, 105, 0],
+  ['g_war', 'Warden 关', 'Warden Gate', -670, 135, 0],
+  ['g_ken', '407 虎牢关', '407 Tiger Gate', 92, 122, 1],
+  ['g_mcc', 'McCowan 关', 'McCowan Gate', 977, 118, 0],
+];
+export function elevAt(x, z) { // bilinear in the real elevation grid
+  const fx = Math.min(ELEV.nx - 1.001, Math.max(0, (x - ELEV.x0) / ELEV.step)), fz = Math.min(ELEV.nz - 1.001, Math.max(0, (z - ELEV.z0) / ELEV.step));
+  const i = Math.floor(fx), j = Math.floor(fz), tx = fx - i, tz = fz - j, h = (a, b) => ELEV.h[b * ELEV.nx + a];
+  return (h(i, j) * (1 - tx) + h(i + 1, j) * tx) * (1 - tz) + (h(i, j + 1) * (1 - tx) + h(i + 1, j + 1) * tx) * tz;
+}
+export const CITIES = Object.fromEntries([
+  ...C.map(([id, zh, en, x, z, v]) => [id, { id, zh, en, x, z, valley: !!v, pass: false, elev: Math.round(elevAt(x, z)) }]),
+  ...P.map(([id, zh, en, x, z, big]) => [id, { id, zh, en, x, z, valley: false, pass: true, big: !!big, elev: Math.round(elevAt(x, z)) }]),
+]);
+export const CITY_IDS = C.map((c) => c[0]);   // what you need to unite Markham
+export const PASS_IDS = P.map((c) => c[0]);
+export const NODE_IDS = [...CITY_IDS, ...PASS_IDS];
 
-// links = supply lines along real roads: [a, b, road]
+// links = supply lines along real roads: [a, b, road, crosses the Rouge River (渡河)]. The river flags
+// are checked against maps/markham.json by tests/unit/sg.test.js. Markham Rd meets Hwy 407 just
+// outside the map, so Raymerville and Armadale are not linked.
 export const LINKS = [
-  ['btv', 'wdb', 'Woodbine Ave'], ['btv', 'civ', '16th Ave'], ['wdb', 'civ', 'Hwy 7'], ['wdb', 'esn', 'Woodbine Ave'],
-  ['civ', 'dtm', 'Enterprise Blvd'], ['civ', 'unv', 'Hwy 7'], ['dtm', 'unv', 'Main St Unionville'], ['dtm', 'hag', 'Kennedy Rd'],
-  ['dtm', 'esn', 'Warden Ave'], ['esn', 'pac', 'Steeles Ave E'], ['esn', 'hag', '14th Ave'], ['hag', 'pac', 'Kennedy Rd'],
-  ['hag', 'mil', '14th Ave'], ['pac', 'mil', 'Steeles Ave E'], ['mil', 'arm', 'Denison St'], ['mil', 'mkv', 'McCowan Rd'],
-  ['unv', 'mkv', 'Hwy 7'], ['unv', 'ray', '16th Ave'], ['mkv', 'ray', 'Hwy 7'], ['ray', 'arm', 'Markham Rd'],
+  ['btv', 'wdb', 'Woodbine Ave', 1], ['btv', 'civ', '16th Ave', 0], ['wdb', 'civ', 'Hwy 7', 1],
+  ['wdb', 'g_wdb', 'Woodbine Ave', 0], ['g_wdb', 'esn', 'Woodbine Ave', 0],
+  ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'unv', 'Hwy 7', 0], ['dtm', 'unv', 'Main St Unionville', 1],
+  ['dtm', 'g_ken', 'Kennedy Rd', 0], ['g_ken', 'hag', 'Kennedy Rd', 0],
+  ['dtm', 'g_war', 'Warden Ave', 0], ['g_war', 'esn', 'Warden Ave', 0],
+  ['esn', 'pac', 'Steeles Ave E', 0], ['esn', 'hag', '14th Ave', 0], ['hag', 'pac', 'Kennedy Rd', 0],
+  ['hag', 'mil', '14th Ave', 0], ['pac', 'mil', 'Steeles Ave E', 0], ['mil', 'arm', 'Denison St', 0],
+  ['mil', 'g_mcc', 'McCowan Rd', 0], ['g_mcc', 'mkv', 'McCowan Rd', 1],
+  ['unv', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
 ];
 export const ADJ = (() => {
-  const a = Object.fromEntries(CITY_IDS.map((c) => [c, []]));
-  for (const [x, y, road] of LINKS) { a[x].push({ c: y, road }); a[y].push({ c: x, road }); }
+  const a = Object.fromEntries(NODE_IDS.map((c) => [c, []]));
+  for (const [x, y, road, river] of LINKS) { a[x].push({ c: y, road, river: !!river }); a[y].push({ c: x, road, river: !!river }); }
   return a;
 })();
 

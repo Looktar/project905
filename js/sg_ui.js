@@ -6,15 +6,16 @@ import { CFG } from './config.js';
 import { t, getLang, extend } from './i18n.js';
 import { toGamePoint } from './input.js';
 import * as E from './sg_engine.js';
-import { GENERALS, TRAITS, CITIES, CITY_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
+import { GENERALS, TRAITS, CITIES, NODE_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
+import { ELEV } from './sg_elev.js';
 
 extend({
   sgStart: '⚔ 万锦三国志', sgTitle: '万锦三国志', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
   sgLog: '战报', sgMenu: '菜单', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgContinue: '继续',
   sgYou: '你', sgUnclaimed: '空城', sgArmy: '{n}军',
   sgCmdDev: '内政', sgCmdDevS: '开发 +金粮', sgCmdDraft: '征兵', sgCmdDraftS: '花金换兵', sgCmdSearch: '搜索', sgCmdSearchS: '找在野武将', sgCmdMove: '调动', sgCmdMoveS: '兵将去邻城',
-  sgCmdMarch: '出征', sgCmdMarchS: '攻打邻城', sgCmdRest: '待命', sgOrder: '本月命令', sgPickTarget: '点地图上发光的城池选目标', sgCancel: '取消',
-  sgTroopsSend: '出兵', sgGensSend: '带哪些武将', sgNoGen: '没有武将：这里只能内政、征兵、调动', sgCut: '断粮！连不回本城：没有收入，每月掉兵',
+  sgCmdMarch: '出征', sgCmdMarchS: '攻打邻城', sgCmdRest: '待命', sgCmdFort: '筑城', sgCmdFortS: '城防 +', sgOrder: '本月命令', sgPickTarget: '点地图上发光的城池选目标', sgCancel: '取消',
+  sgTroopsSend: '出兵', sgGensSend: '带哪些武将', sgNoGen: '这里没有武将，下不了命令。从邻城调一位武将过来。', sgCut: '断粮！连不回本城：没有收入，每月掉兵',
   sgCap: '本城', sgDev: '开发', sgDef: '城防', sgGarrison: '驻守武将', sgNone: '没有', sgRumour: '在野传闻', sgRumourN: '{n} 位', sgRoad: '粮道',
   sgOwner: '势力', sgYourSide: '你的势力', sgPickCity: '点城池查看、下命令。和本城连成一片的城才有粮道，才能出征。',
   sgBonds: '羁绊', sgBondOn: '已激活', sgAllGens: '全部武将',
@@ -22,21 +23,24 @@ extend({
   sgDuel: '单挑！', sgDuelVs: '{a} 对 {d}', sgAtk: '猛攻', sgDefM: '防守', sgSkill: '必杀', sgDuelRule: '猛攻克必杀 · 必杀破防守 · 防守挡猛攻',
   sgDuelWin: '{g} 赢了单挑！', sgDuelDraw: '不分胜负！', sgRound: '第 {n} 回合', sgMoves: '你：{a} · 对方：{d}', sgHit: '{g} 受到 {n} 伤害', sgRival: '宿敌相见：{r}',
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
-  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。', sgOrders: '本月已下命令：{n} 城',
-  evDev: '{c}：内政，开发 +{n}', evDraft: '{c}：征兵 +{n}', evFound: '{c}：{by} 找到了在野武将 {g}！', evFoundAI: '{f} 在 {c} 找到了 {g}',
-  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{c} → {to}：调动 {n} 兵',
+  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。407 高速把万锦一分为二，只有 4 个关能过。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
+  sgPass: '关隘', sgPassNote: '关隘没有百姓：不能内政、征兵、搜索，但城防极高。从邻城调兵进来驻守，就能挡住整条路。', sgBigPass: '万锦虎牢：407 高速上最坚固的关',
+  sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
+  sgTargets: '目标（也可以点地图）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
+  evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！', evFound: '{c}：{by} 找到了在野武将 {g}！', evFoundAI: '{f} 在 {c} 找到了 {g}',
+  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}',
   evMarch: '{f} 从 {c} 出兵 {n} 攻打 {to}', evDuel: '单挑 {a} 对 {d}：{w}', evDuelDraw: '平手', evDuelWon: '{g} 胜',
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每座你的城每月下一个命令：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、调动（兵和武将去相邻的自己城）、出征（打相邻的城）。\n\n城和城之间的线是真实道路，也是粮道：只有和本城连成一片的城才有收入、能出征；被切断的城每月掉兵。\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻，武力越高伤害越大。赢了单挑对方士气大跌，还可能俘虏对方武将。\n\n同时拥有特定武将会激活羁绊（比如桃园结义），宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n407 高速像一道长城横穿万锦，只能从 4 个关过去：Woodbine 关、Warden 关、407 虎牢关、McCowan 关。关没有百姓，但城防极高；407 虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgContinue: 'Continue',
   sgYou: 'You', sgUnclaimed: 'Unclaimed', sgArmy: "{n}'s army",
   sgCmdDev: 'Develop', sgCmdDevS: '+gold & food', sgCmdDraft: 'Draft', sgCmdDraftS: 'gold → troops', sgCmdSearch: 'Search', sgCmdSearchS: 'find free officers', sgCmdMove: 'Move', sgCmdMoveS: 'to a city of yours',
-  sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
-  sgTroopsSend: 'Troops', sgGensSend: 'Officers going', sgNoGen: 'No officers here: develop, draft or move only', sgCut: 'Cut off from your capital: no income, troops desert',
+  sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgCmdFort: 'Fortify', sgCmdFortS: 'walls +', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
+  sgTroopsSend: 'Troops', sgGensSend: 'Officers going', sgNoGen: 'No officers here, so no orders. Move an officer in from next door.', sgCut: 'Cut off from your capital: no income, troops desert',
   sgCap: 'Capital', sgDev: 'Dev', sgDef: 'Walls', sgGarrison: 'Officers', sgNone: 'none', sgRumour: 'Rumoured free officers', sgRumourN: '{n}', sgRoad: 'Supply road',
   sgOwner: 'Owner', sgYourSide: 'Your forces', sgPickCity: 'Tap a city to see it and give orders. Only cities linked to your capital are supplied and can attack.',
   sgBonds: 'Bonds', sgBondOn: 'active', sgAllGens: 'All officers',
@@ -44,14 +48,17 @@ extend({
   sgDuel: 'Duel!', sgDuelVs: '{a} vs {d}', sgAtk: 'Strike', sgDefM: 'Guard', sgSkill: 'Special', sgDuelRule: 'Strike beats Special · Special breaks Guard · Guard stops Strike',
   sgDuelWin: '{g} wins the duel!', sgDuelDraw: 'A draw!', sgRound: 'Round {n}', sgMoves: 'You: {a} · Them: {d}', sgHit: '{g} takes {n}', sgRival: 'Rivals meet: {r}',
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
-  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs.', sgOrders: 'Orders given: {n} cities',
-  evDev: '{c}: developed +{n}', evDraft: '{c}: drafted +{n}', evFound: '{c}: {by} found {g}!', evFoundAI: '{f} found {g} in {c}',
-  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{c} → {to}: moved {n} troops',
+  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. Hwy 407 splits Markham in two and only 4 passes cross it.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
+  sgPass: 'Pass', sgPassNote: 'A pass has no people: no developing, drafting or searching, but huge walls. Move troops in and it holds the whole road.', sgBigPass: 'The Tiger Gate: the strongest pass on Hwy 407',
+  sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
+  sgTargets: 'Targets (or tap the map)', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
+  evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!', evFound: '{c}: {by} found {g}!', evFoundAI: '{f} found {g} in {c}',
+  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops',
   evMarch: '{f} marches {n} from {c} on {to}', evDuel: 'Duel {a} vs {d}: {w}', evDuelDraw: 'draw', evDuelWon: '{g} wins',
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Each of your cities gets one order a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Move (troops and officers to a neighbouring city of yours), Attack (a neighbouring city).\n\nThe lines are real roads and your supply lines: only cities linked to your capital earn and can attack; cut-off cities lose troops every month.\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike; more war power hits harder. Winning breaks the enemy\'s morale and may capture their officer.\n\nCertain officers together switch on bonds (the Peach Garden Oath…); rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Develop (more gold and food every month), Draft (gold for troops), Search (find officers hiding in that city: blind boxes), Fortify (stronger walls), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nHwy 407 cuts Markham in two like a great wall. The only ways over are 4 passes: Woodbine, Warden, the 407 Tiger Gate and McCowan. Passes have no people but huge walls; a mighty officer guards the Tiger Gate at the start, and you may win him over if you take it.\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -65,7 +72,7 @@ const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a' };
 const kNum = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
 const MOVES = { atk: 'sgAtk', def: 'sgDefM', skill: 'sgSkill' };
 const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195; return F('sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }); };
-const CMD_ICON = { dev: '内', draft: '兵', search: '搜', move: '调', march: '征' };
+const CMD_KEY = { dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', move: 'sgCmdMove', march: 'sgCmdMarch' };
 
 function portrait(id, size = 46) {
   const g = GENERALS[id];
@@ -86,6 +93,7 @@ export class Sanguo {
     this.onClose = onClose; this.cv = $('sgMap'); this.ctx = this.cv.getContext('2d'); this.ptrs = new Map();
     this.sel = null; this.mode = null; this.busy = false; this.pulse = 0;
     $('sgEnd').addEventListener('click', () => this.endMonth());
+    $('sgAuto').addEventListener('click', () => this.autoAssign());
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
@@ -114,7 +122,7 @@ export class Sanguo {
     this.w = world;
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
-    const fresh = !s || s.v !== 1 || s.over;
+    const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
     if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0);
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
@@ -130,7 +138,7 @@ export class Sanguo {
     this.panelW = Math.min(300, Math.max(240, W * 0.3));
     // the map area: right of the panel, below the top bar
     this.ox = this.panelW + (W - this.panelW) / 2; this.oy = 48 + (H - 48 - 50) / 2; // 50 px kept free for the end-month button
-    const xs = CITY_IDS.map((c) => CITIES[c].x), zs = CITY_IDS.map((c) => CITIES[c].z);
+    const xs = NODE_IDS.map((c) => CITIES[c].x), zs = NODE_IDS.map((c) => CITIES[c].z);
     const fitS = Math.min((W - this.panelW - 30) / (Math.max(...xs) - Math.min(...xs) + 220), (H - 48 - 50 - 24) / (Math.max(...zs) - Math.min(...zs) + 200));
     this.sMin = fitS * 0.8; this.sMax = fitS * 4;
     if (fit || !this.s0) { this.k = fitS; this.s0 = fitS; this.cx = (Math.max(...xs) + Math.min(...xs)) / 2; this.cz = (Math.max(...zs) + Math.min(...zs)) / 2 + 20; }
@@ -159,11 +167,31 @@ export class Sanguo {
   tap(x, y) {
     if (this.busy) return;
     let bestC = null, bd = 38 * 38;
-    for (const c of CITY_IDS) { const [sx, sy] = this.toScreen(CITIES[c].x, CITIES[c].z); const d = (sx - x) ** 2 + (sy - y + 10) ** 2; if (d < bd) { bd = d; bestC = c; } }
+    for (const c of NODE_IDS) { const [sx, sy] = this.toScreen(CITIES[c].x, CITIES[c].z); const d = (sx - x) ** 2 + (sy - y + 10) ** 2; if (d < bd) { bd = d; bestC = c; } }
     if (!bestC) return;
     if (this.mode && this.mode.targets.includes(bestC)) { this.setTarget(bestC); return; }
     if (this.mode && bestC !== this.mode.c) this.mode = null;
     this.sel = bestC; this.render();
+  }
+  // real ground height (js/sg_elev.js) as a terraced, hill-shaded relief laid over the minimap
+  relief() {
+    if (this.reliefCv) return this.reliefCv;
+    const R = 12, w = (ELEV.nx - 1) * R, h = (ELEV.nz - 1) * R, cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const c = cv.getContext('2d'), img = c.createImageData(w, h), span = ELEV.hi - ELEV.lo;
+    const at = (x, y) => elevAt(ELEV.x0 + (x / R) * ELEV.step, ELEV.z0 + (y / R) * ELEV.step);
+    const LO = [86, 150, 92], MID = [196, 196, 120], HI = [214, 170, 112];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const e = at(x, y), t = Math.floor((e - ELEV.lo) / 3) * 3 / span; // 3 m terraces
+      const sh = Math.max(-1, Math.min(1, (at(x - 2, y - 2) - at(x + 2, y + 2)) * 0.9)); // light from the north-west
+      const col = t < 0.5 ? LO.map((v, i) => v + (MID[i] - v) * t * 2) : MID.map((v, i) => v + (HI[i] - v) * (t - 0.5) * 2);
+      const o = (y * w + x) * 4;
+      for (let i = 0; i < 3; i++) img.data[o + i] = Math.max(0, Math.min(255, col[i] * (1 + 0.22 * sh)));
+      img.data[o + 3] = 255;
+    }
+    c.putImageData(img, 0, 0);
+    this.reliefCv = cv;
+    return cv;
   }
   draw() {
     const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, S = CFG.minimap.pxPerM, st = this.s;
@@ -171,26 +199,41 @@ export class Sanguo {
     c.fillStyle = '#9fd067'; c.fillRect(0, 0, W, H);
     const [x0, y0] = this.toScreen(-HW, -HH);
     c.drawImage(w.minimap, x0, y0, HW * 2 * S * (s / S), HH * 2 * S * (s / S));
-    c.fillStyle = 'rgba(70,45,20,.18)'; c.fillRect(0, 0, W, H); // a warm, old-map wash
+    // relief on top (the town map shows through faintly)
+    const [rx, ry] = this.toScreen(ELEV.x0, ELEV.z0);
+    c.globalAlpha = 0.72; c.drawImage(this.relief(), rx, ry, (ELEV.nx - 1) * ELEV.step * s, (ELEV.nz - 1) * ELEV.step * s); c.globalAlpha = 1;
+    c.fillStyle = 'rgba(70,45,20,.12)'; c.fillRect(0, 0, W, H); // a warm, old-map wash
+    const line = (pts, col, wd) => { c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = this.toScreen(x, z); if (i) c.lineTo(a, b); else c.moveTo(a, b); }); c.stroke(); };
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // the Rouge River and its streams
+    for (const [big, pts] of w.map.rivers) line(pts, big ? 'rgba(46,110,214,.9)' : 'rgba(60,120,210,.45)', big ? Math.max(3, 16 * s) : 1.5);
+    // Hwy 407: a great wall across Markham
+    for (const pts of w.map.overpass) line(pts, '#5a4632', Math.max(6, 26 * s));
+    for (const pts of w.map.overpass) { c.setLineDash([5, 5]); line(pts, '#cdb894', Math.max(3, 14 * s)); c.setLineDash([]); }
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
-    c.lineCap = 'round';
-    for (const [a, b, road] of LINKS) {
+    for (const [a, b, road, river] of LINKS) {
       const [ax, ay] = this.toScreen(CITIES[a].x, CITIES[a].z), [bx, by] = this.toScreen(CITIES[b].x, CITIES[b].z);
       const oa = st.cities[a].owner, ob = st.cities[b].owner;
       c.setLineDash(oa === ob && oa >= 0 ? [] : [10, 8]);
       c.strokeStyle = 'rgba(43,33,26,.55)'; c.lineWidth = 9; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
       c.strokeStyle = oa === ob && oa >= 0 ? this.fColor(oa) : '#f5ebdd'; c.lineWidth = 5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.setLineDash([]);
+      const mx = (ax + bx) / 2, my = (ay + by) / 2;
+      if (river) badge(c, mx, my, '#2e6ed6', zh() ? '渡' : '≈', '#fff', 9);
       if (this.k > this.s0 * 1.5) {
-        c.setLineDash([]); c.font = '700 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-        const mx = (ax + bx) / 2, my = (ay + by) / 2, tw = c.measureText(road).width + 10;
-        c.fillStyle = 'rgba(255,255,255,.88)'; rr(c, mx - tw / 2, my - 8, tw, 16, 8); c.fill();
-        c.fillStyle = '#5a4632'; c.fillText(road, mx, my + 0.5);
+        c.font = '700 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        const tw = c.measureText(road).width + 10, ly = my + (river ? 18 : 0);
+        c.fillStyle = 'rgba(255,255,255,.88)'; rr(c, mx - tw / 2, ly - 8, tw, 16, 8); c.fill();
+        c.fillStyle = '#5a4632'; c.fillText(road, mx, ly + 0.5);
       }
     }
-    c.setLineDash([]);
-    // planned orders: arrows from your cities
-    for (const [from, o] of Object.entries(st.orders || {})) if (o.cmd === 'march' || o.cmd === 'move') {
+    // planned orders: arrows (one per road and kind)
+    const seen = new Set();
+    for (const [id, o] of Object.entries(st.orders || {})) if ((o.cmd === 'march' || o.cmd === 'move') && st.gens[id] && st.gens[id].c) {
+      const from = st.gens[id].c, key = from + o.to + o.cmd;
+      if (seen.has(key)) continue;
+      seen.add(key);
       const [ax, ay] = this.toScreen(CITIES[from].x, CITIES[from].z), [bx, by] = this.toScreen(CITIES[o.to].x, CITIES[o.to].z);
       arrow(c, ax, ay, bx, by, o.cmd === 'march' ? '#e23d3d' : '#2f7de1', this.pulse);
     }
@@ -199,78 +242,110 @@ export class Sanguo {
       const [x, y] = this.toScreen(CITIES[tc].x, CITIES[tc].z), r = 30 + 4 * Math.sin(this.pulse * 5);
       c.strokeStyle = '#f2c14e'; c.lineWidth = 4; c.beginPath(); c.ellipse(x, y, r, r * 0.45, 0, 0, 7); c.stroke();
     }
-    // cities: castles first, labels on top (so a name is never hidden behind a neighbour's castle)
+    // cities and passes first, labels on top (so a name is never hidden behind a neighbour's castle)
     const ts = Math.min(1, Math.max(0.55, this.k / 0.22)), fs = Math.round(Math.max(10.5, 12 * ts));
-    for (const id of CITY_IDS) {
+    for (const id of NODE_IDS) {
       const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
-      castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].zh.slice(-1) : '', ts);
+      if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
+      else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].zh.slice(-1) : '', ts);
     }
-    for (const id of CITY_IDS) {
+    const ordered = new Set(Object.keys(st.orders || {}));
+    for (const id of NODE_IDS) {
       const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
-      const lab = `${cName(id)} · ${kNum(C.troops)}`, ly = y + 18 * ts + 9;
+      const short = CITIES[id].pass && this.k < this.s0 * 1.4; // zoomed out: the gate icon names the pass, the label only counts troops
+      const lab = short ? kNum(C.troops) : `${cName(id)} · ${kNum(C.troops)}`, ly = y + 18 * ts + 9;
       c.font = `700 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
       const tw = c.measureText(lab).width + 20, lh = fs + 7;
-      c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : 'rgba(38,29,22,.88)'; rr(c, x - tw / 2, ly - lh / 2, tw, lh, lh / 2); c.fill();
+      c.fillStyle = id === this.sel ? 'rgba(90,60,20,.95)' : CITIES[id].pass ? 'rgba(70,52,38,.92)' : 'rgba(38,29,22,.88)'; rr(c, x - tw / 2, ly - lh / 2, tw, lh, lh / 2); c.fill();
       c.fillStyle = col; c.beginPath(); c.arc(x - tw / 2 + 9, ly, 3.5, 0, 7); c.fill();
       c.fillStyle = '#fff'; c.fillText(lab, x + 5, ly + 0.5);
       if (C.owner === E.PLAYER && !sup.has(id)) badge(c, x - 26 * ts, y - 30 * ts, '#d64545', zh() ? '断' : '!');
-      const o = st.orders && st.orders[id];
-      if (o && CMD_ICON[o.cmd]) badge(c, x + 30 * ts, y - 4 * ts, '#f2c14e', zh() ? CMD_ICON[o.cmd] : o.cmd[0].toUpperCase(), '#2b211a');
+      if (C.owner === E.PLAYER) { // officers with orders / officers here
+        const gs = E.gensIn(st, id, E.PLAYER);
+        if (gs.length) { const n = gs.filter((g) => ordered.has(g)).length; pill(c, x + 30 * ts, y - 6 * ts, n === gs.length ? '#f2c14e' : '#fff', `${n}/${gs.length}`); }
+      }
+      if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].zh.slice(-1));
     }
     c.fillStyle = 'rgba(43,33,26,.8)'; c.font = '900 14px system-ui, sans-serif'; c.textAlign = 'left'; c.fillText('N ↑', this.panelW + 14, H - 16);
   }
 
   // ---------------------------------------------------------------- side panel
+  goldLeft() { const st = this.s; return st.factions[E.PLAYER].gold - Object.values(st.orders).reduce((a, o) => a + E.orderCost(o), 0); }
   render() {
     const st = this.s, me = st.factions[E.PLAYER];
     $('sgDate').textContent = dateText(st);
     const troops = E.ownedBy(st, E.PLAYER).reduce((a, c) => a + st.cities[c].troops, 0);
-    $('sgRes').innerHTML = [['金', 'sgGold', me.gold, '#f2c14e'], ['粮', 'sgFood', me.food, '#e9d8a6'], ['兵', 'sgTroops', troops, '#f08a6e'], ['城', 'sgCities', E.ownedBy(st, E.PLAYER).length + '/12', '#7fb2f0']]
+    $('sgRes').innerHTML = [['金', 'sgGold', me.gold, '#f2c14e'], ['粮', 'sgFood', me.food, '#e9d8a6'], ['兵', 'sgTroops', troops, '#f08a6e'], ['城', 'sgCities', E.citiesOf(st, E.PLAYER).length + '/12', '#7fb2f0']]
       .map(([ch, k, v, col]) => `<span title="${esc(t(k))}"><i style="background:${col}">${zh() ? ch : t(k)[0]}</i>${typeof v === 'number' ? kNum(v) : v}</span>`).join('');
     $('sgEnd').textContent = t('sgEnd');
+    const idle = E.factionGens(st, E.PLAYER).filter((g) => st.gens[g].c && !st.orders[g]).length;
+    $('sgAuto').innerHTML = `${t('sgAuto')}${idle ? `<i>${idle}</i>` : ''}`; $('sgAuto').title = t('sgAutoT');
     $('sgLogBtn').textContent = t('sgLog'); $('sgMenuBtn').textContent = t('sgMenu'); $('sgTitle').textContent = t('sgTitle');
     $('sgPanel').innerHTML = this.sel ? this.cityPanel(this.sel) : this.sidePanel();
     this.save();
   }
   sidePanel() {
     const st = this.s, gs = E.byLead(E.factionGens(st, E.PLAYER)), bonds = E.activeBonds(st, E.PLAYER, []);
-    const n = Object.keys(st.orders || {}).length;
-    return `<h3>${t('sgYourSide')}</h3><p class="sgHint">${t('sgPickCity')}</p>${n ? `<p class="sgHint">${F('sgOrders', { n })}</p>` : ''}
+    const n = gs.filter((g) => st.orders[g]).length;
+    return `<h3>${t('sgYourSide')}</h3><p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
       ${bonds.length ? `<h4>${t('sgBonds')}</h4>${bonds.map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)} · ${t('sgBondOn')}</div>`).join('')}` : ''}
-      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">📍 ${esc(cName(st.gens[g].c))}</div>`).join('')}`;
+      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">📍 ${esc(cName(st.gens[g].c))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}</div>`).join('')}`;
+  }
+  terrTags(from, to) {
+    const tr = E.terrain(from, to), d = CITIES[to].elev - CITIES[from].elev, k = CFG.sg, out = [];
+    if (tr.why.includes('river')) out.push(F('sgTerrRiver', { n: Math.round(k.riverPen * 100) }));
+    if (tr.why.includes('uphill')) out.push(F('sgTerrUp', { n: Math.round(Math.min(k.hillMax, d * k.hillPerM) * 100) }));
+    if (tr.why.includes('downhill')) out.push(F('sgTerrDown', { n: Math.round(Math.min(k.hillMax / 2, -d * k.hillPerM / 2) * 100) }));
+    return out;
   }
   cityPanel(c) {
-    const st = this.s, C = st.cities[c], mine = C.owner === E.PLAYER, gs = C.owner >= 0 ? E.byLead(E.gensIn(st, c, C.owner)) : [];
+    const st = this.s, C = st.cities[c], mine = C.owner === E.PLAYER, gs = C.owner >= 0 ? E.byLead(E.gensIn(st, c, C.owner)) : E.guardsIn(st, c), info = CITIES[c];
     const cap = C.owner >= 0 && st.factions[C.owner].cap === c;
     let h = `<h3><span class="sgDot" style="background:${this.fColor(C.owner)}"></span>${esc(cName(c))}<button class="sgX" data-a="close">✕</button></h3>
-      <div class="sgSub">${esc(this.fName(C.owner))}${cap ? ' · ' + t('sgCap') : ''}</div>
-      <div class="sgGrid"><div><small>${t('sgTroops')}</small><b>${C.troops.toLocaleString()}</b></div><div><small>${t('sgDef')}</small><b>${C.def}</b></div><div><small>${t('sgDev')}</small><b>${C.dev}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div></div>`;
+      <div class="sgSub">${esc(this.fName(C.owner))}${cap ? ' · ' + t('sgCap') : ''}${info.pass ? ' · ' + t('sgPass') : ''} · ${t('sgElev')} ${info.elev} m</div>
+      <div class="sgGrid"><div><small>${t('sgTroops')}</small><b>${C.troops.toLocaleString()}</b></div><div><small>${t('sgDef')}</small><b>${C.def}</b></div>
+      ${info.pass ? `<div><small>${t('sgWalls')}</small><b>×${E.wallMul(C).toFixed(2)}</b></div><div><small>${t('sgGarrison')}</small><b>${gs.length}</b></div>`
+        : `<div><small>${t('sgDev')}</small><b>${C.dev}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div>`}</div>`;
+    if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
+    if (info.pass) h += `<p class="sgHint">${t('sgPassNote')}</p>`;
+    if (info.valley) h += `<p class="sgHint">🌾 ${t('sgValley')}</p>`;
     if (mine && !E.supplied(st, E.PLAYER).has(c)) h += `<p class="sgWarn">${t('sgCut')}</p>`;
     if (mine) h += this.orderBlock(c, gs);
-    h += `<h4>${t('sgGarrison')}</h4>${gs.length ? gs.map((g) => genCard(g)).join('') : `<p class="sgHint">${t('sgNone')}</p>`}`;
-    h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}</small></div>`).join('')}`;
+    else h += `<h4>${C.owner === -1 && gs.length ? t('sgGuard') : t('sgGarrison')}</h4>${gs.length ? gs.map((g) => genCard(g)).join('') : `<p class="sgHint">${t('sgNone')}</p>`}`;
+    h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}${this.terrTags(n, c).length ? ' · ' + esc(this.terrTags(n, c).join(' ')) : ''}</small></div>`).join('')}`;
     return h;
   }
+  orderText(o) {
+    const k = { dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', move: 'sgCmdMove', march: 'sgCmdMarch' }[o.cmd];
+    return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}` : '');
+  }
+  // troops in city c not yet promised to an officer's move / march (other than `id`)
+  avail(c, id) { const st = this.s; return Math.max(0, st.cities[c].troops - Object.entries(st.orders).filter(([g, o]) => g !== id && st.gens[g]?.c === c && (o.cmd === 'march' || o.cmd === 'move')).reduce((a, [, o]) => a + (o.n || 0), 0)); }
   orderBlock(c, gs) {
-    const st = this.s, o = st.orders[c], m = this.mode && this.mode.c === c ? this.mode : null;
-    const can = (cmd) => {
-      if (cmd === 'march') return ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, c, { cmd, to: n }));
-      if (cmd === 'move') return ADJ[c].some(({ c: n }) => st.cities[n].owner === E.PLAYER);
-      return cmd === 'rest' || E.validOrder(st, E.PLAYER, c, { cmd });
-    };
-    const btn = (cmd, k) => `<button class="sgCmd${(o && o.cmd === cmd) || (m && m.cmd === cmd) ? ' on' : ''}" data-cmd="${cmd}" ${can(cmd) ? '' : 'disabled'}><b>${t(k)}</b><small>${t(k + 'S')}</small></button>`;
-    let h = `<h4>${t('sgOrder')}</h4><div class="sgCmds">${btn('dev', 'sgCmdDev')}${btn('draft', 'sgCmdDraft')}${btn('search', 'sgCmdSearch')}${btn('move', 'sgCmdMove')}${btn('march', 'sgCmdMarch')}<button class="sgCmd${!o && !m ? ' on' : ''}" data-cmd="rest"><b>${t('sgCmdRest')}</b><small>&nbsp;</small></button></div>`;
-    if (!gs.length) h += `<p class="sgHint">${t('sgNoGen')}</p>`;
-    if (m && !m.to) h += `<p class="sgPick">${t('sgPickTarget')}</p><button class="sgSmall" data-a="cancel">${t('sgCancel')}</button>`;
-    const cur = m && m.to ? m : o && (o.cmd === 'march' || o.cmd === 'move') ? o : null;
-    if (cur && cur.to) {
-      const fr = cur.frac ?? (cur.cmd === 'march' ? 0.8 : 0.5);
-      h += `<div class="sgTo">→ ${esc(cName(cur.to))}</div><div class="sgSeg"><span>${t('sgTroopsSend')}</span>${[0.5, 0.8, 1].map((f) => `<button data-frac="${f}" class="${Math.abs(fr - f) < 0.01 ? 'on' : ''}">${Math.round(f * 100)}% · ${kNum(st.cities[c].troops * f)}</button>`).join('')}</div>`;
-      if (gs.length) {
-        const sel = new Set(cur.gens || []);
-        h += `<div class="sgHint">${t('sgGensSend')}</div><div class="sgChips">${gs.map((g) => `<button data-gen="${g}" class="${sel.has(g) ? 'on' : ''}">${esc(gName(g))}</button>`).join('')}</div>`;
+    const st = this.s, gold = this.goldLeft();
+    if (!gs.length) return `<h4>${t('sgOfficers')}</h4><p class="sgHint">${t('sgNoGen')}</p>`;
+    let h = `<h4>${t('sgOfficers')} <small class="sgGold">${F('sgGoldLeft', { n: gold })}</small></h4>`;
+    for (const id of gs) {
+      const o = st.orders[id], m = this.mode && this.mode.id === id ? this.mode : null, cur = o ? o.cmd : null;
+      const can = (cmd) => {
+        if (cur === cmd) return true;
+        if (cmd === 'march') return ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
+        if (cmd === 'move') return ADJ[c].some(({ c: n }) => st.cities[n].owner === E.PLAYER);
+        return E.validOrder(st, E.PLAYER, id, { cmd }) && gold + E.orderCost(o) >= E.orderCost({ cmd });
+      };
+      const cmds = CITIES[c].pass ? ['fort', 'move', 'march'] : ['dev', 'draft', 'search', 'fort', 'move', 'march'];
+      const g = GENERALS[id];
+      h += `<div class="sgO${o ? ' set' : ''}"><div class="sgOh">${portrait(id, 34)}<div><b>${esc(gName(id))}</b><small>${zh() ? '统' : 'L'}${g.lead} ${zh() ? '武' : 'W'}${g.war} ${zh() ? '智' : 'I'}${g.int} ${zh() ? '政' : 'P'}${g.pol}</small></div>
+        <em>${o ? esc(this.orderText(o)) : t('sgCmdRest')}</em></div>
+        <div class="sgCmds">${cmds.map((cmd) => `<button class="sgCmd${cur === cmd || (m && m.cmd === cmd) ? ' on' : ''}" data-g="${id}" data-cmd="${cmd}" ${can(cmd) ? '' : 'disabled'}>${t(CMD_KEY[cmd])}</button>`).join('')}<button class="sgCmd${!o && !m ? ' on' : ''}" data-g="${id}" data-cmd="rest">${t('sgCmdRest')}</button></div>`;
+      if (m) {
+        h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' && this.terrTags(c, n).length ? ` <small>${esc(this.terrTags(c, n).join(' '))}</small>` : ''}</button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+      } else if (o && (o.cmd === 'march' || o.cmd === 'move')) {
+        const av = this.avail(c, id), opts = o.cmd === 'march' ? [0.5, 0.8, 1] : [0, 0.5, 1];
+        h += `<div class="sgSeg"><span>${t('sgMoveTroops')}</span>${opts.map((f) => { const n = Math.floor(av * f); return `<button data-g="${id}" data-n="${n}" class="${o.n === n ? 'on' : ''}">${kNum(n)}</button>`; }).join('')}</div>`;
       }
+      h += '</div>';
     }
     return h;
   }
@@ -280,33 +355,41 @@ export class Sanguo {
     if (!b) return;
     if (b.dataset.a === 'close') { this.sel = null; this.mode = null; this.render(); return; }
     if (b.dataset.a === 'cancel') { this.mode = null; this.render(); return; }
-    if (!c) return;
-    const gs = E.byLead(E.gensIn(st, c, E.PLAYER));
+    const id = b.dataset.g;
+    if (!c || !id || !st.gens[id]) return;
+    if (b.dataset.to) { this.mode = this.mode && this.mode.id === id ? this.mode : { id, c, cmd: 'move', targets: [b.dataset.to] }; this.setTarget(b.dataset.to); return; }
     if (b.dataset.cmd) {
       const cmd = b.dataset.cmd;
       this.mode = null;
-      if (cmd === 'rest') delete st.orders[c];
+      if (cmd === 'rest') delete st.orders[id];
       else if (cmd === 'march' || cmd === 'move') {
-        const targets = ADJ[c].map((a) => a.c).filter((n) => (cmd === 'march' ? E.validOrder(st, E.PLAYER, c, { cmd, to: n }) : st.cities[n].owner === E.PLAYER));
-        delete st.orders[c];
-        if (targets.length === 1) { this.mode = { c, cmd, targets }; this.setTarget(targets[0]); return; }
-        this.mode = { c, cmd, targets };
-      } else st.orders[c] = { cmd };
+        const targets = ADJ[c].map((a) => a.c).filter((n) => (cmd === 'march' ? E.validOrder(st, E.PLAYER, id, { cmd, to: n }) : st.cities[n].owner === E.PLAYER));
+        delete st.orders[id];
+        this.mode = { id, c, cmd, targets };
+        if (targets.length === 1) { this.setTarget(targets[0]); return; }
+      } else st.orders[id] = { cmd };
       this.render(); return;
     }
-    const o = st.orders[c];
-    if (!o) return;
-    if (b.dataset.frac) { o.frac = +b.dataset.frac; this.render(); return; }
-    if (b.dataset.gen) {
-      const g = b.dataset.gen, set = new Set(o.gens || []);
-      if (set.has(g)) set.delete(g); else if (o.cmd === 'move' || set.size < 3) set.add(g);
-      o.gens = gs.filter((x) => set.has(x)); this.render();
-    }
+    const o = st.orders[id];
+    if (o && b.dataset.n !== undefined) { o.n = +b.dataset.n; this.render(); }
   }
   setTarget(to) {
-    const st = this.s, m = this.mode, gs = E.byLead(E.gensIn(st, m.c, E.PLAYER));
-    st.orders[m.c] = { cmd: m.cmd, to, frac: m.cmd === 'march' ? 0.8 : 0.5, gens: m.cmd === 'march' ? gs.slice(0, 3) : [] };
+    const st = this.s, m = this.mode, av = this.avail(m.c, m.id);
+    st.orders[m.id] = { cmd: m.cmd, to, n: m.cmd === 'march' ? Math.floor(av * 0.8) : 0 };
     this.sel = m.c; this.mode = null; this.render();
+  }
+  autoAssign() {
+    if (this.busy) return;
+    const st = this.s, before = Object.keys(st.orders).length;
+    st.orders = E.autoAssign(st, st.orders);
+    const n = Object.keys(st.orders).length - before;
+    this.mode = null; this.render();
+    this.toast(n ? F('sgAutoDone', { n }) : t('sgAutoNone'));
+  }
+  toast(msg) {
+    const el = $('sgToast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(this.toastT); this.toastT = setTimeout(() => el.classList.remove('show'), 1800);
   }
 
   // ---------------------------------------------------------------- the month
@@ -332,15 +415,17 @@ export class Sanguo {
   evText(e) {
     const st = this.s, P = E.PLAYER, f = this.fName(e.f ?? -1);
     switch (e.k) {
-      case 'dev': return e.f === P ? F('evDev', { c: cName(e.c), n: e.n }) : null;
-      case 'draft': return e.f === P ? F('evDraft', { c: cName(e.c), n: e.n }) : null;
+      case 'dev': return e.f === P ? F('evDev', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
+      case 'draft': return e.f === P ? F('evDraft', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
+      case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
+      case 'skip': return e.f === P ? F('evSkip', { g: gName(e.g) }) : null;
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
       case 'nothing': return e.f === P ? F('evNothing', { c: cName(e.c) }) : null;
-      case 'move': return e.f === P ? F('evMove', { c: cName(e.c), to: cName(e.to), n: e.n }) : null;
+      case 'move': return e.f === P ? F('evMove', { g: gName(e.gens[0]), c: cName(e.c), to: cName(e.to), n: e.n }) : null;
       case 'march': return e.f === P || st.cities[e.to].owner === P || (e.to && st.factions.some((x) => x.player && x.cap === e.to)) ? F('evMarch', { f, c: cName(e.c), to: cName(e.to), n: e.n.toLocaleString() }) : null;
       case 'duel': return F('evDuel', { a: gName(e.a), d: gName(e.d), w: e.win ? F('evDuelWon', { g: gName(e.win === 'a' ? e.a : e.d) }) : t('evDuelDraw') });
-      case 'take': return F('evTake', { f, c: cName(e.c) });
+      case 'take': return F(e.pass ? 'evTakePass' : 'evTake', { f, c: cName(e.c) });
       case 'repel': return e.f === P || e.fd === P ? F('evRepel', { c: cName(e.c), f }) : null;
       case 'flee': return e.f === P || e.by === P ? F('evFlee', { g: gName(e.g), c: cName(e.c) }) : null;
       case 'recruit': return F('evRecruit', { f, g: gName(e.g) });
@@ -466,9 +551,9 @@ function castle(c, x, y, col, cap, ch, ts = 1) {
   if (ch) { c.fillStyle = '#fff'; c.font = "900 12px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 30, -44); }
   c.restore();
 }
-function badge(c, x, y, bg, txt, fg = '#fff') {
-  c.fillStyle = bg; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 10, 0, 7); c.fill(); c.stroke();
-  c.fillStyle = fg; c.font = '900 12px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 0.5);
+function badge(c, x, y, bg, txt, fg = '#fff', r = 10) {
+  c.fillStyle = bg; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = fg; c.font = `900 ${Math.round(r * 1.2)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 0.5);
 }
 function arrow(c, ax, ay, bx, by, col, t) {
   const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L;
@@ -476,4 +561,32 @@ function arrow(c, ax, ay, bx, by, col, t) {
   c.strokeStyle = col; c.lineWidth = 5; c.setLineDash([12, 8]); c.lineDashOffset = -t * 40;
   c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
   c.fillStyle = col; c.beginPath(); c.moveTo(ex + ux * 12, ey + uy * 12); c.lineTo(ex - uy * 9, ey + ux * 9); c.lineTo(ex + uy * 9, ey - ux * 9); c.closePath(); c.fill();
+}
+function pill(c, x, y, bg, txt) {
+  c.font = '900 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const w = c.measureText(txt).width + 10;
+  c.fillStyle = bg; c.strokeStyle = '#2b211a'; c.lineWidth = 1.5; rr(c, x - w / 2, y - 8, w, 16, 8); c.fill(); c.stroke();
+  c.fillStyle = '#2b211a'; c.fillText(txt, x, y + 0.5);
+}
+// a pass: two stone towers and a gatehouse with a roof in the owner's colour; the big one has a banner
+function gate(c, x, y, col, big, ts = 1) {
+  const k = (big ? 1.2 : 0.95) * ts;
+  c.save(); c.translate(x, y); c.scale(k, k);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(0, 9, 32, 9, 0, 0, 7); c.fill();
+  const poly = (pts, f) => { c.fillStyle = f; c.beginPath(); pts.forEach(([a, b], i) => (i ? c.lineTo(a, b) : c.moveTo(a, b))); c.closePath(); c.fill(); };
+  poly([[-30, 8], [30, 8], [30, -10], [-30, -10]], '#9c8a6c');                       // wall
+  for (let i = -30; i < 30; i += 8) poly([[i, -10], [i + 5, -10], [i + 5, -14], [i, -14]], '#9c8a6c'); // crenels
+  poly([[-30, -10], [-18, -10], [-18, -26], [-30, -26]], '#c9b897');                  // towers
+  poly([[18, -10], [30, -10], [30, -26], [18, -26]], '#c9b897');
+  poly([[-12, 8], [12, 8], [12, -18], [-12, -18]], '#e8decd');                         // gatehouse
+  c.fillStyle = '#4a3220'; c.beginPath(); c.moveTo(-6, 8); c.lineTo(-6, -2); c.arc(0, -2, 6, Math.PI, 0); c.lineTo(6, 8); c.closePath(); c.fill();
+  poly([[-17, -18], [17, -18], [11, -27], [-11, -27]], col);
+  poly([[-33, -26], [-15, -26], [-19, -32], [-29, -32]], shade(col, 0.82));
+  poly([[15, -26], [33, -26], [29, -32], [19, -32]], shade(col, 0.82));
+  if (big) {
+    c.strokeStyle = '#5a4632'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -27); c.lineTo(0, -50); c.stroke();
+    poly([[0, -50], [20, -48], [16, -42], [20, -36], [0, -38]], col);
+    c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('关', 10, -43);
+  }
+  c.restore();
 }

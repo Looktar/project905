@@ -2,6 +2,7 @@
 
 ## 地图数据
 - © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors，ODbL 许可。原始导出在 `data/raw/`。
+- 万锦三国志策略地图的海拔（v0.8，D-74）：Copernicus DEM GLO-90，© DLR e.V. 2010–2014 和 © Airbus Defence and Space GmbH 2014–2018，由欧盟哥白尼计划（COPERNICUS）和 ESA 提供，可免费使用，要求署名。通过 [Open-Meteo 海拔 API](https://open-meteo.com/en/docs/elevation-api)（CC BY 4.0）抓取，`tools/fetch_elev.py` 生成 `js/sg_elev.js`，游戏运行时不联网。
 - 部分商业 / 工业建筑轮廓：Contains information licensed under the [Open Data Licence – York Region](https://insights-york.opendata.arcgis.com/)（York Region Building Footprint）。只用于 OSM 没画的商业楼，不用于住宅（D-68）。原始数据 `data/raw/york_footprints.json.gz`，由 `tools/fetch_york.py` 下载。
 
 ## 模型、音效、招牌

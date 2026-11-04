@@ -190,6 +190,20 @@ body.touch #bD.hide{display:none}
 .sgDm button:nth-child(2){background:#2f7de1}.sgDm button:nth-child(3){background:#7c55c9}
 .sgRule{font-size:12px;color:#d9c8ae;text-align:center;margin:6px 0 0}
 .sgHelp{white-space:pre-line;font-size:14px;line-height:1.55;color:#f5ebdd}
+#sgAuto{position:absolute;right:calc(12px + var(--sa-r,0px));bottom:calc(68px + var(--sa-b,0px));height:40px;padding:0 16px;background:#3a2c21;color:#f2c14e;border:2px solid #f2c14e;border-radius:999px;font:900 15px inherit;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+#sgAuto i{font-style:normal;background:#f2c14e;color:#2b211a;border-radius:999px;min-width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+#sgToast{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:#f2c14e;color:#2b211a;font-weight:900;font-size:14px;border-radius:999px;padding:6px 16px;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+#sgToast.show{opacity:1}
+.sgGold{font:700 12px system-ui,sans-serif;color:#d9c8ae;margin-left:6px}
+.sgO{background:#33271e;border:1px solid #5c4630;border-radius:10px;padding:6px;margin-bottom:6px}
+.sgO.set{border-color:#f2c14e}
+.sgOh{display:flex;align-items:center;gap:6px;margin-bottom:5px}.sgOh>div{min-width:0;display:flex;flex-direction:column}
+.sgOh b{font-size:14px;color:#fff}.sgOh small{font-size:10px;color:#d9c8ae}
+.sgOh em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;color:#f2c14e;text-align:right;max-width:46%}
+.sgO .sgCmds{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.sgO .sgCmd{min-height:32px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden}
+.sgO .sgSeg,.sgO .sgChips{margin-top:6px}.sgO .sgPick{margin:6px 0 4px}
+.sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
 </style>
 </head>
 <body>
@@ -233,7 +247,9 @@ body.touch #bD.hide{display:none}
     <canvas id="sgMap"></canvas>
     <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
     <div id="sgPanel"></div>
+    <button id="sgAuto"></button>
     <button id="sgEnd"></button>
+    <div id="sgToast"></div>
     <div id="sgLayer"></div>
   </div>
   <div id="plist" class="modal">
@@ -263,6 +279,7 @@ body.touch #bD.hide{display:none}
       <p><b data-t="cDev"></b> <span data-t="cDevText"></span></p>
       <p><b data-t="cMap"></b> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <span data-t="cMapText"></span></p>
       <p><b data-t="cYork"></b> <a href="https://insights-york.opendata.arcgis.com/" target="_blank" rel="noopener">York Region</a> · <span data-t="cYorkText"></span></p>
+      <p><b data-t="cElev"></b> <span data-t="cElevText"></span></p>
       <p><b data-t="cArt"></b> <span data-t="cArtText"></span></p>
       <p data-t="cDisclaimer"></p>
       <p style="opacity:.6">v0.1</p>
@@ -278,8 +295,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=564c604c5a","./js/bigmap.js":"./js/bigmap.js?v=564c604c5a","./js/config.js":"./js/config.js?v=564c604c5a","./js/fire.js":"./js/fire.js?v=564c604c5a","./js/game.js":"./js/game.js?v=564c604c5a","./js/geo.js":"./js/geo.js?v=564c604c5a","./js/glb.js":"./js/glb.js?v=564c604c5a","./js/hud.js":"./js/hud.js?v=564c604c5a","./js/i18n.js":"./js/i18n.js?v=564c604c5a","./js/input.js":"./js/input.js?v=564c604c5a","./js/main.js":"./js/main.js?v=564c604c5a","./js/math.js":"./js/math.js?v=564c604c5a","./js/missions.js":"./js/missions.js?v=564c604c5a","./js/models.js":"./js/models.js?v=564c604c5a","./js/nav.js":"./js/nav.js?v=564c604c5a","./js/orient.js":"./js/orient.js?v=564c604c5a","./js/poi.js":"./js/poi.js?v=564c604c5a","./js/pranks.js":"./js/pranks.js?v=564c604c5a","./js/props.js":"./js/props.js?v=564c604c5a","./js/renderer.js":"./js/renderer.js?v=564c604c5a","./js/sg_data.js":"./js/sg_data.js?v=564c604c5a","./js/sg_engine.js":"./js/sg_engine.js?v=564c604c5a","./js/sg_ui.js":"./js/sg_ui.js?v=564c604c5a","./js/signals.js":"./js/signals.js?v=564c604c5a","./js/world.js":"./js/world.js?v=564c604c5a"}}</script>
-<script type="module" src="js/main.js?v=564c604c5a"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=2244b6ed30","./js/bigmap.js":"./js/bigmap.js?v=2244b6ed30","./js/config.js":"./js/config.js?v=2244b6ed30","./js/fire.js":"./js/fire.js?v=2244b6ed30","./js/game.js":"./js/game.js?v=2244b6ed30","./js/geo.js":"./js/geo.js?v=2244b6ed30","./js/glb.js":"./js/glb.js?v=2244b6ed30","./js/hud.js":"./js/hud.js?v=2244b6ed30","./js/i18n.js":"./js/i18n.js?v=2244b6ed30","./js/input.js":"./js/input.js?v=2244b6ed30","./js/main.js":"./js/main.js?v=2244b6ed30","./js/math.js":"./js/math.js?v=2244b6ed30","./js/missions.js":"./js/missions.js?v=2244b6ed30","./js/models.js":"./js/models.js?v=2244b6ed30","./js/nav.js":"./js/nav.js?v=2244b6ed30","./js/orient.js":"./js/orient.js?v=2244b6ed30","./js/poi.js":"./js/poi.js?v=2244b6ed30","./js/pranks.js":"./js/pranks.js?v=2244b6ed30","./js/props.js":"./js/props.js?v=2244b6ed30","./js/renderer.js":"./js/renderer.js?v=2244b6ed30","./js/sg_data.js":"./js/sg_data.js?v=2244b6ed30","./js/sg_elev.js":"./js/sg_elev.js?v=2244b6ed30","./js/sg_engine.js":"./js/sg_engine.js?v=2244b6ed30","./js/sg_ui.js":"./js/sg_ui.js?v=2244b6ed30","./js/signals.js":"./js/signals.js?v=2244b6ed30","./js/world.js":"./js/world.js?v=2244b6ed30"}}</script>
+<script type="module" src="js/main.js?v=2244b6ed30"></script>
 <!-- stamp:end -->
 </body>
 </html>
