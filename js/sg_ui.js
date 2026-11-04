@@ -4,7 +4,7 @@
 // Rules live in sg_engine.js; this file is DOM + canvas only. The game state is saved in localStorage.
 import { CFG } from './config.js';
 import { t, getLang, extend } from './i18n.js';
-import { toGamePoint } from './input.js';
+import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import { GENERALS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
@@ -26,18 +26,18 @@ extend({
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
-  sgTargets: '目标（也可以点地图）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
+  sgTargets: '目标（也可以点地图）', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
   ev_blizzard: '{c} 暴风雪，冻跑了 {n} 兵', ev_icestorm: '{c} 遭遇冰暴，城防 −{n}', ev_flood: '胭脂河涨水淹了 {c}：开发 −4，兵 −{n}', ev_riot: '{c} 民变，兵 −{n}',
   ev_sighting: '传闻：{g} 藏在 {c}', ev_cny: '春节庙会！各家每座城多收 {n} 金', evHarvest: '九月秋收，粮仓满了！', evFound: '{c}：{by} 找到了在野武将 {g}！', evFoundAI: '{f} 在 {c} 找到了 {g}',
-  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}',
-  evMarch: '{f} 从 {c} 出兵 {n} 攻打 {to}', evDuel: '单挑 {a} 对 {d}：{w}', evDuelDraw: '平手', evDuelWon: '{g} 胜',
+  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}，路上 {m} 个月', evArrive: '{g} 带 {n} 兵到达 {c}',
+  evMarch: '{f} 从 {c} 出兵 {n} 攻打 {to}，{m} 个月后到', evDuel: '单挑 {a} 对 {d}：{w}', evDuelDraw: '平手', evDuelWon: '{g} 胜',
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
@@ -55,18 +55,18 @@ extend({
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
-  sgTargets: 'Targets (or tap the map)', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
+  sgTargets: 'Targets (or tap the map)', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
   ev_blizzard: 'Blizzard in {c}: {n} troops slip away', ev_icestorm: 'Ice storm in {c}: walls −{n}', ev_flood: 'The Rouge floods {c}: dev −4, troops −{n}', ev_riot: 'Unrest in {c}: troops −{n}',
   ev_sighting: 'Rumour: {g} is hiding in {c}', ev_cny: 'Lunar New Year fair! Every lord earns {n} more gold per city', evHarvest: 'September harvest: the granaries are full!', evFound: '{c}: {by} found {g}!', evFoundAI: '{f} found {g} in {c}',
-  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops',
-  evMarch: '{f} marches {n} from {c} on {to}', evDuel: 'Duel {a} vs {d}: {w}', evDuelDraw: 'draw', evDuelWon: '{g} wins',
+  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops, {m} mo on the road', evArrive: '{g} reached {c} with {n} troops',
+  evMarch: '{f} marches {n} from {c} on {to}, arriving in {m} mo', evDuel: 'Duel {a} vs {d}: {w}', evDuelDraw: 'draw', evDuelWon: '{g} wins',
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -106,6 +106,7 @@ export class Sanguo {
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
+    dragScroll($('sg'), '#sgPanel, .sgCard');
     const cv = this.cv;
     cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
     cv.addEventListener('pointermove', (e) => {
@@ -346,6 +347,27 @@ export class Sanguo {
       }
       if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].zh.slice(-1));
     }
+    // armies on the road (v0.9.3): a banner part of the way along the road, with troops and arrival
+    for (const a of st.armies || []) {
+      const pts = a.route.map((n) => this.toScreen(CITIES[n].x, CITIES[n].z));
+      const seg = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])), len = seg.reduce((x, y) => x + y, 0);
+      let d = len * Math.min(0.85, Math.max(0.15, (a.total - a.left) / a.total)), i = 0;
+      while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; }
+      const u = seg[i] ? d / seg[i] : 0, x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u, [tx, ty] = pts[pts.length - 1];
+      const col = this.fColor(a.f), lead = a.gens[0];
+      c.strokeStyle = col; c.lineWidth = 3; c.setLineDash([6, 5]); c.lineDashOffset = -this.pulse * 30;
+      c.beginPath(); c.moveTo(x, y); for (let j = i + 1; j < pts.length; j++) c.lineTo(pts[j][0], pts[j][1]); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+      const ang = Math.atan2(ty - y, tx - x), bob = Math.sin(this.pulse * 6 + a.id) * 1.5;
+      c.save(); c.translate(x, y + bob);
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, 12, 12, 4, 0, 0, 7); c.fill();
+      c.strokeStyle = '#5a4632'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 10); c.lineTo(0, -22); c.stroke();
+      c.fillStyle = col; c.beginPath(); c.moveTo(0, -22); c.lineTo(Math.cos(ang) >= 0 ? 20 : -20, -17); c.lineTo(0, -10); c.closePath(); c.fill();
+      c.fillStyle = col; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(0, 2, 10, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(lead ? GENERALS[lead].zh.slice(-1) : '兵', 0, 2.5);
+      c.restore();
+      pill(c, x, y + 24, a.f === E.PLAYER ? '#cfe3ff' : '#ffd6d0', `${kNum(a.troops)} · ${this.eta(a)}`);
+    }
     // compass, bottom left of the map area (the corners on the right hold the buttons)
     const nx = this.panelW + (this.panelHidden ? 70 : 32), ny = H - 30;
     c.fillStyle = 'rgba(38,29,22,.85)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.arc(nx, ny, 15, 0, 7); c.fill(); c.stroke();
@@ -372,9 +394,12 @@ export class Sanguo {
     const st = this.s, gs = E.byLead(E.factionGens(st, E.PLAYER)), bonds = E.activeBonds(st, E.PLAYER, []);
     const n = gs.filter((g) => st.orders[g]).length;
     const season = E.isWinter(st) ? `<p class="sgHint">❄ ${t('sgWinter')}</p>` : E.dateOf(st).month === 9 ? `<p class="sgHint">🌾 ${t('sgHarvestNote')}</p>` : '';
-    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
+    const mineA = (st.armies || []).filter((a) => a.f === E.PLAYER), foeA = (st.armies || []).filter((a) => a.f !== E.PLAYER && st.cities[a.to].owner === E.PLAYER);
+    const armyRow = (a) => `<div class="sgArmy"><span class="sgDot" style="background:${this.fColor(a.f)}"></span>${esc(F('sgArmyTo', { g: a.gens.map(gName).join('、') || this.fName(a.f), n: kNum(a.troops), to: cName(a.to), eta: this.eta(a) }))}</div>`;
+    const armies = (foeA.length ? `<h4 class="sgRed">⚠ ${t('sgIncoming')}</h4>${foeA.map(armyRow).join('')}` : '') + (mineA.length ? `<h4>🚩 ${t('sgOnRoad')}</h4>${mineA.map(armyRow).join('')}` : '');
+    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
       ${bonds.length ? `<h4>${t('sgBonds')}</h4>${bonds.map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)} · ${t('sgBondOn')}</div>`).join('')}` : ''}
-      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">📍 ${esc(cName(st.gens[g].c))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}</div>`).join('')}`;
+      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}</div>`).join('')}`;
   }
   terrTags(from, to) {
     const tr = E.terrain(from, to), d = CITIES[to].elev - CITIES[from].elev, k = CFG.sg, out = [];
@@ -399,11 +424,14 @@ export class Sanguo {
     const rum = E.hiddenIn(st, c).filter((g) => st.gens[g].rumor);
     if (rum.length) h += `<p class="sgHint">🗣 ${esc(F('sgRumoured', { g: rum.map(gName).join('、') }))}</p>`;
     if (mine && !E.supplied(st, E.PLAYER).has(c)) h += `<p class="sgWarn">${t('sgCut')}</p>`;
+    for (const a of (st.armies || []).filter((x) => x.to === c && x.f !== C.owner)) h += `<p class="sgWarn">⚠ ${esc(F('sgArmyTo', { g: a.gens.map(gName).join('、') || this.fName(a.f), n: kNum(a.troops), to: cName(c), eta: this.eta(a) }))}</p>`;
     if (mine) h += this.orderBlock(c, gs);
     else h += `<h4>${C.owner === -1 && gs.length ? t('sgGuard') : t('sgGarrison')}</h4>${gs.length ? gs.map((g) => genCard(g)).join('') : `<p class="sgHint">${t('sgNone')}</p>`}`;
     h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}${ADJ[c].find((x) => x.c === n).station ? ' · ⛽ ' + esc(F('sgStation', { n: ADJ[c].find((x) => x.c === n).station })) : ''}${this.terrTags(n, c).length ? ' · ' + esc(this.terrTags(n, c).join(' ')) : ''}</small></div>`).join('')}`;
     return h;
   }
+  armyOf(g) { return (this.s.armies || []).find((a) => a.gens.includes(g)) || null; }
+  eta(a) { return a.left <= 1 ? t('sgEtaNow') : F('sgEta', { n: a.left }); }
   orderText(o) {
     const k = o.cmd === 'plot' ? (o.kind === 'fire' ? 'sgFire' : 'sgRumor') : CMD_KEY[o.cmd];
     return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}` : '');
@@ -432,7 +460,7 @@ export class Sanguo {
         h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${E.PLOTS.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(kd === 'fire' ? 'sgFire' : 'sgRumor')} <small>${t(kd === 'fire' ? 'sgFireS' : 'sgRumorS')}</small></button>`).join('')}</div>`;
         if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m) {
-        h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' && this.terrTags(c, n).length ? ` <small>${esc(this.terrTags(c, n).join(' '))}</small>` : ''}</button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+        h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(c, n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move')) {
         const av = this.avail(c, id), opts = o.cmd === 'march' ? [0.5, 0.8, 1] : [0, 0.5, 1];
         h += `<div class="sgSeg"><span>${t('sgMoveTroops')}</span>${opts.map((f) => { const n = Math.floor(av * f); return `<button data-g="${id}" data-n="${n}" class="${o.n === n ? 'on' : ''}">${kNum(n)}</button>`; }).join('')}</div>`;
@@ -519,8 +547,9 @@ export class Sanguo {
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
       case 'nothing': return e.f === P ? F('evNothing', { c: cName(e.c) }) : null;
-      case 'move': return e.f === P ? F('evMove', { g: gName(e.gens[0]), c: cName(e.c), to: cName(e.to), n: e.n }) : null;
-      case 'march': return e.f === P || st.cities[e.to].owner === P || (e.to && st.factions.some((x) => x.player && x.cap === e.to)) ? F('evMarch', { f, c: cName(e.c), to: cName(e.to), n: e.n.toLocaleString() }) : null;
+      case 'move': return e.f === P ? F('evMove', { g: gName(e.gens[0]), c: cName(e.c), to: cName(e.to), n: e.n, m: e.months || 1 }) : null;
+      case 'arrive': return e.f === P ? F('evArrive', { g: e.gens.map(gName).join('、'), c: cName(e.c), n: e.n }) : null;
+      case 'march': return e.f === P || st.cities[e.to].owner === P || (e.to && st.factions.some((x) => x.player && x.cap === e.to)) ? F('evMarch', { f, c: cName(e.c), to: cName(e.to), n: e.n.toLocaleString(), m: e.months || 1 }) : null;
       case 'duel': return F('evDuel', { a: gName(e.a), d: gName(e.d), w: e.win ? F('evDuelWon', { g: gName(e.win === 'a' ? e.a : e.d) }) : t('evDuelDraw') });
       case 'take': return F(e.pass ? 'evTakePass' : 'evTake', { f, c: cName(e.c) });
       case 'plot': return e.f === P || e.fd === P ? F((e.kind === 'fire' ? 'evFire' : 'evRumor') + (e.ok ? 'Ok' : 'No'), { g: gName(e.g), to: cName(e.to), n: e.n }) : null;
@@ -689,4 +718,40 @@ function gate(c, x, y, col, big, ts = 1) {
     c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('关', 10, -43);
   }
   c.restore();
+}
+
+// Finger scrolling for the panel and the pop-up cards (v0.9.3): the page blocks native touch scrolling
+// (main.js accidental-touch guards) and, when the page is turned for forced landscape, a native scroll
+// would also run the wrong way. So a drag is read in game coordinates and scrolls the element itself,
+// with a little inertia; a drag never counts as a tap on a button underneath.
+function dragScroll(root, sel) {
+  let st = null, fling = 0, blockClick = 0;
+  root.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest(sel);
+    cancelAnimationFrame(fling);
+    if (!el || e.pointerType === 'mouse' || el.scrollHeight <= el.clientHeight + 1) { st = null; return; }
+    st = { el, id: e.pointerId, x: e.clientX, y: e.clientY, top: el.scrollTop, moved: false, v: 0, t: performance.now(), last: 0 };
+  });
+  root.addEventListener('pointermove', (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    const [, dy] = toGameDelta(e.clientX - st.x, e.clientY - st.y), now = performance.now();
+    if (!st.moved && Math.abs(dy) > 6) st.moved = true;
+    if (!st.moved) return;
+    st.el.scrollTop = st.top - dy;
+    const dt = Math.max(1, now - st.t);
+    st.v = 0.8 * st.v + 0.2 * ((st.last - dy) / dt); st.last = dy; st.t = now;
+  });
+  const end = (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    if (st.moved) {
+      blockClick = performance.now() + 350;
+      const el = st.el;
+      let v = st.v * 16;
+      const step = () => { if (Math.abs(v) < 0.5) return; el.scrollTop += v; v *= 0.93; fling = requestAnimationFrame(step); };
+      fling = requestAnimationFrame(step);
+    }
+    st = null;
+  };
+  root.addEventListener('pointerup', end); root.addEventListener('pointercancel', end);
+  root.addEventListener('click', (e) => { if (performance.now() < blockClick) { e.stopPropagation(); e.preventDefault(); } }, true);
 }

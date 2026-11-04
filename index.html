@@ -131,7 +131,7 @@ body.touch #bD.hide{display:none}
 #sgRes span{display:flex;align-items:center;gap:4px;background:#3a2c21;border:1px solid #5c4630;border-radius:999px;padding:2px 9px 2px 3px;font-weight:800;font-size:13px;white-space:nowrap}
 #sgRes i{font-style:normal;width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#2b211a;font-size:11px;font-weight:900}
 #sgTop button,.sgSmall{background:#3a2c21;color:#f5ebdd;border:1px solid #8a6a3a;border-radius:999px;height:34px;padding:0 12px;font:800 13px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
-#sgPanel{position:absolute;left:calc(8px + var(--sa-l,0px));top:56px;bottom:8px;width:min(300px,max(240px,30%));box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;background:rgba(38,29,22,.94);border:1.5px solid #8a6a3a;border-radius:14px;padding:10px 10px 14px}
+#sgPanel{position:absolute;left:calc(8px + var(--sa-l,0px));top:56px;bottom:8px;width:min(300px,max(240px,30%));box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:none;overscroll-behavior:contain;background:rgba(38,29,22,.94);border:1.5px solid #8a6a3a;border-radius:14px;padding:10px 10px 14px}
 #sgPanel h3{margin:0 0 2px;font-size:18px;display:flex;align-items:center;gap:6px}
 #sgPanel h4{margin:12px 0 6px;font:900 16px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e}
 .sgDot{width:10px;height:10px;border-radius:5px;display:inline-block;flex:none}
@@ -167,7 +167,7 @@ body.touch #bD.hide{display:none}
 #sgEnd{position:absolute;right:calc(12px + var(--sa-r,0px));bottom:calc(12px + var(--sa-b,0px));height:48px;padding:0 24px;background:#f2c14e;color:#2b211a;border:3px solid #fff;border-radius:999px;font:900 17px inherit;font-family:inherit;letter-spacing:1px;box-shadow:0 4px 0 rgba(0,0,0,.3);cursor:pointer}
 #sgLayer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,14,10,.6);padding:10px;box-sizing:border-box}
 #sgLayer.show{display:flex}
-.sgCard{background:#261d16;border:2px solid #8a6a3a;border-radius:18px;padding:12px 16px 14px;width:min(520px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;box-sizing:border-box}
+.sgCard{background:#261d16;border:2px solid #8a6a3a;border-radius:18px;padding:12px 16px 14px;width:min(520px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:none;box-sizing:border-box}
 .sgCard h2{margin:0 0 8px;font:900 22px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sgCard h2 small{font:700 13px system-ui,sans-serif;color:#d9c8ae}
 .sgCenter{text-align:center;justify-content:center}
@@ -209,6 +209,7 @@ body.touch #bD.hide{display:none}
 #sgPanelTab{position:absolute;left:calc(8px + var(--sa-l,0px));top:60px;width:36px;height:44px;display:none;background:rgba(38,29,22,.94);color:#f2c14e;border:1.5px solid #8a6a3a;border-radius:10px;font:900 18px inherit;font-family:inherit;cursor:pointer}
 #sgPanelTab.show{display:block}
 #sgPanel h3 .sgX+.sgX{margin-left:6px}
+.sgArmy{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;color:#f5ebdd}.sgRed{color:#ff8a80 !important}
 .sgRoadRow{flex-wrap:wrap;row-gap:0}.sgRoadRow small{flex-basis:100%;margin-left:16px;text-align:left}
 /* phones in landscape (also when the page is rotated): js/sg_ui.js sets #sg.small */
 #sg.small #sgTop{height:40px}#sg.small #sgTitle{font-size:16px}#sg.small #sgDate{font-size:12px;padding:2px 8px}#sg.small #sgRes span{font-size:12px;padding:1px 7px 1px 2px}#sg.small #sgTop button{height:30px;padding:0 10px;font-size:12px}
@@ -315,8 +316,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=8e97e34008","./js/bigmap.js":"./js/bigmap.js?v=8e97e34008","./js/config.js":"./js/config.js?v=8e97e34008","./js/fire.js":"./js/fire.js?v=8e97e34008","./js/game.js":"./js/game.js?v=8e97e34008","./js/geo.js":"./js/geo.js?v=8e97e34008","./js/glb.js":"./js/glb.js?v=8e97e34008","./js/hud.js":"./js/hud.js?v=8e97e34008","./js/i18n.js":"./js/i18n.js?v=8e97e34008","./js/input.js":"./js/input.js?v=8e97e34008","./js/main.js":"./js/main.js?v=8e97e34008","./js/math.js":"./js/math.js?v=8e97e34008","./js/missions.js":"./js/missions.js?v=8e97e34008","./js/models.js":"./js/models.js?v=8e97e34008","./js/nav.js":"./js/nav.js?v=8e97e34008","./js/orient.js":"./js/orient.js?v=8e97e34008","./js/poi.js":"./js/poi.js?v=8e97e34008","./js/pranks.js":"./js/pranks.js?v=8e97e34008","./js/props.js":"./js/props.js?v=8e97e34008","./js/renderer.js":"./js/renderer.js?v=8e97e34008","./js/sg_data.js":"./js/sg_data.js?v=8e97e34008","./js/sg_elev.js":"./js/sg_elev.js?v=8e97e34008","./js/sg_engine.js":"./js/sg_engine.js?v=8e97e34008","./js/sg_sites.js":"./js/sg_sites.js?v=8e97e34008","./js/sg_ui.js":"./js/sg_ui.js?v=8e97e34008","./js/signals.js":"./js/signals.js?v=8e97e34008","./js/world.js":"./js/world.js?v=8e97e34008"}}</script>
-<script type="module" src="js/main.js?v=8e97e34008"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=d9f81672b2","./js/bigmap.js":"./js/bigmap.js?v=d9f81672b2","./js/config.js":"./js/config.js?v=d9f81672b2","./js/fire.js":"./js/fire.js?v=d9f81672b2","./js/game.js":"./js/game.js?v=d9f81672b2","./js/geo.js":"./js/geo.js?v=d9f81672b2","./js/glb.js":"./js/glb.js?v=d9f81672b2","./js/hud.js":"./js/hud.js?v=d9f81672b2","./js/i18n.js":"./js/i18n.js?v=d9f81672b2","./js/input.js":"./js/input.js?v=d9f81672b2","./js/main.js":"./js/main.js?v=d9f81672b2","./js/math.js":"./js/math.js?v=d9f81672b2","./js/missions.js":"./js/missions.js?v=d9f81672b2","./js/models.js":"./js/models.js?v=d9f81672b2","./js/nav.js":"./js/nav.js?v=d9f81672b2","./js/orient.js":"./js/orient.js?v=d9f81672b2","./js/poi.js":"./js/poi.js?v=d9f81672b2","./js/pranks.js":"./js/pranks.js?v=d9f81672b2","./js/props.js":"./js/props.js?v=d9f81672b2","./js/renderer.js":"./js/renderer.js?v=d9f81672b2","./js/sg_data.js":"./js/sg_data.js?v=d9f81672b2","./js/sg_elev.js":"./js/sg_elev.js?v=d9f81672b2","./js/sg_engine.js":"./js/sg_engine.js?v=d9f81672b2","./js/sg_sites.js":"./js/sg_sites.js?v=d9f81672b2","./js/sg_ui.js":"./js/sg_ui.js?v=d9f81672b2","./js/signals.js":"./js/signals.js?v=d9f81672b2","./js/world.js":"./js/world.js?v=d9f81672b2"}}</script>
+<script type="module" src="js/main.js?v=d9f81672b2"></script>
 <!-- stamp:end -->
 </body>
 </html>
