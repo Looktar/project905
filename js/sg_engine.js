@@ -51,11 +51,12 @@ function hops(a) { // graph distance from city a to every node
   return d;
 }
 
-// cities and passes of f connected to its capital through its own nodes (the supply lines)
+// cities and passes of f connected to its capital, or to one of its 补给站 supply depots, through its own nodes
 export function supplied(s, f) {
   const fa = s.factions[f], out = new Set();
-  if (!fa || s.cities[fa.cap]?.owner !== f) return out;
-  const q = [fa.cap]; out.add(fa.cap);
+  if (!fa) return out;
+  const q = [fa.cap, ...CITY_IDS.filter((c) => CITIES[c].depot)].filter((c) => s.cities[c]?.owner === f);
+  for (const c of q) out.add(c);
   while (q.length) { const c = q.shift(); for (const { c: n } of ADJ[c]) if (!out.has(n) && s.cities[n].owner === f) { out.add(n); q.push(n); } }
   return out;
 }
@@ -67,6 +68,7 @@ export function terrain(from, to) {
   let m = 1;
   const why = [];
   if (link && link.river) { m -= k.riverPen; why.push('river'); }
+  if (link && link.station) { m += k.stationAtk; why.push('station'); } // 驿站: fed and fuelled on the way
   if (dh > 0) { const p = Math.min(k.hillMax, dh * k.hillPerM); m -= p; if (p >= 0.04) why.push('uphill'); }
   else if (dh < 0) { const p = Math.min(k.hillMax / 2, -dh * k.hillPerM / 2); m += p; if (p >= 0.04) why.push('downhill'); }
   return { m, why };
@@ -151,6 +153,17 @@ export function plotChance(s, id, c) {
   return Math.max(0.1, Math.min(k.plotMax, k.plotBase + (gen(id).int - dInt) * k.plotInt + fx(id, 'plot')));
 }
 export const orderCost = (o) => (o && COST[o.cmd] ? K()[COST[o.cmd]] : 0);
+// where an officer in c may move: a neighbouring node of ours, or one road further when the first road
+// has a 驿站 relay station (the node in between must be ours too)
+export function moveTargets(s, f, c) {
+  const out = new Set();
+  for (const { c: n, station } of ADJ[c]) {
+    if (s.cities[n].owner !== f) continue;
+    out.add(n);
+    if (station) for (const { c: m } of ADJ[n]) if (m !== c && s.cities[m].owner === f) out.add(m);
+  }
+  return [...out];
+}
 export function validOrder(s, f, id, o) {
   const G = s.gens[id];
   if (!o || !G || G.f !== f || G.hidden || !G.c) return false;
@@ -161,7 +174,7 @@ export function validOrder(s, f, id, o) {
     case 'draft': return !city.pass && fa.gold >= k.draftCost && city.troops < capOf(city);
     case 'search': return !city.pass;
     case 'fort': return fa.gold >= k.fortCost && city.def < defMaxOf(city);
-    case 'move': return adjacent(c, o.to) && s.cities[o.to].owner === f;
+    case 'move': return moveTargets(s, f, c).includes(o.to);
     case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
     case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= k.plotCost;
     default: return false;
@@ -332,6 +345,8 @@ export function beginTurn(s, playerOrders = {}) {
 export function nextBattle(s) {
   while (s.queue.length) {
     const m = s.queue.shift(), T = s.cities[m.to];
+    if (!s.factions[m.f].alive) continue; // the lord fell earlier this month: the army breaks up (its officers already scattered)
+    m.gens = m.gens.filter((id) => s.gens[id].f === m.f && !s.gens[id].hidden);
     if (T.owner === m.f) { enterCity(s, m); continue; } // a friend got there first: just move in
     const dGens = defenders(s, m.to);
     let duel = null;
@@ -511,7 +526,7 @@ export function endTurn(s) {
       if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
       else if (!C.pass) {
         fa.gold += Math.round(k.goldBase + C.dev * k.goldPerDev);
-        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (CITIES[c].valley ? 1 + k.valleyFood : 1));
+        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)));
         fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
       }
       troops += C.troops;
