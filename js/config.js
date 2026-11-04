@@ -113,10 +113,13 @@ export const CFG = {
     rounds: 8, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
     aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
-    // v0.8 (D-74): one order per officer a month; passes on Hwy 407; real terrain
+    // v0.8 (D-74): one order per officer a month; passes (real parks, D-75); real terrain
     minMarch: 100, fortCost: 60, fortBase: 6, fortPerStat: 1 / 8,
     passTroops: [1400, 2000], passBigTroops: 2600, passDef: 80, passBigDef: 100, passDefMax: 120, passDefRegen: 2, passCap: 6000, passMul: 1.15,
     hillPerM: 0.012, hillMax: 0.24, riverPen: 0.15, valleyFood: 0.4,
+    // v0.8.1 (D-75): seasons, stratagems (计略) and random events
+    snowPen: 0.1, harvest: 3, plotCost: 80, plotBase: 0.45, plotInt: 1 / 100, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
+    eventChance: 0.55, cnyGold: 40,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
