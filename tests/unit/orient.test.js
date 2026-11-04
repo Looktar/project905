@@ -131,3 +131,24 @@ describe('safe areas on an iPhone with a notch', () => {
     });
   });
 });
+
+// v0.9.2 (D-79): which way the phone is turned, from the gravity sensor
+import { tiltDir, calibrateSign } from '../../js/orient.js';
+describe('tilt direction', () => {
+  const g = 9.81;
+  it('W3C / Android convention (reading points up)', () => {
+    expect(tiltDir({ x: g, y: 0.5, z: 1 }, 1)).toBe(1);    // turned counter-clockwise: right edge up
+    expect(tiltDir({ x: -g, y: 0.5, z: 1 }, 1)).toBe(-1);  // turned clockwise: left edge up
+    expect(tiltDir({ x: 1, y: g, z: 1 }, 1)).toBe(0);      // upright portrait: keep
+    expect(tiltDir({ x: 0.5, y: 0.5, z: g }, 1)).toBe(0);  // lying flat: keep
+    expect(tiltDir({ x: 6, y: 5, z: 3 }, 1)).toBe(0);      // in between: keep
+  });
+  it('inverted readings (iOS Safari) give the same answer once the sign is known', () => {
+    expect(calibrateSign({ x: 0.3, y: -g, z: -0.5 })).toBe(-1); // upright on an inverted device
+    expect(calibrateSign({ x: 0.3, y: g, z: 0.5 })).toBe(1);
+    expect(calibrateSign({ x: g, y: 0.3, z: 0 })).toBe(0);      // sideways: cannot tell
+    expect(tiltDir({ x: -g, y: -0.5, z: -1 }, -1)).toBe(1);
+    expect(tiltDir({ x: g, y: -0.5, z: -1 }, -1)).toBe(-1);
+    expect(tiltDir(null, 1)).toBe(0);
+  });
+});

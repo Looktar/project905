@@ -63,3 +63,25 @@ export function safeAreaVars(m) {
   for (const k of ['l', 'r', 't', 'b']) out['--sa-' + k] = `env(safe-area-inset-${s[k]})`;
   return out;
 }
+
+// Which way is the phone turned? (v0.9.2, D-79) From the gravity reading of a devicemotion event
+// (accelerationIncludingGravity, device axes: x to the screen's right, y to its top).
+// sign: +1 where the reading points up (the W3C convention, Android), -1 where it points down
+// (iOS Safari); calibrateSign() learns it while the phone is held upright.
+// Returns 1 (turned counter-clockwise: the right edge is up, so the game's top goes along the right
+// edge, the default rotation), -1 (turned clockwise), or 0 (not clearly sideways: keep what we have).
+export function tiltDir(g, sign = 1) {
+  if (!g || g.x == null || g.y == null) return 0;
+  const x = g.x * sign, y = g.y * sign, z = g.z ? g.z * sign : 0, m = Math.hypot(x, y, z);
+  if (m < 1e-6) return 0;
+  if (Math.abs(x) < 0.6 * m || Math.abs(x) < 1.5 * Math.abs(y)) return 0;
+  return x > 0 ? 1 : -1;
+}
+// upright portrait (top edge up): the y reading is +g with the W3C convention, -g on inverted devices
+export function calibrateSign(g) {
+  if (!g || g.x == null || g.y == null) return 0;
+  const m = Math.hypot(g.x, g.y, g.z || 0);
+  if (m < 1e-6 || Math.abs(g.y) < 0.8 * m) return 0;
+  return g.y > 0 ? 1 : -1;
+}
+
