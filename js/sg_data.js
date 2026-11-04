@@ -63,6 +63,8 @@ export const TRAIT_FX = {
   yaoshu: { atk: 0.18 }, qiqin: { def: 0.2 }, feidao: { duel: 0.2 }, xianzhen: { atk: 0.15 }, yongmeng: { duel: 0.15 },
   shouye: { def: 0.15 }, zhengzhi: { dev: 0.3 },
 };
+// v0.8.1 (D-75): officers famous for stratagems are better at 计略 (rumours, fire)
+for (const [k, v] of Object.entries({ shensuan: 0.2, guicai: 0.2, lianhuan: 0.15, qimou: 0.15, huoshen: 0.2, huoshao: 0.2, kurou: 0.1, yaoshu: 0.1, waijiao: 0.05 })) TRAIT_FX[k].plot = v;
 
 // [id, zh, en, 统率, 武力, 智力, 政治, trait, kingdom (portrait colour)]
 const G = [
@@ -160,15 +162,17 @@ const C = [
   ['mil', 'Milliken Mills', 'Milliken Mills', 600, 900, 0],
   ['arm', 'Armadale', 'Armadale', 1420, 1020, 0],
 ];
-// Hwy 407 runs right across Markham like a great wall: the only ways over it are the real
-// interchanges, and each one is a pass (关). Passes have no people (no development, drafting or
-// searching) but very high walls; troops get there by moving in. The Kennedy Rd one is the big
-// one, "407 虎牢关", guarded at the start by the strongest officer still at large.
+// v0.8.1 (D-75): the passes (关 / 隘口) are real Markham parks that sit across a road between two
+// cities: river valleys and woods you have to get through. They have no people (no development,
+// drafting or searching) but strong walls; troops get there by moving in. Toogood Park, by the
+// pond in Unionville, is the big one, "Toogood 虎牢关", guarded at the start by the strongest
+// officer still at large. (Wismer Park is north of the map, so it is not one of them.)
 const P = [
-  ['g_wdb', 'Woodbine 关', 'Woodbine Gate', -1490, 105, 0],
-  ['g_war', 'Warden 关', 'Warden Gate', -670, 135, 0],
-  ['g_ken', '407 虎牢关', '407 Tiger Gate', 92, 122, 1],
-  ['g_mcc', 'McCowan 关', 'McCowan Gate', 977, 118, 0],
+  ['p_jb', 'John Button 关', 'John Button Pass', -1193, -798, 0],
+  ['p_tg', 'Toogood 虎牢关', 'Toogood Tiger Pass', -110, -597, 1],
+  ['p_ad', 'Austin Drive 关', 'Austin Drive Pass', 510, -481, 0],
+  ['p_md', 'Milne Dam 关', 'Milne Dam Pass', 1433, -200, 0],
+  ['p_mm', 'Milliken 关', 'Milliken Pass', -76, 550, 0],
 ];
 export function elevAt(x, z) { // bilinear in the real elevation grid
   const fx = Math.min(ELEV.nx - 1.001, Math.max(0, (x - ELEV.x0) / ELEV.step)), fz = Math.min(ELEV.nz - 1.001, Math.max(0, (z - ELEV.z0) / ELEV.step));
@@ -184,18 +188,15 @@ export const PASS_IDS = P.map((c) => c[0]);
 export const NODE_IDS = [...CITY_IDS, ...PASS_IDS];
 
 // links = supply lines along real roads: [a, b, road, crosses the Rouge River (渡河)]. The river flags
-// are checked against maps/markham.json by tests/unit/sg.test.js. Markham Rd meets Hwy 407 just
-// outside the map, so Raymerville and Armadale are not linked.
+// are checked against maps/markham.json by tests/unit/sg.test.js.
 export const LINKS = [
-  ['btv', 'wdb', 'Woodbine Ave', 1], ['btv', 'civ', '16th Ave', 0], ['wdb', 'civ', 'Hwy 7', 1],
-  ['wdb', 'g_wdb', 'Woodbine Ave', 0], ['g_wdb', 'esn', 'Woodbine Ave', 0],
-  ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'unv', 'Hwy 7', 0], ['dtm', 'unv', 'Main St Unionville', 1],
-  ['dtm', 'g_ken', 'Kennedy Rd', 0], ['g_ken', 'hag', 'Kennedy Rd', 0],
-  ['dtm', 'g_war', 'Warden Ave', 0], ['g_war', 'esn', 'Warden Ave', 0],
-  ['esn', 'pac', 'Steeles Ave E', 0], ['esn', 'hag', '14th Ave', 0], ['hag', 'pac', 'Kennedy Rd', 0],
-  ['hag', 'mil', '14th Ave', 0], ['pac', 'mil', 'Steeles Ave E', 0], ['mil', 'arm', 'Denison St', 0],
-  ['mil', 'g_mcc', 'McCowan Rd', 0], ['g_mcc', 'mkv', 'McCowan Rd', 1],
-  ['unv', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
+  ['btv', 'wdb', 'Woodbine Ave', 1], ['btv', 'p_jb', '16th Ave', 0], ['p_jb', 'civ', '16th Ave', 0], ['wdb', 'civ', 'Hwy 7', 1],
+  ['wdb', 'esn', 'Woodbine Ave', 0], ['civ', 'dtm', 'Enterprise Blvd', 1], ['civ', 'p_tg', 'Hwy 7', 0], ['p_tg', 'unv', 'Hwy 7', 0],
+  ['dtm', 'unv', 'Main St Unionville', 1], ['dtm', 'hag', 'Kennedy Rd', 0], ['dtm', 'esn', 'Warden Ave', 0],
+  ['esn', 'pac', 'Steeles Ave E', 0], ['esn', 'p_mm', '14th Ave', 0], ['p_mm', 'hag', '14th Ave', 0], ['hag', 'pac', 'Kennedy Rd', 0],
+  ['hag', 'mil', '14th Ave', 0], ['pac', 'mil', 'Steeles Ave E', 0], ['mil', 'arm', 'Denison St', 0], ['mil', 'mkv', 'McCowan Rd', 1],
+  ['unv', 'p_ad', 'Hwy 7', 0], ['p_ad', 'mkv', 'Hwy 7', 0], ['unv', 'ray', '16th Ave', 0], ['mkv', 'ray', 'Hwy 7', 0],
+  ['ray', 'p_md', 'Markham Rd', 0], ['p_md', 'arm', 'Markham Rd', 1],
 ];
 export const ADJ = (() => {
   const a = Object.fromEntries(NODE_IDS.map((c) => [c, []]));

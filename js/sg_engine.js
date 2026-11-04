@@ -1,8 +1,9 @@
 // 万锦三国志 rules engine (D-73, v0.8 D-74). Pure and deterministic: all randomness comes from the
 // seeded generator kept in the state, so a saved game (JSON) resumes exactly. No DOM, unit-tested.
 //
-// v0.8: every officer (not every city) gets one order a month; Hwy 407 is crossed only through four
-// passes (关); real terrain (ground height, the Rouge River) helps the defender.
+// v0.8: every officer (not every city) gets one order a month; passes (关) are real parks across
+// a road; real terrain (ground height, the Rouge River) helps the defender.
+// v0.8.1: seasons (autumn harvest, winter snow), stratagems (流言 rumour / 火计 fire), random events.
 //
 // A month:  beginTurn(s, playerOrders)  -> domestic orders of every faction run, armies queue up
 //           nextBattle(s)               -> the next army arrives: { m, duel } (duel may be null)
@@ -71,6 +72,9 @@ export function terrain(from, to) {
   return { m, why };
 }
 // walls: a pass is worth more than a city wall of the same number
+// seasons: December to February is snowy Markham winter (attacking is harder), September is harvest
+export const isWinter = (s) => [12, 1, 2].includes(dateOf(s).month);
+export const seasonOf = (s) => { const m = dateOf(s).month; return m <= 2 || m === 12 ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn'; };
 export const wallMul = (city) => (1 + city.def / K().defDiv) * (city.pass ? K().passMul : 1);
 
 // bonds active for a set of generals (army) of faction f
@@ -125,7 +129,7 @@ export function newGame(seed = Date.now(), names = {}) {
   // everyone else hides somewhere in Markham (cities only): the blind boxes found by searching
   const order = shuffle(s, [...CITY_IDS]);
   pool.forEach((id, i) => { s.gens[id] = { id, f: -1, c: order[i % order.length], hidden: true, loyal: 70 }; });
-  // the strongest officer still at large holds 407 虎牢关 for nobody (like Lü Bu at Hulao)
+  // the strongest officer still at large holds Toogood 虎牢关 for nobody (like Lü Bu at Hulao)
   const big = PASS_IDS.find((c) => CITIES[c].big);
   const guard = pool.reduce((m, id) => (m && gen(m).war >= gen(id).war ? m : id), null);
   if (big && guard) Object.assign(s.gens[guard], { c: big, hidden: false, guard: true });
@@ -138,7 +142,14 @@ export const hiddenIn = (s, c) => Object.values(s.gens).filter((g) => g.hidden &
 // ---------------------------------------------------------------- orders
 // one order per officer: orders = { [general id]: { cmd, to, n } }
 // cmd: 'dev' | 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
-export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost' };
+//      'plot' (计略) with kind 'rumor' (流言: troops desert) or 'fire' (火计: walls burn) against a neighbour
+export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost' };
+export const PLOTS = ['rumor', 'fire'];
+// chance that a stratagem by officer id works against node c
+export function plotChance(s, id, c) {
+  const k = K(), d = defenders(s, c), dInt = d.length ? Math.max(...d.map((x) => gen(x).int)) : k.neutralStat;
+  return Math.max(0.1, Math.min(k.plotMax, k.plotBase + (gen(id).int - dInt) * k.plotInt + fx(id, 'plot')));
+}
 export const orderCost = (o) => (o && COST[o.cmd] ? K()[COST[o.cmd]] : 0);
 export function validOrder(s, f, id, o) {
   const G = s.gens[id];
@@ -152,6 +163,7 @@ export function validOrder(s, f, id, o) {
     case 'fort': return fa.gold >= k.fortCost && city.def < defMaxOf(city);
     case 'move': return adjacent(c, o.to) && s.cities[o.to].owner === f;
     case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= k.plotCost;
     default: return false;
   }
 }
@@ -173,7 +185,7 @@ function runOrder(s, f, id, o) {
     const p = k.searchBase + G.int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search');
     if (hid.length && rnd(s) < p) {
       const nid = pick(s, hid);
-      Object.assign(s.gens[nid], { f, c, hidden: false, loyal: 75 + fx(nid, 'loyal') });
+      Object.assign(s.gens[nid], { f, c, hidden: false, rumor: false, loyal: 75 + fx(nid, 'loyal') });
       ev(s, { k: 'found', f, c, g: nid, by: id });
     } else if (rnd(s) < k.treasure[0]) {
       const n = Math.round(k.treasure[1] + rnd(s) * (k.treasure[2] - k.treasure[1]));
@@ -183,6 +195,13 @@ function runOrder(s, f, id, o) {
     const amt = Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0));
     fa.gold -= k.fortCost; city.def = Math.min(defMaxOf(city), city.def + amt);
     ev(s, { k: 'fort', f, c, g: id, n: amt });
+  } else if (o.cmd === 'plot') {
+    const T = s.cities[o.to], ok = rnd(s) < plotChance(s, id, o.to);
+    fa.gold -= k.plotCost;
+    let n = 0;
+    if (ok && o.kind === 'rumor') { n = Math.round(T.troops * (k.rumorBase + G.int * k.rumorPerInt)); T.troops -= n; }
+    if (ok && o.kind === 'fire') { n = Math.min(T.def - 10, Math.round(k.fireBase + G.int * k.firePerInt)); T.def -= Math.max(0, n); T.troops = Math.round(T.troops * 0.97); }
+    ev(s, { k: 'plot', f, c, to: o.to, g: id, kind: o.kind, ok, n, fd: T.owner });
   } else if (o.cmd === 'move') {
     const n = Math.max(0, Math.min(city.troops, Math.floor(o.n || 0)));
     s.gens[id].c = o.to;
@@ -235,7 +254,7 @@ export function aiOrders(s, f, opts = {}) {
       const ids = from.flatMap((c) => free(c).slice(0, 2));
       let troops = 0, tw = 0;
       for (const c of from) { const x = s.cities[c].troops * k.marchFrac; troops += x; tw += x * terrain(c, t).m; }
-      let sc = armyPower(troops, ids) * (tw / troops) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
+      let sc = armyPower(troops, ids) * (tw / troops) * (isWinter(s) ? 1 - k.snowPen : 1) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
       if (T.owner === -1) sc += 0.1;
       if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
       if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc };
@@ -251,13 +270,18 @@ export function aiOrders(s, f, opts = {}) {
   const incoming = {};
   for (const c of mine) {
     const C = s.cities[c];
-    let gs = free(c), searched = false, fed = false;
+    let gs = free(c), searched = false, fed = false, plotted = false;
     const take = (key) => { const g = best(gs, key); gs = gs.filter((x) => x !== g); return g; };
     const threat = threatOf(c), front = isFront(c);
     const canDraft = () => !C.pass && gold >= k.draftCost && C.troops < capOf(C);
     while (gs.length) {
       if (canDraft() && (C.troops < threat * 1.2 || C.troops < k.aiSafe)) { out[take('lead')] = { cmd: 'draft' }; gold -= k.draftCost; continue; }
       if (!C.pass && !searched && hiddenIn(s, c).length && rnd(s) < 0.7) { out[take('int')] = { cmd: 'search' }; searched = true; continue; }
+      // a clever officer on the front line plots against the strongest hostile neighbour
+      if (war && !plotted && front && gold >= k.plotCost + 100 && gen(best(gs, 'int')).int >= 75) {
+        const t = ADJ[c].map((a) => a.c).filter((n) => enemy(s.cities[n].owner) && s.cities[n].owner !== f).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0];
+        if (t && rnd(s) < 0.7) { out[take('int')] = { cmd: 'plot', kind: s.cities[t].def > 50 ? 'fire' : 'rumor', to: t }; gold -= k.plotCost; plotted = true; continue; }
+      }
       if (front && gold >= k.fortCost && C.def < (C.pass ? defMaxOf(C) : 60) && (C.pass || threat > C.troops * 0.6)) { out[take('pol')] = { cmd: 'fort' }; gold -= k.fortCost; continue; }
       if (!C.pass && C.dev < 90 && gold >= k.devCost) { out[take('pol')] = { cmd: 'dev' }; gold -= k.devCost; continue; }
       // a spare officer goes where there is nobody, so every city can act
@@ -360,7 +384,7 @@ function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
 
 export function resolveBattle(s, m, duelWin = null, duel = null) {
   const k = K(), T = s.cities[m.to], o = T.owner, dGens = defenders(s, m.to);
-  let aMul = m.terr ?? 1, dMul = 1;
+  let aMul = (m.terr ?? 1) * (isWinter(s) ? 1 - k.snowPen : 1), dMul = 1;
   if (duel) {
     const loser = duelWin === 'a' ? duel.d : duelWin === 'd' ? duel.a : null;
     ev(s, { k: 'duel', f: m.f, c: m.to, a: duel.a, d: duel.d, win: duelWin, fd: o, rival: duel.rival });
@@ -414,7 +438,7 @@ function retreat(s, m, troops) {
   s.cities[fallback].troops = Math.min(K().maxTroops, s.cities[fallback].troops + troops);
   for (const id of m.gens) s.gens[id].c = back(m.home && m.home[id]) || fallback;
 }
-function hide(s, id, c) { Object.assign(s.gens[id], { f: -1, c: CITIES[c] && !CITIES[c].pass ? c : CITY_IDS[0], hidden: true, guard: false }); }
+function hide(s, id, c) { Object.assign(s.gens[id], { f: -1, c: CITIES[c] && !CITIES[c].pass ? c : CITY_IDS[0], hidden: true, guard: false, rumor: false }); }
 // a captured officer: the captor tries to win him over, otherwise lets him go (he hides somewhere)
 function capture(s, id, byF, c) {
   const k = K(), from = s.gens[id].f;
@@ -445,8 +469,34 @@ function checkFaction(s, f) {
   ev(s, { k: 'fall', f });
 }
 
+// ---------------------------------------------------------------- random events (v0.8.1)
+// one random Markham event most months, plus the fixed ones (Lunar New Year fair, the harvest)
+const owned = (s) => CITY_IDS.filter((c) => s.cities[c].owner >= 0);
+export const EVENTS = {
+  nightmarket: (s) => { const o = s.cities.pac.owner; if (o < 0) return null; const n = Math.round(150 + rnd(s) * 100); s.factions[o].gold += n; return { c: 'pac', f: o, n }; },
+  bumper: (s) => { const c = pick(s, owned(s)); if (!c) return null; const o = s.cities[c].owner; s.factions[o].food += 400; return { c, f: o, n: 400 }; },
+  volunteers: (s) => { const c = pick(s, owned(s)); if (!c) return null; const C = s.cities[c], n = Math.min(300, capOf(C) - C.troops); if (n <= 0) return null; C.troops += n; return { c, f: C.owner, n }; },
+  merchant: (s) => { const fs = s.factions.filter((x) => x.alive); const fa = pick(s, fs); fa.gold += 120; return { f: fa.id, n: 120 }; },
+  blizzard: (s) => { if (!isWinter(s)) return null; const c = pick(s, owned(s)); if (!c) return null; const C = s.cities[c], n = Math.round(C.troops * 0.06); C.troops -= n; return { c, f: C.owner, n }; },
+  icestorm: (s) => { if (![12, 1, 2, 3].includes(dateOf(s).month)) return null; const c = pick(s, owned(s)); if (!c) return null; const C = s.cities[c], n = Math.min(10, C.def - 20); if (n <= 0) return null; C.def -= n; return { c, f: C.owner, n }; },
+  flood: (s) => { if (![4, 5].includes(dateOf(s).month)) return null; const c = pick(s, CITY_IDS.filter((x) => CITIES[x].valley && s.cities[x].owner >= 0)); if (!c) return null; const C = s.cities[c], n = Math.round(C.troops * 0.05); C.troops -= n; C.dev = Math.max(0, C.dev - 4); return { c, f: C.owner, n }; },
+  riot: (s) => { const c = pick(s, owned(s).filter((x) => s.cities[x].dev < 45)); if (!c) return null; const C = s.cities[c], n = Math.round(C.troops * 0.1); C.troops -= n; return { c, f: C.owner, n }; },
+  sighting: (s) => { const g = pick(s, Object.values(s.gens).filter((x) => x.hidden && !x.rumor).map((x) => x.id)); if (!g) return null; s.gens[g].rumor = true; return { g, c: s.gens[g].c }; },
+};
+export const EVENT_IDS = Object.keys(EVENTS);
+function randomEvents(s) {
+  const k = K(), m = dateOf(s).month;
+  if (m === 2) { for (const fa of s.factions) if (fa.alive) fa.gold += k.cnyGold * citiesOf(s, fa.id).length; ev(s, { k: 'event', id: 'cny', n: k.cnyGold }); } // 春节庙会
+  if (rnd(s) >= k.eventChance) return;
+  for (let tries = 0; tries < 4; tries++) {
+    const id = pick(s, EVENT_IDS), r = EVENTS[id](s);
+    if (r) { ev(s, { k: 'event', id, ...r }); return; }
+  }
+}
+
 export function endTurn(s) {
   const k = K();
+  randomEvents(s);
   for (const fa of s.factions) {
     if (!fa.alive) continue;
     if (s.cities[fa.cap].owner !== fa.id) { // capital lost: the strongest city becomes the new one
@@ -461,7 +511,8 @@ export function endTurn(s) {
       if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
       else if (!C.pass) {
         fa.gold += Math.round(k.goldBase + C.dev * k.goldPerDev);
-        fa.food += Math.round((k.foodBase + C.dev * k.foodPerDev) * (CITIES[c].valley ? 1 + k.valleyFood : 1));
+        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (CITIES[c].valley ? 1 + k.valleyFood : 1));
+        fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
       }
       troops += C.troops;
     }
@@ -478,6 +529,7 @@ export function endTurn(s) {
   const lead = alive.find((f) => citiesOf(s, f.id).length >= k.coalitionAt);
   const L = lead && alive.length >= 3 ? lead.id : null;
   if (L !== s.coalition) { ev(s, { k: L === null ? 'coalitionEnd' : 'coalition', f: L === null ? s.coalition : L }); s.coalition = L; }
+  if (dateOf(s).month === 9) ev(s, { k: 'harvest' });
   const mine = citiesOf(s, PLAYER).length;
   if (mine === CITY_IDS.length) s.over = 'win';
   else if (!mine) s.over = 'lose';

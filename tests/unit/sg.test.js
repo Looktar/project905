@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
-  terrain, wallMul, autoAssign, aiOrders, orderCost,
+  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -27,7 +27,7 @@ describe('data', () => {
     for (const id of GEN_IDS) { const g = GENERALS[id]; expect(TRAITS[g.trait]).toBeTruthy(); expect(TRAIT_FX[g.trait]).toBeTruthy(); for (const k of ['lead', 'war', 'int', 'pol']) expect(g[k]).toBeGreaterThan(0); }
     for (const b of BONDS) for (const m of b.m) expect(GENERALS[m]).toBeTruthy();
     expect(CITY_IDS.length).toBe(12);
-    expect(PASS_IDS.length).toBe(4);
+    expect(PASS_IDS.length).toBe(5);
     for (const [a, b] of LINKS) { expect(CITIES[a]).toBeTruthy(); expect(CITIES[b]).toBeTruthy(); }
     // connected
     const seen = new Set(['unv']), q = ['unv'];
@@ -49,49 +49,100 @@ describe('real terrain (v0.8)', () => {
     expect(ELEV.lo).toBeGreaterThan(140); expect(ELEV.hi).toBeLessThan(260); // Markham sits ~170-215 m above sea level
     for (const c of NODE_IDS) expect(CITIES[c].elev).toBeGreaterThan(150);
   });
-  it('river flags match the Rouge River in the map; only passes cross Hwy 407', () => {
+  it('river flags match the Rouge River in the map; passes are real parks', () => {
     const rouge = map.rivers.filter((r) => r[0] === 1).map((r) => r[1]);
     for (const [a, b, , river] of LINKS) expect([a, b, hits(a, b, rouge)]).toEqual([a, b, !!river]);
-    // a link touching a pass ends at the highway; no city-to-city link crosses it
-    for (const [a, b] of LINKS) if (!CITIES[a].pass && !CITIES[b].pass) expect([a, b, hits(a, b, map.overpass)]).toEqual([a, b, false]);
+    // every pass is a park in the map data (within 150 m of a park outline), between exactly two nodes
+    const parks = map.parks.map((p) => (p.p || p)).filter((p) => Array.isArray(p) && Array.isArray(p[0]));
+    for (const c of PASS_IDS) {
+      expect(ADJ[c].length).toBe(2);
+      const d = Math.min(...parks.flatMap((p) => p.map(([x, z]) => Math.hypot(x - CITIES[c].x, z - CITIES[c].z))));
+      expect([c, d < 150]).toEqual([c, true]);
+    }
     // valley cities really are near the Rouge
     const near = (c) => Math.min(...rouge.flatMap((l) => l.map(([x, z]) => Math.hypot(x - CITIES[c].x, z - CITIES[c].z))));
     for (const c of CITY_IDS) if (CITIES[c].valley) expect(near(c)).toBeLessThan(220);
   });
   it('crossing the river or attacking uphill is harder; passes have strong walls', () => {
     expect(terrain('wdb', 'civ').why).toContain('river');
-    expect(terrain('wdb', 'civ').m).toBeLessThan(terrain('wdb', 'g_wdb').m + 0.1);
-    const up = ['dtm', 'g_ken'], dn = ['g_ken', 'dtm'];
-    if (CITIES.g_ken.elev > CITIES.dtm.elev) expect(terrain(...up).m).toBeLessThan(terrain(...dn).m);
+    expect(terrain('wdb', 'civ').m).toBeLessThan(terrain('wdb', 'esn').m + 0.1);
+    const up = ['dtm', 'p_tg'], dn = ['p_tg', 'dtm'];
+    if (CITIES.p_tg.elev > CITIES.dtm.elev) expect(terrain(...up).m).toBeLessThan(terrain(...dn).m);
     const s = newGame(3);
-    expect(wallMul(s.cities.g_ken)).toBeGreaterThan(wallMul(s.cities[s.factions[0].cap]));
+    expect(wallMul(s.cities.p_tg)).toBeGreaterThan(wallMul(s.cities[s.factions[0].cap]));
     // passes: no people (no develop / draft / search), but you can fortify and garrison them
     const id = factionGens(s, 0)[0];
-    Object.assign(s.cities.g_war, { owner: 0, troops: 500 }); s.gens[id].c = 'g_war';
+    Object.assign(s.cities.p_mm, { owner: 0, troops: 500 }); s.gens[id].c = 'p_mm';
     expect(validOrder(s, 0, id, { cmd: 'dev' })).toBe(false);
     expect(validOrder(s, 0, id, { cmd: 'draft' })).toBe(false);
     expect(validOrder(s, 0, id, { cmd: 'search' })).toBe(false);
     expect(validOrder(s, 0, id, { cmd: 'fort' })).toBe(true);
   });
-  it('407 虎牢关 starts with a guard; beating it can win him over', () => {
+  it('Toogood 虎牢关 starts with a guard; beating it can win him over', () => {
     let won = 0;
     for (let seed = 1; seed <= 30; seed++) {
-      const s = newGame(seed), [g] = guardsIn(s, 'g_ken');
+      const s = newGame(seed), [g] = guardsIn(s, 'p_tg');
       expect(g).toBeTruthy();
       expect(s.gens[g].hidden).toBe(false);
       const id = factionGens(s, 0)[0];
       // only the player is left, next to the pass with a huge army
       for (const f of s.factions.slice(1)) { f.alive = false; for (const x of factionGens(s, f.id)) Object.assign(s.gens[x], { f: -1, hidden: true }); }
       for (const c of CITY_IDS) s.cities[c].owner = -1;
-      for (const x of factionGens(s, 0)) s.gens[x].c = 'dtm';
-      Object.assign(s.cities.dtm, { owner: 0, troops: 10000 }); s.factions[0].cap = 'dtm';
-      runTurn(s, { [id]: { cmd: 'march', to: 'g_ken', n: 10000 } });
-      if (s.cities.g_ken.owner === 0) won++;
-      expect(guardsIn(s, 'g_ken').length).toBeLessThanOrEqual(s.cities.g_ken.owner === 0 ? 0 : 1);
-      if (s.cities.g_ken.owner === 0) expect(s.gens[g].guard).toBe(false);
+      for (const x of factionGens(s, 0)) s.gens[x].c = 'unv';
+      Object.assign(s.cities.unv, { owner: 0, troops: 10000 }); s.factions[0].cap = 'unv';
+      runTurn(s, { [id]: { cmd: 'march', to: 'p_tg', n: 10000 } });
+      if (s.cities.p_tg.owner === 0) won++;
+      expect(guardsIn(s, 'p_tg').length).toBeLessThanOrEqual(s.cities.p_tg.owner === 0 ? 0 : 1);
+      if (s.cities.p_tg.owner === 0) expect(s.gens[g].guard).toBe(false);
       check(s);
     }
     expect(won).toBeGreaterThan(20);
+  });
+});
+
+describe('seasons, stratagems, random events (v0.8.1)', () => {
+  it('winter makes attacking harder; September brings the harvest', () => {
+    const atk = (turn) => {
+      const s = newGame(9), c = s.factions[0].cap, n = ADJ[c].find((a) => s.cities[a.c].owner === -1).c, [a] = factionGens(s, 0);
+      for (const f of s.factions.slice(1)) f.alive = false;
+      Object.assign(s.cities[n], { troops: 1500, def: 50 }); s.turn = turn; CFG.sg.eventChance = 0;
+      try { runTurn(s, { [a]: { cmd: 'march', to: n, n: 2000 } }); } finally { CFG.sg.eventChance = 0.55; }
+      return s.events.find((e) => e.k === 'take' || e.k === 'repel').lostA;
+    };
+    expect(isWinter({ turn: 0 })).toBe(true); expect(isWinter({ turn: 5 })).toBe(false);
+    expect(atk(0)).toBeGreaterThan(atk(5)); // January vs June: more losses in the snow (same seed, same dice)
+    const month = (turn) => { const x = newGame(4), f0 = x.factions[1].food; x.turn = turn; x.events = []; CFG.sg.eventChance = 0; try { endTurn(x); } finally { CFG.sg.eventChance = 0.55; } return x.factions[1].food - f0; };
+    expect(month(8)).toBeGreaterThan(month(7) * 2); // month index 8 = September
+  });
+  it('rumours thin the garrison, fire burns the walls; clever officers succeed more', () => {
+    let rum = 0, fire = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const s = newGame(seed), c = s.factions[0].cap, n = ADJ[c].find((a) => s.cities[a.c].owner === -1).c, [a] = factionGens(s, 0);
+      for (const f of s.factions.slice(1)) f.alive = false;
+      Object.assign(s.cities[n], { troops: 2000, def: 60 });
+      expect(validOrder(s, 0, a, { cmd: 'plot', kind: 'rumor', to: n })).toBe(true);
+      expect(validOrder(s, 0, a, { cmd: 'plot', kind: 'rumor', to: c })).toBe(false);
+      beginTurn(s, { [a]: { cmd: 'plot', kind: seed % 2 ? 'rumor' : 'fire', to: n } });
+      const e = s.events.find((x) => x.k === 'plot');
+      if (e.ok && e.kind === 'rumor') { rum++; expect(s.cities[n].troops).toBeLessThan(2000); }
+      if (e.ok && e.kind === 'fire') { fire++; expect(s.cities[n].def).toBeLessThan(60); }
+    }
+    expect(rum + fire).toBeGreaterThan(6);
+    const s = newGame(1);
+    s.gens.zhugeliang = { ...s.gens.zhugeliang, f: 0, c: s.factions[0].cap, hidden: false };
+    s.gens.xuchu = { ...s.gens.xuchu, f: 0, c: s.factions[0].cap, hidden: false };
+    const n = ADJ[s.factions[0].cap][0].c;
+    expect(plotChance(s, 'zhugeliang', n)).toBeGreaterThan(plotChance(s, 'xuchu', n));
+  });
+  it('random events happen, stay inside the rules, and Lunar New Year pays every February', () => {
+    const seen = new Set();
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = newGame(seed);
+      for (let t = 0; t < 36 && !s.over; t++) { for (const e of runTurn(s, autoPlayer(s))) if (e.k === 'event') seen.add(e.id); check(s); }
+    }
+    expect(seen.has('cny')).toBe(true);
+    expect(seen.size).toBeGreaterThanOrEqual(7);
+    for (const id of seen) if (id !== 'cny') expect(EVENT_IDS).toContain(id);
   });
 });
 
@@ -102,7 +153,7 @@ describe('new game', () => {
     expect(citiesOf(s, -1).length).toBe(8);
     expect(PASS_IDS.every((c) => s.cities[c].owner === -1)).toBe(true);
     const hid = Object.values(s.gens).filter((g) => g.hidden).length;
-    expect(hid).toBe(GEN_IDS.length - 8 - 1); // one guards 407 虎牢关
+    expect(hid).toBe(GEN_IDS.length - 8 - 1); // one guards Toogood 虎牢关
     expect(CITY_IDS.every((c) => hiddenIn(s, c).length >= 2)).toBe(true);
     // the same seed deals the same game; another seed another one
     expect(JSON.stringify(newGame(11))).toBe(JSON.stringify(s));
