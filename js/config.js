@@ -124,6 +124,8 @@ export const CFG = {
     stationAtk: 0.1, depotFood: 0.3,
     // v0.9 (D-77): random boards
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
+    // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
+    marchSpeed: 650, relaySpeed: 1.6,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p

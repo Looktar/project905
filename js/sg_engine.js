@@ -5,6 +5,8 @@
 // a road; real terrain (ground height, the Rouge River) helps the defender.
 // v0.8.1: seasons (autumn harvest, winter snow), stratagems (流言 rumour / 火计 fire), random events.
 // v0.9: every game draws its own map of real places (genMap); the map travels in the save (s.map).
+// v0.9.3: armies take time on the road (s.armies): the longer the road, the more months; relay roads
+// are quicker. They are shown on the map while they march and fight when they arrive.
 //
 // A month:  beginTurn(s, playerOrders)  -> domestic orders of every faction run, armies queue up
 //           nextBattle(s)               -> the next army arrives: { m, duel } (duel may be null)
@@ -16,7 +18,7 @@ import { CFG } from './config.js';
 import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
 import { SITES, PARKS, PAIRS } from './sg_sites.js';
 
-export const SAVE_V = 3;
+export const SAVE_V = 4;
 const K = () => CFG.sg;
 export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
 export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
@@ -101,6 +103,22 @@ const best = (ids, k) => ids.reduce((m, id) => (m && gen(m)[k] >= gen(id)[k] ? m
 export const dateOf = (s) => ({ year: K().startYear + Math.floor(s.turn / 12), month: (s.turn % 12) + 1 });
 export const adjacent = (a, b) => ADJ[a].some((x) => x.c === b);
 export const linkOf = (a, b) => ADJ[a].find((x) => x.c === b) || null;
+// the road an army takes from a to b: the direct road, or two roads through a node of ours (relay moves)
+export function routeOf(s, f, a, b) {
+  if (adjacent(a, b)) return [a, b];
+  const via = ADJ[a].find(({ c: n, station }) => station && s.cities[n].owner === f && adjacent(n, b));
+  return via ? [a, via.c, b] : [a, b];
+}
+// months on the road (v0.9.3): road length / marching speed, quicker on a road with a 驿站
+export function travelMonths(route) {
+  const k = K();
+  let t = 0;
+  for (let i = 1; i < route.length; i++) {
+    const a = CITIES[route[i - 1]], b = CITIES[route[i]], l = linkOf(route[i - 1], route[i]);
+    t += Math.hypot(a.x - b.x, a.z - b.z) / (k.marchSpeed * (l && l.station ? k.relaySpeed : 1));
+  }
+  return Math.max(1, Math.ceil(t - 0.15));
+}
 
 function hops(a) { // graph distance from city a to every node
   const d = { [a]: 0 }, q = [a];
@@ -164,7 +182,7 @@ export const defenders = (s, c) => (s.cities[c].owner >= 0 ? gensIn(s, c, s.citi
 export function newGame(seed = Date.now(), opts = {}) {
   const k = K(), names = opts.names || {};
   const map = opts.map === 'random' ? genMap(seed) : CLASSIC;
-  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {}, map };
+  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {}, map, armies: [], nextArmy: 1 };
   loadMap(s);
   rnd(s);
   // starting cities: four, pairwise at least 2 roads apart
@@ -278,18 +296,19 @@ function runOrder(s, f, id, o) {
     if (ok && o.kind === 'rumor') { n = Math.round(T.troops * (k.rumorBase + G.int * k.rumorPerInt)); T.troops -= n; }
     if (ok && o.kind === 'fire') { n = Math.min(T.def - 10, Math.round(k.fireBase + G.int * k.firePerInt)); T.def -= Math.max(0, n); T.troops = Math.round(T.troops * 0.97); }
     ev(s, { k: 'plot', f, c, to: o.to, g: id, kind: o.kind, ok, n, fd: T.owner });
-  } else if (o.cmd === 'move') {
-    const n = Math.max(0, Math.min(city.troops, Math.floor(o.n || 0)));
-    s.gens[id].c = o.to;
-    city.troops -= n; s.cities[o.to].troops = Math.min(k.maxTroops, s.cities[o.to].troops + n);
-    ev(s, { k: 'move', f, c, to: o.to, n, gens: [id] });
-  } else if (o.cmd === 'march') {
-    const n = Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac));
-    if (n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march' }); return; }
+  } else if (o.cmd === 'move' || o.cmd === 'march') {
+    // the officer sets off with his troops; a short road takes one month (he arrives this month)
+    const march = o.cmd === 'march';
+    const n = march ? Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac)) : Math.max(0, Math.min(city.troops, Math.floor(o.n || 0)));
+    if (march && n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march' }); return; }
+    const route = routeOf(s, f, c, o.to), months = travelMonths(route);
     s.gens[id].c = null; // on the road
     city.troops -= n;
-    s.queue.push({ f, from: c, to: o.to, gens: [id], troops: n, terr: terrain(c, o.to).m });
-    ev(s, { k: 'march', f, c, to: o.to, n, gens: [id] });
+    // officers leaving the same city for the same place this month go as one army
+    const j = s.armies.find((x) => x.f === f && x.from === c && x.to === o.to && x.kind === o.cmd && x.left === x.total && x.total === months);
+    if (j) { j.gens.push(id); j.troops += n; }
+    else s.armies.push({ id: s.nextArmy++, f, kind: o.cmd, from: c, to: o.to, route, gens: [id], troops: n, terr: march ? terrain(route[route.length - 2], o.to).m : 1, total: months, left: months });
+    ev(s, { k: o.cmd, f, c, to: o.to, n, gens: [id], months });
   }
 }
 
@@ -309,7 +328,9 @@ export function aiOrders(s, f, opts = {}) {
   const mine = ownedBy(s, f);
   const hostile = (o) => o >= 0 && o !== f && !isAlly(s, f, o);
   const enemy = (o) => o !== f && !isAlly(s, f, o) && !(o === PLAYER && s.turn < k.truce);
-  const threatOf = (c) => Math.max(0, ...ADJ[c].map(({ c: n }) => (hostile(s.cities[n].owner) ? s.cities[n].troops : 0)));
+  const inbound = (c) => s.armies.filter((a) => a.to === c && hostile(a.f)).reduce((x, a) => x + a.troops, 0);
+  const threatOf = (c) => Math.max(inbound(c), ...ADJ[c].map(({ c: n }) => (hostile(s.cities[n].owner) ? s.cities[n].troops : 0)));
+  const enRoute = new Set(s.armies.filter((a) => a.f === f).map((a) => a.to));
   const isFront = (c) => ADJ[c].some(({ c: n }) => s.cities[n].owner !== f && !isAlly(s, f, s.cities[n].owner));
   // cut off: everybody walks back towards the supplied cities, the first one brings the troops
   for (const c of mine) if (!sup.has(c)) {
@@ -325,6 +346,7 @@ export function aiOrders(s, f, opts = {}) {
     const targets = new Set();
     for (const c of mine) if (sup.has(c) && !used.has(c) && free(c).length) for (const { c: t } of ADJ[c]) if (s.cities[t].owner !== f && enemy(s.cities[t].owner)) targets.add(t);
     for (const t of targets) {
+      if (enRoute.has(t)) continue; // our army is already on its way there
       const T = s.cities[t];
       const from = ADJ[t].map((a) => a.c).filter((c) => s.cities[c].owner === f && sup.has(c) && !used.has(c) && free(c).length && s.cities[c].troops >= 800);
       if (!from.length) continue;
@@ -382,7 +404,7 @@ export function aiOrders(s, f, opts = {}) {
 // ---------------------------------------------------------------- the month
 export function beginTurn(s, playerOrders = {}) {
   loadMap(s);
-  s.events = []; s.queue = [];
+  s.events = []; s.queue = []; s.armies = s.armies || []; s.nextArmy = s.nextArmy || 1;
   const all = [];
   for (const fa of s.factions) {
     if (!fa.alive) continue;
@@ -392,7 +414,16 @@ export function beginTurn(s, playerOrders = {}) {
   // domestic first (in a shuffled order so no faction always goes first), armies queue up
   for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd !== 'march'))) runOrder(s, f, id, o);
   for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd === 'march'))) runOrder(s, f, id, o);
-  // armies of one lord heading for the same place join up and fight as one (terrain: troop-weighted)
+  // the armies arriving this month (left 1): moves into a node of ours just go in; everything else fights.
+  // Armies of one lord arriving at the same place join up and fight as one (terrain: troop-weighted)
+  const arriving = s.armies.filter((a) => a.left <= 1);
+  s.armies = s.armies.filter((a) => a.left > 1);
+  for (const a of arriving) {
+    if (!s.factions[a.f].alive) continue;
+    a.gens = a.gens.filter((id) => s.gens[id].f === a.f && !s.gens[id].hidden);
+    if (s.cities[a.to].owner === a.f) { enterCity(s, a); if (a.kind === 'move') ev(s, { k: 'arrive', f: a.f, c: a.to, n: a.troops, gens: [...a.gens] }); }
+    else s.queue.push(a);
+  }
   const merged = [];
   for (const m of s.queue) {
     const j = merged.find((x) => x.f === m.f && x.to === m.to);
@@ -599,6 +630,7 @@ export function endTurn(s) {
       }
       troops += C.troops;
     }
+    for (const a of s.armies) if (a.f === fa.id) troops += a.troops; // armies on the road eat too
     fa.food -= Math.round(troops * k.foodPerTroop);
     if (fa.food < 0) { fa.food = 0; for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.hungerLoss)); ev(s, { k: 'hunger', f: fa.id }); }
     fixLord(s, fa.id);
@@ -612,6 +644,9 @@ export function endTurn(s) {
   const lead = alive.find((f) => citiesOf(s, f.id).length >= k.coalitionAt);
   const L = lead && alive.length >= 3 ? lead.id : null;
   if (L !== s.coalition) { ev(s, { k: L === null ? 'coalitionEnd' : 'coalition', f: L === null ? s.coalition : L }); s.coalition = L; }
+  // armies still on the road: one month nearer (the armies of a fallen lord have broken up)
+  s.armies = s.armies.filter((a) => s.factions[a.f].alive);
+  for (const a of s.armies) a.left--;
   if (dateOf(s).month === 9) ev(s, { k: 'harvest' });
   const mine = citiesOf(s, PLAYER).length;
   if (mine === CITY_IDS.length) s.over = 'win';

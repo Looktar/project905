@@ -1,9 +1,9 @@
 // 万锦三国志 (D-73): the strategy rules, run headless.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
-  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap,
+  terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -16,10 +16,18 @@ const check = (s) => {
   for (const g of Object.values(s.gens)) {
     if (g.hidden) { expect(g.f).toBe(-1); expect(CITIES[g.c].pass).toBe(false); }
     else if (g.guard) { expect(g.f).toBe(-1); expect(s.cities[g.c].owner).toBe(-1); }
+    else if (g.c === null) expect((s.armies || []).some((a) => a.f === g.f && a.gens.includes(g.id))).toBe(true); // on the road
     else { expect(g.f).toBeGreaterThanOrEqual(0); expect(s.cities[g.c].owner).toBe(g.f); }
   }
   for (const c of NODE_IDS) { const C = s.cities[c]; expect(C.troops).toBeGreaterThanOrEqual(0); expect(C.troops).toBeLessThanOrEqual(CFG.sg.maxTroops); expect(C.dev).toBeLessThanOrEqual(100); }
   for (const f of s.factions) { expect(f.gold).toBeGreaterThanOrEqual(0); expect(f.food).toBeGreaterThanOrEqual(0); }
+};
+
+// tests of other rules march along roads that take one month (v0.9.3 made long roads slower)
+const oneMonthRoads = () => {
+  let keep;
+  beforeEach(() => { keep = CFG.sg.marchSpeed; CFG.sg.marchSpeed = 1e9; });
+  afterEach(() => { CFG.sg.marchSpeed = keep; });
 };
 
 describe('data', () => {
@@ -40,6 +48,7 @@ describe('data', () => {
 });
 
 describe('real terrain (v0.8)', () => {
+  oneMonthRoads();
   const map = JSON.parse(readFileSync(new URL('../../maps/markham.json', import.meta.url), 'utf8'));
   const cross = (p, q, r, t) => { const d = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); return d(p, q, r) * d(p, q, t) < 0 && d(r, t, p) * d(r, t, q) < 0; };
   const P = (c) => [CITIES[c].x, CITIES[c].z];
@@ -102,6 +111,7 @@ describe('real terrain (v0.8)', () => {
 });
 
 describe('seasons, stratagems, random events (v0.8.1)', () => {
+  oneMonthRoads();
   it('winter makes attacking harder; September brings the harvest', () => {
     const atk = (turn) => {
       const s = newGame(9), c = s.factions[0].cap, n = ADJ[c].find((a) => s.cities[a.c].owner === -1).c, [a] = factionGens(s, 0);
@@ -228,6 +238,63 @@ describe('random boards (v0.9)', () => {
   });
 });
 
+describe('armies on the road (v0.9.3)', () => {
+  it('a long road takes more months; relay roads are quicker; the army is on the map meanwhile', () => {
+    const s = newGame(9);
+    const pairs = LINKS.map(([a, b]) => [a, b, travelMonths([a, b])]);
+    expect(Math.max(...pairs.map((p) => p[2]))).toBeGreaterThanOrEqual(2);
+    const L = ([a, b]) => Math.hypot(CITIES[a].x - CITIES[b].x, CITIES[a].z - CITIES[b].z);
+    const st = LINKS.find((l) => l[4]), plain = LINKS.find((l) => !l[4] && Math.abs(L(l) - L(st)) < 120);
+    if (plain) expect(travelMonths(st.slice(0, 2))).toBeLessThanOrEqual(travelMonths(plain.slice(0, 2)));
+    // march down a two-month road: nothing happens in month 1, the army is on the road; it fights in month 2
+    const two = pairs.find(([a, b, t]) => t === 2 && !CITIES[a].pass && !CITIES[b].pass);
+    const [from, to] = two;
+    for (const f of s.factions.slice(1)) { f.alive = false; for (const x of factionGens(s, f.id)) Object.assign(s.gens[x], { f: -1, hidden: true }); }
+    for (const c of NODE_IDS) s.cities[c].owner = -1;
+    const [g] = factionGens(s, 0);
+    for (const x of factionGens(s, 0)) s.gens[x].c = from;
+    Object.assign(s.cities[from], { owner: 0, troops: 6000 }); s.factions[0].cap = from;
+    Object.assign(s.cities[to], { troops: 300, def: 20 });
+    runTurn(s, { [g]: { cmd: 'march', to, n: 5000 } });
+    expect(s.cities[to].owner).toBe(-1);
+    expect(s.armies.length).toBe(1);
+    expect(s.armies[0]).toMatchObject({ f: 0, to, left: 1, total: 2 });
+    expect(s.gens[g].c).toBe(null);
+    check(s);
+    const t1 = s.factions[0].food;
+    runTurn(s, {});
+    expect(s.cities[to].owner).toBe(0);
+    expect(s.gens[g].c).toBe(to);
+    expect(s.armies.length).toBe(0);
+    check(s);
+    expect(t1).toBeGreaterThan(0);
+    // moves take time too, and an officer on the road cannot take orders
+    Object.assign(s.cities[from], { owner: 0 });
+    const [h] = factionGens(s, 0).filter((x) => s.gens[x].c === to);
+    runTurn(s, { [h]: { cmd: 'move', to: from, n: 0 } });
+    expect(s.gens[h].c).toBe(null);
+    expect(validOrder(s, 0, h, { cmd: 'dev' })).toBe(false);
+    runTurn(s, {});
+    expect(s.gens[h].c).toBe(from);
+    check(s);
+  });
+  it('the computer counts armies coming for it, and does not send two at one target', () => {
+    let again = 0, sent = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const s = newGame(seed * 7, { map: 'random' });
+      for (let t = 0; t < 30 && !s.over; t++) {
+        // armies still on the road after this month's arrivals; then: did a new army set off for the same place?
+        const onRoad = new Set(s.armies.filter((a) => a.left > 1 && a.kind === 'march').map((a) => a.f + '>' + a.to)), maxId = s.nextArmy;
+        runTurn(s, autoPlayer(s));
+        for (const a of s.armies) if (a.id >= maxId && a.kind === 'march' && a.f > 0) { sent++; if (onRoad.has(a.f + '>' + a.to)) again++; }
+        check(s);
+      }
+    }
+    expect(sent).toBeGreaterThan(10);
+    expect(again).toBe(0);
+  });
+});
+
 describe('new game', () => {
   it('each lord starts with one city and two random generals; the rest hide in the cities', () => {
     const s = newGame(11);
@@ -252,6 +319,7 @@ describe('new game', () => {
 });
 
 describe('orders (one per officer, v0.8)', () => {
+  oneMonthRoads();
   it('develop, draft and search', () => {
     const s = newGame(3), c = s.factions[0].cap, C = s.cities[c], g0 = s.factions[0].gold, [a, b] = factionGens(s, 0);
     const dev0 = C.dev;
@@ -335,6 +403,7 @@ describe('supply lines', () => {
 });
 
 describe('duels and bonds', () => {
+  oneMonthRoads();
   it('rock-paper-scissors rounds, stronger arms hit harder; a duel always ends', () => {
     const s = newGame(1);
     const d = { a: 'lvbu', d: 'xunyu', fa: 0, fd: 1, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null };
