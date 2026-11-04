@@ -118,6 +118,78 @@ body.touch #bD.hide{display:none}
 .credits b{font-weight:900}
 .credits a{color:#2563eb}
 #titleCredits{position:absolute;top:14px;left:14px}
+
+#sgBtn{font-family:inherit;font-size:clamp(15px,2.2vw,20px);font-weight:900;color:#f2c14e;background:#2b211a;border:3px solid #f2c14e;border-radius:999px;padding:7px 26px;box-shadow:0 5px 0 rgba(30,40,70,.3);cursor:pointer}
+#sgBtn:disabled{opacity:.5}
+#sg{padding:0;background:#2b211a;z-index:27;color:#f5ebdd;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+#sgMap{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#sgTop{position:absolute;left:0;right:0;top:0;height:48px;box-sizing:border-box;padding:0 calc(10px + var(--sa-r,0px)) 0 calc(10px + var(--sa-l,0px));display:flex;align-items:center;gap:8px;background:rgba(38,29,22,.95);border-bottom:1.5px solid #8a6a3a}
+#sgTitle{font:900 20px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e;letter-spacing:1px;white-space:nowrap}
+#sgDate{background:#f2c14e;color:#2b211a;border-radius:999px;padding:3px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+#sgRes{flex:1;display:flex;gap:6px;justify-content:flex-end;overflow:hidden}
+#sgRes span{display:flex;align-items:center;gap:4px;background:#3a2c21;border:1px solid #5c4630;border-radius:999px;padding:2px 9px 2px 3px;font-weight:800;font-size:13px;white-space:nowrap}
+#sgRes i{font-style:normal;width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#2b211a;font-size:11px;font-weight:900}
+#sgTop button,.sgSmall{background:#3a2c21;color:#f5ebdd;border:1px solid #8a6a3a;border-radius:999px;height:34px;padding:0 12px;font:800 13px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+#sgPanel{position:absolute;left:calc(8px + var(--sa-l,0px));top:56px;bottom:8px;width:min(300px,max(240px,30%));box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;background:rgba(38,29,22,.94);border:1.5px solid #8a6a3a;border-radius:14px;padding:10px 10px 14px}
+#sgPanel h3{margin:0 0 2px;font-size:18px;display:flex;align-items:center;gap:6px}
+#sgPanel h4{margin:12px 0 6px;font:900 16px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e}
+.sgDot{width:10px;height:10px;border-radius:5px;display:inline-block;flex:none}
+.sgX{margin-left:auto;background:#3a2c21;color:#f5ebdd;border:1px solid #5c4630;border-radius:999px;width:32px;height:32px;font:900 14px inherit;font-family:inherit;cursor:pointer;flex:none}
+.sgSub{font-size:12px;color:#d9c8ae;margin-bottom:8px}
+.sgHint{font-size:12px;color:#d9c8ae;line-height:1.45;margin:4px 0}
+.sgWarn{font-size:12px;color:#fff;background:#a33a3a;border-radius:8px;padding:6px 8px;margin:6px 0}
+.sgPick{font-size:13px;color:#2b211a;background:#f2c14e;border-radius:8px;padding:6px 8px;margin:8px 0 6px;font-weight:800}
+.sgGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sgGrid div{background:#33271e;border-radius:8px;padding:5px 8px}
+.sgGrid small{display:block;font-size:11px;color:#d9c8ae}.sgGrid b{font-size:15px}
+.sgCmds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sgCmd{min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#3a2c21;color:#f5ebdd;border:1px solid #8a6a3a;border-radius:10px;font-family:inherit;cursor:pointer;padding:3px}
+.sgCmd b{font-size:14px}.sgCmd small{font-size:10px;color:#d9c8ae}
+.sgCmd.on{background:#f2c14e;color:#2b211a;border-color:#f2c14e}.sgCmd.on small{color:#5a4632}
+.sgCmd:disabled{opacity:.35}
+.sgTo{margin:8px 0 4px;font-weight:900;color:#f2c14e}
+.sgSeg{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:12px;color:#d9c8ae}
+.sgSeg button,.sgChips button{background:#3a2c21;color:#f5ebdd;border:1px solid #5c4630;border-radius:999px;min-height:32px;padding:0 10px;font:800 12px inherit;font-family:inherit;cursor:pointer}
+.sgSeg button.on,.sgChips button.on{background:#f2c14e;color:#2b211a;border-color:#f2c14e}
+.sgChips{display:flex;flex-wrap:wrap;gap:5px}
+.sgG{display:flex;gap:8px;padding:8px;background:#33271e;border:1px solid #5c4630;border-radius:10px;margin-bottom:6px}
+.sgGi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sgGi>b{font-size:15px;color:#fff}
+.sgP{flex:none;border-radius:50%;border:2px solid #f2c14e;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'STKaiti','KaiTi','Kaiti SC',serif;font-weight:900;box-sizing:border-box}
+.sgSt{display:flex;align-items:center;gap:5px;font-size:10px;color:#d9c8ae}.sgSt span{width:26px}
+.sgSt i{flex:1;height:5px;background:#4a3a2c;border-radius:3px;overflow:hidden}.sgSt i b{display:block;height:5px}
+.sgSt em{width:20px;text-align:right;font-style:normal;font-weight:800;color:#f5ebdd}
+.sgTrw{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px}
+.sgTr{font-size:11px;font-weight:900;color:#2b211a;background:#f2c14e;border-radius:4px;padding:0 5px}.sgTrw small{font-size:10.5px;color:#d9c8ae}
+.sgWhere{font-size:11px;color:#d9c8ae;margin:-3px 0 8px 4px}
+.sgBond{font-size:12px;background:#4a2f2f;border:1px solid #a35a4a;border-radius:8px;padding:4px 8px;margin:4px 0;color:#ffd7c4}
+.sgRoadRow{display:flex;align-items:center;gap:6px;font-size:13px;padding:3px 0}.sgRoadRow small{margin-left:auto;color:#d9c8ae;font-size:11px}
+#sgEnd{position:absolute;right:calc(12px + var(--sa-r,0px));bottom:calc(12px + var(--sa-b,0px));height:48px;padding:0 24px;background:#f2c14e;color:#2b211a;border:3px solid #fff;border-radius:999px;font:900 17px inherit;font-family:inherit;letter-spacing:1px;box-shadow:0 4px 0 rgba(0,0,0,.3);cursor:pointer}
+#sgLayer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,14,10,.6);padding:10px;box-sizing:border-box}
+#sgLayer.show{display:flex}
+.sgCard{background:#261d16;border:2px solid #8a6a3a;border-radius:18px;padding:12px 16px 14px;width:min(520px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;box-sizing:border-box}
+.sgCard h2{margin:0 0 8px;font:900 22px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sgCard h2 small{font:700 13px system-ui,sans-serif;color:#d9c8ae}
+.sgCenter{text-align:center;justify-content:center}
+.sgEv{list-style:none;margin:0 0 10px;padding:0;font-size:14px;line-height:1.5}
+.sgEv li{padding:3px 0;border-bottom:1px solid #3a2c21;color:#d9c8ae}.sgEv li.me{color:#f5ebdd}.sgEv li.imp{color:#ffd27a;font-weight:800}.sgEv small{opacity:.6;margin-right:4px}
+.sgBig{display:block;width:100%;min-height:46px;margin-top:8px;background:#f2c14e;color:#2b211a;border:none;border-radius:12px;font:900 16px inherit;font-family:inherit;cursor:pointer}
+.sgBig.alt{background:#3a2c21;color:#f5ebdd;border:1px solid #8a6a3a}
+.sgReveal{display:flex;gap:14px;align-items:center}.sgReveal>div{flex:1;min-width:0}
+.sgBigName{font:900 28px 'STKaiti','KaiTi','Kaiti SC',serif;color:#fff;margin-bottom:4px}
+#sgLayer.flip .sgCard{animation:sgFlip .55s cubic-bezier(.2,1.4,.4,1)}
+@keyframes sgFlip{0%{transform:perspective(600px) rotateY(90deg) scale(.7);opacity:0}100%{transform:none;opacity:1}}
+.sgRivals{display:flex;gap:10px;justify-content:space-around;margin:6px 0}.sgRivals div{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}.sgRivals small{color:#d9c8ae}
+.sgDuel{display:flex;align-items:center;justify-content:space-around;gap:8px}
+.sgDs{display:flex;flex-direction:column;align-items:center;gap:3px;width:40%}.sgDs b{font-size:17px;color:#fff}.sgDs small{color:#d9c8ae}
+.sgHp{display:block;width:100%;height:10px;background:#4a3a2c;border-radius:5px;overflow:hidden}.sgHp b{display:block;height:10px;transition:width .35s}
+.sgDs em{font-style:normal;font-weight:900}
+.sgVs{font:900 26px 'STKaiti','KaiTi',serif;color:#ff8a80}
+.sgMsg{min-height:40px;font-size:14px;line-height:1.5}
+.sgDm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sgDm button{min-height:50px;background:#d64545;color:#fff;border:2px solid #fff;border-radius:12px;font:900 18px inherit;font-family:inherit;cursor:pointer}
+.sgDm button:nth-child(2){background:#2f7de1}.sgDm button:nth-child(3){background:#7c55c9}
+.sgRule{font-size:12px;color:#d9c8ae;text-align:center;margin:6px 0 0}
+.sgHelp{white-space:pre-line;font-size:14px;line-height:1.55;color:#f5ebdd}
 </style>
 </head>
 <body>
@@ -143,6 +215,7 @@ body.touch #bD.hide{display:none}
     <div id="subtitle"></div>
     <div id="tagline"></div>
     <button id="startBtn" disabled></button>
+    <button id="sgBtn" disabled></button>
     <div id="loading"></div>
     <div id="loadbar"><i></i></div>
     <div id="controls"></div>
@@ -155,6 +228,13 @@ body.touch #bD.hide{display:none}
     <div id="bmList"></div>
     <div id="bmZoom"><button id="bmIn">＋</button><button id="bmOut">－</button><button id="bmMe">◎</button></div>
     <div id="bmCard"><b></b><small id="bmDist"></small><div><button id="bmGo" data-t="navGo"></button><button id="bmTp" data-t="navTp"></button><button id="bmStop" data-t="navStop"></button></div><small id="bmMsg"></small></div>
+  </div>
+  <div id="sg" class="modal">
+    <canvas id="sgMap"></canvas>
+    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
+    <div id="sgPanel"></div>
+    <button id="sgEnd"></button>
+    <div id="sgLayer"></div>
   </div>
   <div id="plist" class="modal">
     <div class="card">
@@ -172,6 +252,7 @@ body.touch #bD.hide{display:none}
       <div class="row"><span data-t="tilt"></span><div class="seg" data-key="tilt"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
       <div class="row"><span data-t="shake"></span><div class="seg" data-key="shake"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
       <div class="row"><span data-t="resolution"></span><div class="seg" data-key="res"><button data-v="low" data-t="resLow"></button><button data-v="mid" data-t="resMid"></button><button data-v="high" data-t="resHigh"></button></div></div>
+      <button class="ui wide" id="openSg" data-t="sgStart"></button>
       <button class="ui wide" id="openCredits" data-t="credits"></button>
     </div>
   </div>
@@ -197,8 +278,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=36d54ee19c","./js/bigmap.js":"./js/bigmap.js?v=36d54ee19c","./js/config.js":"./js/config.js?v=36d54ee19c","./js/fire.js":"./js/fire.js?v=36d54ee19c","./js/game.js":"./js/game.js?v=36d54ee19c","./js/geo.js":"./js/geo.js?v=36d54ee19c","./js/glb.js":"./js/glb.js?v=36d54ee19c","./js/hud.js":"./js/hud.js?v=36d54ee19c","./js/i18n.js":"./js/i18n.js?v=36d54ee19c","./js/input.js":"./js/input.js?v=36d54ee19c","./js/main.js":"./js/main.js?v=36d54ee19c","./js/math.js":"./js/math.js?v=36d54ee19c","./js/missions.js":"./js/missions.js?v=36d54ee19c","./js/models.js":"./js/models.js?v=36d54ee19c","./js/nav.js":"./js/nav.js?v=36d54ee19c","./js/orient.js":"./js/orient.js?v=36d54ee19c","./js/poi.js":"./js/poi.js?v=36d54ee19c","./js/pranks.js":"./js/pranks.js?v=36d54ee19c","./js/props.js":"./js/props.js?v=36d54ee19c","./js/renderer.js":"./js/renderer.js?v=36d54ee19c","./js/signals.js":"./js/signals.js?v=36d54ee19c","./js/world.js":"./js/world.js?v=36d54ee19c"}}</script>
-<script type="module" src="js/main.js?v=36d54ee19c"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=564c604c5a","./js/bigmap.js":"./js/bigmap.js?v=564c604c5a","./js/config.js":"./js/config.js?v=564c604c5a","./js/fire.js":"./js/fire.js?v=564c604c5a","./js/game.js":"./js/game.js?v=564c604c5a","./js/geo.js":"./js/geo.js?v=564c604c5a","./js/glb.js":"./js/glb.js?v=564c604c5a","./js/hud.js":"./js/hud.js?v=564c604c5a","./js/i18n.js":"./js/i18n.js?v=564c604c5a","./js/input.js":"./js/input.js?v=564c604c5a","./js/main.js":"./js/main.js?v=564c604c5a","./js/math.js":"./js/math.js?v=564c604c5a","./js/missions.js":"./js/missions.js?v=564c604c5a","./js/models.js":"./js/models.js?v=564c604c5a","./js/nav.js":"./js/nav.js?v=564c604c5a","./js/orient.js":"./js/orient.js?v=564c604c5a","./js/poi.js":"./js/poi.js?v=564c604c5a","./js/pranks.js":"./js/pranks.js?v=564c604c5a","./js/props.js":"./js/props.js?v=564c604c5a","./js/renderer.js":"./js/renderer.js?v=564c604c5a","./js/sg_data.js":"./js/sg_data.js?v=564c604c5a","./js/sg_engine.js":"./js/sg_engine.js?v=564c604c5a","./js/sg_ui.js":"./js/sg_ui.js?v=564c604c5a","./js/signals.js":"./js/signals.js?v=564c604c5a","./js/world.js":"./js/world.js?v=564c604c5a"}}</script>
+<script type="module" src="js/main.js?v=564c604c5a"></script>
 <!-- stamp:end -->
 </body>
 </html>
