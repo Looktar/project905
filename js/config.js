@@ -103,6 +103,17 @@ export const CFG = {
   },
   // prank list + golden dim sum (v0.4, D-70): $ rewards, number of buns, min metres between buns
   pranks: { reward: 30, bun: 10, allBonus: 500, buns: 30, bunGap: 140 },
+  // 万锦三国志 strategy mode (D-73): one turn = one month; troops, gold, food are plain counts
+  sg: {
+    startYear: 196, startGold: 600, startFood: 2500, startTroops: 3000, neutralTroops: [700, 1500], neutralRegen: 30, neutralMax: 1500,
+    maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, truce: 6, devCost: 50, draftCost: 100, draftBase: 400, draftPerLead: 6, devBase: 3, devPerPol: 1 / 12,
+    goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
+    searchBase: 0.4, searchPerInt: 1 / 250, treasure: [0.25, 80, 150], marchFrac: 0.8,
+    duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelSkill: 0.4, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
+    rounds: 8, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
+    flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
+    aiAttack: 1.35, aiSafe: 2500, coalitionAt: 6,
+  },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
   occlusion: { alpha: 0.32, speed: 9, maxH: 50, sampleY: [0.9, 2.4], silhouette: [0.45, 0.88, 1.0, 0.9] },

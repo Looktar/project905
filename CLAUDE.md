@@ -26,6 +26,9 @@ js/missions.js        v0.3 任务：送外卖、出租车、赛车、地标打�
 js/pranks.js          v0.4 万锦恶作剧清单（game.ev 事件）+ 30 个金点心收集品（D-70）
 js/nav.js             v0.5 地点索引、容错搜索、GPS 导航路线、传送（D-71）
 js/bigmap.js          v0.5 全城大地图界面：点小地图或按 M，拖动 / 缩放 / 搜索 / 导航 / 传送
+js/sg_data.js         v0.7 万锦三国志数据：48 位武将、特技、羁绊、宿敌、12 座城和粮道（D-73）
+js/sg_engine.js       v0.7 万锦三国志规则：回合、命令、粮道、战斗、单挑、俘虏、电脑君主、反联盟（纯函数，种子随机）
+js/sg_ui.js           v0.7 万锦三国志界面：策略地图、城池面板、急报、盲盒翻牌、单挑；存档在 localStorage p905sg
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
 js/orient.js          强制横屏的坐标换算和安全区映射（纯函数，有单元测试）
 js/glb.js             最小 GLB 加载器：模型转成顶点色三角形，交给 MeshBuilder.addTriangles 烘焙

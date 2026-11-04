@@ -159,6 +159,27 @@ async function runViewport(browser, base, vp) {
     await page.screenshot({ path: join(SHOT_DIR, `${name}-map.png`) });
     notes.push('big map: ' + (await page.locator('#bmCard b').textContent()).trim());
     await tap('#bigmap .x');
+    // 万锦三国志 (D-73): open it from the settings panel, flip the starting blind boxes, play a month
+    await page.evaluate(() => localStorage.removeItem('p905sg'));
+    await tap('#setBtn');
+    await tap('#openSg');
+    await page.waitForSelector('#sgLayer.show', { timeout: 5000 });
+    await sleep(700);
+    await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
+    for (let i = 0; i < 3; i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
+    await tap('.sgCmd[data-cmd="search"]');
+    await tap('#sgEnd');
+    for (let i = 0; i < 12; i++) {
+      await sleep(300);
+      const kind = await page.evaluate(() => { const L = document.getElementById('sgLayer'); return !L.classList.contains('show') ? 'none' : L.classList.contains('duel') ? 'duel' : 'ok'; });
+      if (kind === 'none') break;
+      if (kind === 'duel') await tap((await page.$('[data-dm="ok"]')) ? '[data-dm="ok"]' : '[data-dm="atk"]');
+      else { if (!notes.some((n) => n.startsWith('sg'))) { await page.screenshot({ path: join(SHOT_DIR, `${name}-sg.png`) }); notes.push('sg: ' + (await page.locator('#sgDate').textContent()).trim()); } await tap('#sgLayer [data-ok]'); }
+    }
+    if ((await page.locator('#sgDate').textContent()).trim() === '') throw new Error('sg: no date');
+    await tap('#sgMenuBtn');
+    await tap('#sgLayer [data-ok="back"]');
+    await page.waitForFunction(() => !document.getElementById('sg').classList.contains('show'), null, { timeout: 5000 });
   } catch (e) {
     problems.push(e.message.split('\n')[0]);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-failure.png`) }).catch(() => {});

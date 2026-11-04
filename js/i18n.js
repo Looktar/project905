@@ -59,4 +59,6 @@ const DICT = {
 let lang = (navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
 export function setLang(l) { lang = l; }
 export function getLang() { return lang; }
+// more strings from feature modules (sg_ui.js)
+export function extend(zh, en) { Object.assign(DICT.zh, zh); Object.assign(DICT.en, en); }
 export const t = (k) => (DICT[lang] && DICT[lang][k]) || DICT.zh[k] || k;
