@@ -110,7 +110,6 @@ body.touch #bD.hide{display:none}
 .card h2{margin:0 0 8px;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .card .x{background:#eef1f6;color:#2d3a55;border:none;border-radius:999px;width:34px;height:34px;font:900 16px inherit;font-family:inherit;cursor:pointer;flex:none}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-top:2px solid #eef1f6;font-weight:800;font-size:15px}
-.row.touchOnly{display:none}body.touch .row.touchOnly{display:flex}
 .seg{display:flex;background:#eef1f6;border-radius:999px;padding:3px;gap:2px;flex:none}
 .seg button{border:none;background:none;color:#5b6782;font:800 14px inherit;font-family:inherit;padding:5px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .seg button.on{background:#ff6b4a;color:#fff;box-shadow:0 2px 0 rgba(30,40,70,.2)}
@@ -184,6 +183,14 @@ body.touch #bD.hide{display:none}
 .sgDs{display:flex;flex-direction:column;align-items:center;gap:3px;width:40%}.sgDs b{font-size:17px;color:#fff}.sgDs small{color:#d9c8ae}
 .sgHp{display:block;width:100%;height:10px;background:#4a3a2c;border-radius:5px;overflow:hidden}.sgHp b{display:block;height:10px;transition:width .35s}
 .sgDs em{font-style:normal;font-weight:900}
+.sgDs{position:relative}.sgDs.hit .sgP{animation:sgHit .35s}.sgDs.ko .sgP{filter:grayscale(.8);transform:rotate(-12deg)}
+.sgDmg{position:absolute;top:-4px;left:50%;transform:translateX(-50%);font:900 26px system-ui,sans-serif;font-style:normal;color:#ff5a4a;-webkit-text-stroke:2px #2b211a;animation:sgDmg .9s ease-out forwards;pointer-events:none}
+.sgKo{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-style:normal;color:#ffd23f;font-size:18px;animation:sgKo 1s linear infinite;pointer-events:none}
+.sgCard.jolt{animation:sgJolt .32s}
+@keyframes sgHit{0%,100%{transform:none}20%{transform:translateX(-7px) rotate(-6deg)}50%{transform:translateX(6px) rotate(4deg)}75%{transform:translateX(-3px)}}
+@keyframes sgDmg{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,-6px) scale(1.25)}100%{opacity:0;transform:translate(-50%,-38px) scale(1)}}
+@keyframes sgKo{0%{transform:translateX(-50%) rotate(0)}100%{transform:translateX(-50%) rotate(360deg)}}
+@keyframes sgJolt{0%,100%{transform:none}25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
 .sgVs{font:900 26px 'STKaiti','KaiTi',serif;color:#ff8a80}
 .sgMsg{min-height:40px;font-size:14px;line-height:1.5}
 .sgDm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -208,6 +215,9 @@ body.touch #bD.hide{display:none}
 #sgPanel.hide{display:none}
 #sgPanelTab{position:absolute;left:calc(8px + var(--sa-l,0px));top:60px;width:36px;height:44px;display:none;background:rgba(38,29,22,.94);color:#f2c14e;border:1.5px solid #8a6a3a;border-radius:10px;font:900 18px inherit;font-family:inherit;cursor:pointer}
 #sgPanelTab.show{display:block}
+#sgZoom{position:absolute;right:calc(10px + var(--sa-r,0px));top:58px;display:flex;flex-direction:column;gap:6px}
+#sgZoom button{width:40px;height:40px;border-radius:12px;background:rgba(38,29,22,.94);color:#f2c14e;border:1.5px solid #8a6a3a;font:900 20px inherit;font-family:inherit;cursor:pointer}
+#sg.small #sgZoom{top:48px;gap:4px}#sg.small #sgZoom button{width:36px;height:36px;font-size:18px}
 #sgPanel h3 .sgX+.sgX{margin-left:6px}
 .sgArmy{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;color:#f5ebdd}.sgRed{color:#ff8a80 !important}
 .sgRoadRow{flex-wrap:wrap;row-gap:0}.sgRoadRow small{flex-basis:100%;margin-left:16px;text-align:left}
@@ -267,6 +277,7 @@ body.touch #bD.hide{display:none}
     <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
     <div id="sgPanel"></div>
     <button id="sgPanelTab">»</button>
+    <div id="sgZoom"><button id="sgZIn">＋</button><button id="sgZOut">－</button><button id="sgZHome">◎</button></div>
     <button id="sgAuto"></button>
     <button id="sgEnd"></button>
     <div id="sgToast"></div>
@@ -281,7 +292,6 @@ body.touch #bD.hide{display:none}
   <div id="settings" class="modal">
     <div class="card">
       <h2><span data-t="settings"></span><button class="x" data-close="settings">✕</button></h2>
-      <div class="row touchOnly"><span data-t="rotate"></span><div class="seg" data-key="rot"><button data-v="auto" data-t="rotAuto"></button><button data-v="1" data-t="rotL"></button><button data-v="-1" data-t="rotR"></button></div></div>
       <div class="row"><span data-t="language"></span><div class="seg" data-key="lang"><button data-v="zh">中文</button><button data-v="en">English</button></div></div>
       <div class="row"><span data-t="sound"></span><div class="seg" data-key="sound"><button data-v="on" data-t="on"></button><button data-v="off" data-t="off"></button></div></div>
       <div class="row"><span data-t="minimap"></span><div class="seg" data-key="mini"><button data-v="open" data-t="expanded"></button><button data-v="small" data-t="collapsed"></button></div></div>
@@ -316,8 +326,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=d9f81672b2","./js/bigmap.js":"./js/bigmap.js?v=d9f81672b2","./js/config.js":"./js/config.js?v=d9f81672b2","./js/fire.js":"./js/fire.js?v=d9f81672b2","./js/game.js":"./js/game.js?v=d9f81672b2","./js/geo.js":"./js/geo.js?v=d9f81672b2","./js/glb.js":"./js/glb.js?v=d9f81672b2","./js/hud.js":"./js/hud.js?v=d9f81672b2","./js/i18n.js":"./js/i18n.js?v=d9f81672b2","./js/input.js":"./js/input.js?v=d9f81672b2","./js/main.js":"./js/main.js?v=d9f81672b2","./js/math.js":"./js/math.js?v=d9f81672b2","./js/missions.js":"./js/missions.js?v=d9f81672b2","./js/models.js":"./js/models.js?v=d9f81672b2","./js/nav.js":"./js/nav.js?v=d9f81672b2","./js/orient.js":"./js/orient.js?v=d9f81672b2","./js/poi.js":"./js/poi.js?v=d9f81672b2","./js/pranks.js":"./js/pranks.js?v=d9f81672b2","./js/props.js":"./js/props.js?v=d9f81672b2","./js/renderer.js":"./js/renderer.js?v=d9f81672b2","./js/sg_data.js":"./js/sg_data.js?v=d9f81672b2","./js/sg_elev.js":"./js/sg_elev.js?v=d9f81672b2","./js/sg_engine.js":"./js/sg_engine.js?v=d9f81672b2","./js/sg_sites.js":"./js/sg_sites.js?v=d9f81672b2","./js/sg_ui.js":"./js/sg_ui.js?v=d9f81672b2","./js/signals.js":"./js/signals.js?v=d9f81672b2","./js/world.js":"./js/world.js?v=d9f81672b2"}}</script>
-<script type="module" src="js/main.js?v=d9f81672b2"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=4701f7fb22","./js/bigmap.js":"./js/bigmap.js?v=4701f7fb22","./js/config.js":"./js/config.js?v=4701f7fb22","./js/fire.js":"./js/fire.js?v=4701f7fb22","./js/game.js":"./js/game.js?v=4701f7fb22","./js/geo.js":"./js/geo.js?v=4701f7fb22","./js/glb.js":"./js/glb.js?v=4701f7fb22","./js/hud.js":"./js/hud.js?v=4701f7fb22","./js/i18n.js":"./js/i18n.js?v=4701f7fb22","./js/input.js":"./js/input.js?v=4701f7fb22","./js/main.js":"./js/main.js?v=4701f7fb22","./js/math.js":"./js/math.js?v=4701f7fb22","./js/missions.js":"./js/missions.js?v=4701f7fb22","./js/models.js":"./js/models.js?v=4701f7fb22","./js/nav.js":"./js/nav.js?v=4701f7fb22","./js/orient.js":"./js/orient.js?v=4701f7fb22","./js/poi.js":"./js/poi.js?v=4701f7fb22","./js/pranks.js":"./js/pranks.js?v=4701f7fb22","./js/props.js":"./js/props.js?v=4701f7fb22","./js/renderer.js":"./js/renderer.js?v=4701f7fb22","./js/sg_data.js":"./js/sg_data.js?v=4701f7fb22","./js/sg_elev.js":"./js/sg_elev.js?v=4701f7fb22","./js/sg_engine.js":"./js/sg_engine.js?v=4701f7fb22","./js/sg_sites.js":"./js/sg_sites.js?v=4701f7fb22","./js/sg_ui.js":"./js/sg_ui.js?v=4701f7fb22","./js/signals.js":"./js/signals.js?v=4701f7fb22","./js/world.js":"./js/world.js?v=4701f7fb22"}}</script>
+<script type="module" src="js/main.js?v=4701f7fb22"></script>
 <!-- stamp:end -->
 </body>
 </html>

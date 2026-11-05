@@ -171,9 +171,11 @@ async function runViewport(browser, base, vp) {
     await tap('.sgCmd[data-cmd="search"]');
     await tap('#sgAuto');
     await tap('#sgEnd');
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 40; i++) {
       await sleep(300);
-      const kind = await page.evaluate(() => { const L = document.getElementById('sgLayer'); return !L.classList.contains('show') ? 'none' : L.classList.contains('duel') ? 'duel' : 'ok'; });
+      // 'busy' = the month is still playing out (battle animations, v0.9.4) with no card up yet
+      const kind = await page.evaluate(() => { const L = document.getElementById('sgLayer'); return !L.classList.contains('show') ? (window.__sg && window.__sg.busy ? 'busy' : 'none') : L.classList.contains('duel') ? 'duel' : 'ok'; });
+      if (kind === 'busy') continue;
       if (kind === 'none') break;
       if (kind === 'duel') await tap((await page.$('[data-dm="ok"]')) ? '[data-dm="ok"]' : '[data-dm="atk"]');
       else { if (!notes.some((n) => n.startsWith('sg'))) { await page.screenshot({ path: join(SHOT_DIR, `${name}-sg.png`) }); notes.push('sg: ' + (await page.locator('#sgDate').textContent()).trim()); } await tap('#sgLayer [data-ok]'); }

@@ -5,7 +5,7 @@ import { HUD } from './hud.js';
 import { BigMap } from './bigmap.js';
 import { Sanguo } from './sg_ui.js';
 import { CFG } from './config.js';
-import { input, layout, initTouch, poll, clearEdges, isTouch, startMotion, setRotatePref } from './input.js';
+import { input, layout, initTouch, poll, clearEdges, isTouch } from './input.js';
 import * as sfx from './audio.js';
 import { t, setLang, getLang } from './i18n.js';
 import { lerp } from './math.js';
@@ -28,11 +28,9 @@ const settings = {
   shake: store.shake !== false, // screen shake on impacts
   res: DPR[store.res] ? store.res : Q.defaultRes[isTouch ? 'touch' : 'desktop'], // pixel-ratio level: low / mid / high
   manualQ: !!store.manualQ,                         // graphics picked by hand: no auto-lowering
-  rot: ['auto', 1, -1].includes(store.rot) ? store.rot : 'auto', // forced-landscape direction (D-79)
 };
 const save = () => { try { localStorage.setItem('p905', JSON.stringify(settings)); } catch (e) { /* private mode */ } };
 setLang(settings.lang); sfx.setMuted(settings.mute);
-setRotatePref(settings.rot, () => resize());
 // ?bench=1: baseline benchmark at the spawn (Hwy 7 x Kennedy, entities full), spec 7
 const bench = /bench=1/.test(location.search) ? { t: 0, frames: [], calls: 0, cpu: 0, n: 0, done: false } : null;
 const autoQ = !/noauto=1/.test(location.search) && !bench; // ?noauto=1 keeps graphics fixed (benchmarks, screenshots)
@@ -48,7 +46,7 @@ function applyTexts() {
   $('credit').textContent = t('credit');
   for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
   $('muteBtn').textContent = settings.mute ? '🔇' : '🔊';
-  const cur = { rot: String(settings.rot), lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', shake: settings.shake ? 'on' : 'off', res: settings.res };
+  const cur = { lang: settings.lang, sound: settings.mute ? 'off' : 'on', mini: settings.mini ? 'open' : 'small', shadows: settings.shadows ? 'on' : 'off', tilt: settings.tilt ? 'on' : 'off', shake: settings.shake ? 'on' : 'off', res: settings.res };
   for (const seg of document.querySelectorAll('.seg[data-key]'))
     for (const b of seg.children) b.classList.toggle('on', b.dataset.v === cur[seg.dataset.key]);
   if (game) game.hud.setMode(!!game.inCar, game.inCar && game.inCar.type); else ['bA', 'bB', 'bC', 'bD'].forEach((id, i) => ($(id).textContent = t(['punch', 'enter', 'run', 'light'][i])));
@@ -148,11 +146,10 @@ async function boot() {
 let previewCam = null;
 
 // phones: real fullscreen + landscape lock where the browser allows it (Android); everywhere else the
-// page itself is turned (input.js layout), following the gravity sensor. Both need a tap, so this runs
-// from the start buttons.
+// page itself is turned (input.js layout), always the same way. It needs a tap, so this runs from the
+// start buttons.
 async function goLandscape() {
   if (!isTouch) return;
-  startMotion();
   try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }); } catch (e) { /* ignore */ }
   try { await screen.orientation?.lock?.('landscape'); } catch (e) { /* ignore */ }
   setTimeout(resize, 300);
@@ -187,7 +184,7 @@ $('openCredits').addEventListener('click', () => openModal('credits'));
 const bigmap = new BigMap(() => closeModal('bigmap'));
 // 万锦三国志 (D-73): the strategy mode, from the title screen or the settings panel
 sanguo = new Sanguo(() => closeModal('sg'));
-function openSg() { if (!world) return; for (const m of document.querySelectorAll('.modal.show')) closeModal(m.id); openModal('sg'); sanguo.open(world, W, H); window.__sg = sanguo; }
+function openSg() { if (!world) return; for (const m of document.querySelectorAll('.modal.show')) closeModal(m.id); openModal('sg'); sfx.quiet(); sfx.setMuted(settings.mute); sanguo.open(world, W, H); /* 三国 has its own sounds (D-81) */ window.__sg = sanguo; }
 $('sgBtn').addEventListener('click', () => { sfx.unlock(); goLandscape(); openSg(); });
 $('openSg').addEventListener('click', openSg);
 function openMap() { if (!game || anyModal()) return; openModal('bigmap'); bigmap.open(game, W, H); }
@@ -202,7 +199,6 @@ for (const seg of document.querySelectorAll('.seg[data-key]')) seg.addEventListe
   const b = e.target.closest('button[data-v]');
   if (!b) return;
   const v = b.dataset.v, k = seg.dataset.key;
-  if (k === 'rot') { settings.rot = v === 'auto' ? 'auto' : +v; setRotatePref(settings.rot); resize(); }
   if (k === 'lang') { settings.lang = v; setLang(v); }
   if (k === 'sound') settings.mute = v === 'off';
   if (k === 'mini') { settings.mini = v === 'open'; if (hud) hud.setMiniOpen(settings.mini); }

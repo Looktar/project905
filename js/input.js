@@ -4,7 +4,7 @@
 // The geometry (CSS transform, touch -> game coordinates, safe areas) lives in
 // orient.js (pure, unit-tested); this file only applies it to the DOM.
 import { CFG } from './config.js';
-import { orientMode, cssTransform, screenToGame, screenDeltaToGame, safeAreaVars, tiltDir, calibrateSign } from './orient.js';
+import { orientMode, cssTransform, screenToGame, screenDeltaToGame, safeAreaVars } from './orient.js';
 
 export const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
@@ -36,36 +36,10 @@ const btnState = { run: false, punchHeld: false, fireHeld: false };
 // resize event has not been handled yet).
 let mode = orientMode({ vw: innerWidth, vh: innerHeight, touch: false });
 
-// Forced landscape follows the way the phone is turned (v0.9.2, D-79): with rotation lock on, the
-// browser stays in portrait whichever way the phone is held sideways, so the gravity sensor picks the
-// rotation; without a sensor (or permission) it is the default one. `rotPref` is the player's choice
-// in the settings: 'auto', or 1 / -1 to fix it.
-let rotPref = 'auto', autoDir = null, gSign = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform)) ? -1 : 1;
-let pending = 0, pendingSince = 0, onDirChange = null;
-export function setRotatePref(p, cb) { rotPref = p; if (cb) onDirChange = cb; }
-const currentDir = () => (rotPref === 'auto' ? autoDir ?? CFG.input.rotateDir : rotPref); // no sensor reading yet: the default
-function onMotion(e) {
-  const g = e.accelerationIncludingGravity;
-  if (!g) return;
-  if (innerHeight <= innerWidth) return; // the browser is in landscape itself: nothing to do
-  const cs = calibrateSign(g);
-  if (cs) gSign = cs;
-  const d = tiltDir(g, gSign), now = performance.now();
-  if (!d || d === (autoDir ?? CFG.input.rotateDir)) { pending = 0; return; }
-  if (d !== pending) { pending = d; pendingSince = now; return; }
-  if (now - pendingSince > 500) { autoDir = d; pending = 0; if (rotPref === 'auto' && onDirChange) onDirChange(); }
-}
-let motionOn = false;
-// iOS asks for permission, and only from a tap: call this from a click handler
-export function startMotion() {
-  if (motionOn || !isTouch || typeof DeviceMotionEvent === 'undefined') return;
-  const go = () => { if (!motionOn) { motionOn = true; addEventListener('devicemotion', onMotion); } };
-  if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then((r) => { if (r === 'granted') go(); }).catch(() => {});
-  else go();
-}
-
+// Forced landscape always turns the page the same way (D-81, the 总决策 asked for one fixed direction):
+// the game's top edge along the phone's right edge, so the phone is turned counter-clockwise to play.
 export function layout(app) {
-  mode = orientMode({ vw: innerWidth, vh: innerHeight, touch: isTouch, rotateDir: currentDir() });
+  mode = orientMode({ vw: innerWidth, vh: innerHeight, touch: isTouch, rotateDir: CFG.input.rotateDir });
   input.rotated = mode.rotated; input.rotateDir = mode.dir;
   input.W = mode.W; input.H = mode.H;
   app.style.width = mode.W + 'px'; app.style.height = mode.H + 'px';

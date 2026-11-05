@@ -31,7 +31,7 @@ export class BigMap {
     $('bmOut').addEventListener('click', () => this.zoomAt(1 / 1.6));
     // pan / pinch / tap
     const cv = this.cv;
-    cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
+    cv.addEventListener('pointerdown', (e) => { if (e.isPrimary) this.ptrs.clear(); /* a lost pointerup (iOS) must not leave a ghost finger */ cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
     cv.addEventListener('pointermove', (e) => {
       const p = this.ptrs.get(e.pointerId);
       if (!p) return;
@@ -40,10 +40,12 @@ export class BigMap {
         this.cx -= (x - p.x) / this.s; this.cz -= (y - p.y) / this.s;
         if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true;
       } else {
-        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
+        // two fingers: zoom about them and move with them
+        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y), m0x = (a.x + b.x) / 2, m0y = (a.y + b.y) / 2;
         p.x = x; p.y = y;
-        const d1 = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d0 > 10) this.zoomAt(d1 / d0, (a.x + b.x) / 2, (a.y + b.y) / 2);
+        const d1 = Math.hypot(a.x - b.x, a.y - b.y), m1x = (a.x + b.x) / 2, m1y = (a.y + b.y) / 2;
+        if (d0 > 10) this.zoomAt(d1 / d0, m1x, m1y);
+        this.cx -= (m1x - m0x) / this.s; this.cz -= (m1y - m0y) / this.s;
       }
       p.x = x; p.y = y; this.dirty = true;
     });
@@ -53,6 +55,7 @@ export class BigMap {
       if (p && !this.moved && !this.ptrs.size) this.tap(p.x, p.y);
     };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', (e) => this.ptrs.delete(e.pointerId));
+    document.addEventListener('touchend', (e) => { if (!e.touches.length) this.ptrs.clear(); });
     cv.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = toGamePoint(e.clientX, e.clientY); this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y); }, { passive: false });
   }
 
