@@ -106,19 +106,19 @@ export const CFG = {
   // 万锦三国志 strategy mode (D-73): one turn = one month; troops, gold, food are plain counts
   sg: {
     startYear: 196, startGold: 600, startFood: 2500, startTroops: 3000, neutralTroops: [700, 1500], neutralRegen: 30, neutralMax: 1500,
-    maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, truce: 6, devCost: 50, draftCost: 100, draftBase: 400, draftPerLead: 6, devBase: 3, devPerPol: 1 / 12,
+    maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, truce: 6, devCost: 50, draftCost: 100, draftBase: 150, draftPerLead: 10, devBase: 1, devPerPol: 1 / 7,
     goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
-    searchBase: 0.4, searchPerInt: 1 / 250, treasure: [0.25, 80, 150], marchFrac: 0.8,
+    searchBase: 0.15, searchPerInt: 1 / 160, treasure: [0.25, 80, 150], marchFrac: 0.8,
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelSkill: 0.4, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
     rounds: 8, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
     aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
     // v0.8 (D-74): one order per officer a month; passes (real parks, D-75); real terrain
-    minMarch: 100, fortCost: 60, fortBase: 6, fortPerStat: 1 / 8,
+    minMarch: 100, fortCost: 60, fortBase: 4, fortPerStat: 1 / 6,
     passTroops: [1400, 2000], passBigTroops: 2600, passDef: 80, passBigDef: 100, passDefMax: 120, passDefRegen: 2, passCap: 6000, passMul: 1.15,
     hillPerM: 0.012, hillMax: 0.24, riverPen: 0.15, valleyFood: 0.4,
     // v0.8.1 (D-75): seasons, stratagems (计略) and random events
-    snowPen: 0.1, harvest: 3, plotCost: 80, plotBase: 0.45, plotInt: 1 / 100, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
+    snowPen: 0.1, harvest: 3, plotCost: 80, plotBase: 0.45, plotInt: 1 / 70, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
     eventChance: 0.55, cnyGold: 40,
     // v0.8.2 (D-76): 驿站 relay roads (gas stations) and 补给站 supply depots (malls)
     stationAtk: 0.1, depotFood: 0.3,
@@ -126,6 +126,9 @@ export const CFG = {
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
     // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
     marchSpeed: 650, relaySpeed: 1.6,
+    // v0.9.5 (D-82): officers matter more. Army multiplier = statBase + statLead x best 统率 + statWar x best 武力
+    // + statDeputy x each of two deputies; duel damage follows (武力 ratio) ^ duelExp
+    statBase: 0.3, statLead: 0.9, statWar: 0.45, statDeputy: 0.15, duelExp: 2.2, duelMin: 0.35, duelMax: 2.8,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p

@@ -163,7 +163,7 @@ body.touch #bD.hide{display:none}
 .sgWhere{font-size:11px;color:#d9c8ae;margin:-3px 0 8px 4px}
 .sgBond{font-size:12px;background:#4a2f2f;border:1px solid #a35a4a;border-radius:8px;padding:4px 8px;margin:4px 0;color:#ffd7c4}
 .sgRoadRow{display:flex;align-items:center;gap:6px;font-size:13px;padding:3px 0}.sgRoadRow small{margin-left:auto;color:#d9c8ae;font-size:11px}
-#sgEnd{position:absolute;right:calc(12px + var(--sa-r,0px));bottom:calc(12px + var(--sa-b,0px));height:48px;padding:0 24px;background:#f2c14e;color:#2b211a;border:3px solid #fff;border-radius:999px;font:900 17px inherit;font-family:inherit;letter-spacing:1px;box-shadow:0 4px 0 rgba(0,0,0,.3);cursor:pointer}
+#sgTop #sgEnd{background:#f2c14e;color:#2b211a;border:2px solid #fff;font-weight:900;font-size:15px;padding:0 16px;box-shadow:0 2px 0 rgba(0,0,0,.3)}
 #sgLayer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,14,10,.6);padding:10px;box-sizing:border-box}
 #sgLayer.show{display:flex}
 .sgCard{background:#261d16;border:2px solid #8a6a3a;border-radius:18px;padding:12px 16px 14px;width:min(520px,100%);max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:none;box-sizing:border-box}
@@ -198,7 +198,7 @@ body.touch #bD.hide{display:none}
 .sgDm button:nth-child(2){background:#2f7de1}.sgDm button:nth-child(3){background:#7c55c9}
 .sgRule{font-size:12px;color:#d9c8ae;text-align:center;margin:6px 0 0}
 .sgHelp{white-space:pre-line;font-size:14px;line-height:1.55;color:#f5ebdd}
-#sgAuto{position:absolute;right:calc(12px + var(--sa-r,0px));bottom:calc(68px + var(--sa-b,0px));height:40px;padding:0 16px;background:#3a2c21;color:#f2c14e;border:2px solid #f2c14e;border-radius:999px;font:900 15px inherit;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+#sgTop #sgAuto{display:flex;align-items:center;gap:5px;color:#f2c14e;border-color:#f2c14e}
 #sgAuto i{font-style:normal;background:#f2c14e;color:#2b211a;border-radius:999px;min-width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 4px}
 #sgToast{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:#f2c14e;color:#2b211a;font-weight:900;font-size:14px;border-radius:999px;padding:6px 16px;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
 #sgToast.show{opacity:1}
@@ -209,9 +209,27 @@ body.touch #bD.hide{display:none}
 .sgOh b{font-size:14px;color:#fff}.sgOh small{font-size:10px;color:#d9c8ae}
 .sgOh em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;color:#f2c14e;text-align:right;max-width:46%}
 .sgO .sgCmds{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.sgO .sgCmd{min-height:32px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden}
+.sgO .sgCmd{min-height:36px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden;line-height:1.1}.sgO .sgCmd small{display:block;font-size:9.5px;font-weight:700;color:#d9c8ae;margin-top:1px}.sgO .sgCmd.on small{color:#5a4632}
 .sgO .sgSeg,.sgO .sgChips{margin-top:6px}.sgO .sgPick{margin:6px 0 4px}
 .sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
+/* v0.9.5 (D-82): rarity frames, stat grades, battle odds */
+.sgP{position:relative}
+.sgP.tR{border-color:#b8c0c8}.sgP.tSR{border-color:#b98cf0;box-shadow:0 0 0 2px rgba(185,140,240,.35)}
+.sgP.tSSR{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.45),0 0 10px rgba(242,193,78,.55)}
+.sgP.tUR{border-color:#ff7a59;box-shadow:0 0 0 2px #f2c14e,0 0 14px rgba(255,122,89,.8);animation:sgUr 2.4s linear infinite}
+@keyframes sgUr{0%,100%{box-shadow:0 0 0 2px #f2c14e,0 0 10px rgba(255,122,89,.6)}50%{box-shadow:0 0 0 2px #fff3c4,0 0 18px rgba(255,190,80,.95)}}
+.sgTier{position:absolute;right:-6px;bottom:-4px;font:900 9px system-ui,sans-serif;font-style:normal;padding:1px 4px;border-radius:6px;color:#2b211a;background:#d7dde3;letter-spacing:.5px}
+.sgP.tSR .sgTier{background:#c9a6ff}.sgP.tSSR .sgTier{background:#f2c14e}.sgP.tUR .sgTier{background:linear-gradient(90deg,#ff7a59,#f2c14e,#7fd1a1,#7fb2f0);color:#2b211a}
+.sgSt u{text-decoration:none;font-weight:900;font-size:10px;width:12px;text-align:center}
+.sgSt u.gS{color:#ff8a5c}.sgSt u.gA{color:#f2c14e}.sgSt u.gB{color:#9fe0a8}.sgSt u.gC{color:#bfb3a1}.sgSt u.gD{color:#7d6f60}
+.sgOdds{font-size:10px;font-weight:900;padding:0 5px;border-radius:5px;margin-left:3px}
+.sgOdds.oa{background:#2f8f4e;color:#fff}.sgOdds.ob{background:#7fd1a1;color:#2b211a}.sgOdds.oc{background:#f2c14e;color:#2b211a}.sgOdds.od{background:#d64545;color:#fff}
+#sgLayer.rUR .sgCard{border-color:#ff9a5c;box-shadow:0 0 0 3px rgba(242,193,78,.6),0 0 40px rgba(255,140,80,.55);background:radial-gradient(circle at 25% 40%,rgba(255,170,90,.25),transparent 55%),#261d16}
+#sgLayer.rSSR .sgCard{border-color:#f2c14e;box-shadow:0 0 0 3px rgba(242,193,78,.45),0 0 28px rgba(242,193,78,.45);background:radial-gradient(circle at 25% 40%,rgba(242,193,78,.18),transparent 55%),#261d16}
+#sgLayer.rSR .sgCard{border-color:#b98cf0;box-shadow:0 0 20px rgba(185,140,240,.35)}
+#sgLayer.rUR .sgReveal .sgP,#sgLayer.rSSR .sgReveal .sgP{animation:sgPop .7s cubic-bezier(.2,1.6,.4,1)}
+@keyframes sgPop{0%{transform:scale(.3) rotate(-20deg)}100%{transform:none}}
+
 #sgPanel.hide{display:none}
 #sgPanelTab{position:absolute;left:calc(8px + var(--sa-l,0px));top:60px;width:36px;height:44px;display:none;background:rgba(38,29,22,.94);color:#f2c14e;border:1.5px solid #8a6a3a;border-radius:10px;font:900 18px inherit;font-family:inherit;cursor:pointer}
 #sgPanelTab.show{display:block}
@@ -231,7 +249,7 @@ body.touch #bD.hide{display:none}
 #sg.small .sgO{padding:5px;margin-bottom:5px}#sg.small .sgOh{margin-bottom:4px}#sg.small .sgOh b{font-size:13px}#sg.small .sgO .sgCmd{min-height:28px;font-size:11px}
 #sg.small .sgG{padding:6px;gap:6px}#sg.small .sgGi>b{font-size:13px}#sg.small .sgSt{font-size:9px}
 #sg.small .sgRoadRow{font-size:12px;padding:2px 0}
-#sg.small #sgEnd{height:42px;padding:0 18px;font-size:15px}#sg.small #sgAuto{bottom:calc(62px + var(--sa-b,0px));height:36px;font-size:14px}
+#sg.small #sgTitle{display:none}#sg.small #sgTop #sgEnd{font-size:13px;padding:0 10px}#sg.small #sgRes span i{width:16px;height:16px}
 .sgChips button.on small{color:#7a2b1f}
 </style>
 </head>
@@ -274,12 +292,10 @@ body.touch #bD.hide{display:none}
   </div>
   <div id="sg" class="modal">
     <canvas id="sgMap"></canvas>
-    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
+    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgAuto"></button><button id="sgEnd"></button><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
     <div id="sgPanel"></div>
     <button id="sgPanelTab">»</button>
-    <div id="sgZoom"><button id="sgZIn">＋</button><button id="sgZOut">－</button><button id="sgZHome">◎</button></div>
-    <button id="sgAuto"></button>
-    <button id="sgEnd"></button>
+    <div id="sgZoom"><button id="sgZIn">+</button><button id="sgZOut">−</button><button id="sgZHome">◎</button></div>
     <div id="sgToast"></div>
     <div id="sgLayer"></div>
   </div>
@@ -326,8 +342,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=4701f7fb22","./js/bigmap.js":"./js/bigmap.js?v=4701f7fb22","./js/config.js":"./js/config.js?v=4701f7fb22","./js/fire.js":"./js/fire.js?v=4701f7fb22","./js/game.js":"./js/game.js?v=4701f7fb22","./js/geo.js":"./js/geo.js?v=4701f7fb22","./js/glb.js":"./js/glb.js?v=4701f7fb22","./js/hud.js":"./js/hud.js?v=4701f7fb22","./js/i18n.js":"./js/i18n.js?v=4701f7fb22","./js/input.js":"./js/input.js?v=4701f7fb22","./js/main.js":"./js/main.js?v=4701f7fb22","./js/math.js":"./js/math.js?v=4701f7fb22","./js/missions.js":"./js/missions.js?v=4701f7fb22","./js/models.js":"./js/models.js?v=4701f7fb22","./js/nav.js":"./js/nav.js?v=4701f7fb22","./js/orient.js":"./js/orient.js?v=4701f7fb22","./js/poi.js":"./js/poi.js?v=4701f7fb22","./js/pranks.js":"./js/pranks.js?v=4701f7fb22","./js/props.js":"./js/props.js?v=4701f7fb22","./js/renderer.js":"./js/renderer.js?v=4701f7fb22","./js/sg_data.js":"./js/sg_data.js?v=4701f7fb22","./js/sg_elev.js":"./js/sg_elev.js?v=4701f7fb22","./js/sg_engine.js":"./js/sg_engine.js?v=4701f7fb22","./js/sg_sites.js":"./js/sg_sites.js?v=4701f7fb22","./js/sg_ui.js":"./js/sg_ui.js?v=4701f7fb22","./js/signals.js":"./js/signals.js?v=4701f7fb22","./js/world.js":"./js/world.js?v=4701f7fb22"}}</script>
-<script type="module" src="js/main.js?v=4701f7fb22"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=203036fd61","./js/bigmap.js":"./js/bigmap.js?v=203036fd61","./js/config.js":"./js/config.js?v=203036fd61","./js/fire.js":"./js/fire.js?v=203036fd61","./js/game.js":"./js/game.js?v=203036fd61","./js/geo.js":"./js/geo.js?v=203036fd61","./js/glb.js":"./js/glb.js?v=203036fd61","./js/hud.js":"./js/hud.js?v=203036fd61","./js/i18n.js":"./js/i18n.js?v=203036fd61","./js/input.js":"./js/input.js?v=203036fd61","./js/main.js":"./js/main.js?v=203036fd61","./js/math.js":"./js/math.js?v=203036fd61","./js/missions.js":"./js/missions.js?v=203036fd61","./js/models.js":"./js/models.js?v=203036fd61","./js/nav.js":"./js/nav.js?v=203036fd61","./js/orient.js":"./js/orient.js?v=203036fd61","./js/poi.js":"./js/poi.js?v=203036fd61","./js/pranks.js":"./js/pranks.js?v=203036fd61","./js/props.js":"./js/props.js?v=203036fd61","./js/renderer.js":"./js/renderer.js?v=203036fd61","./js/sg_data.js":"./js/sg_data.js?v=203036fd61","./js/sg_elev.js":"./js/sg_elev.js?v=203036fd61","./js/sg_engine.js":"./js/sg_engine.js?v=203036fd61","./js/sg_sites.js":"./js/sg_sites.js?v=203036fd61","./js/sg_ui.js":"./js/sg_ui.js?v=203036fd61","./js/signals.js":"./js/signals.js?v=203036fd61","./js/world.js":"./js/world.js?v=203036fd61"}}</script>
+<script type="module" src="js/main.js?v=203036fd61"></script>
 <!-- stamp:end -->
 </body>
 </html>
