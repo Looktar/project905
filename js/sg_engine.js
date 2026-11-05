@@ -99,6 +99,7 @@ export const ownedBy = (s, f) => NODE_IDS.filter((c) => s.cities[c].owner === f)
 export const citiesOf = (s, f) => CITY_IDS.filter((c) => s.cities[c].owner === f);    // cities only
 export const factionGens = (s, f) => Object.values(s.gens).filter((g) => g.f === f && !g.hidden && f >= 0).map((g) => g.id);
 export const byLead = (ids) => [...ids].sort((a, b) => gen(b).lead - gen(a).lead);
+export const byWar = (ids) => [...ids].sort((a, b) => gen(b).war - gen(a).war);
 const best = (ids, k) => ids.reduce((m, id) => (m && gen(m)[k] >= gen(id)[k] ? m : id), null);
 export const dateOf = (s) => ({ year: K().startYear + Math.floor(s.turn / 12), month: (s.turn % 12) + 1 });
 export const adjacent = (a, b) => ADJ[a].some((x) => x.c === b);
@@ -239,15 +240,15 @@ export function devAmt(s, f, id) { const k = K(); return Math.round((k.devBase +
 export function draftAmt(id) { const k = K(); return Math.round((k.draftBase + gen(id).lead * k.draftPerLead) * (1 + fx(id, 'draft'))); }
 export function searchChance(s, f, id) { const k = K(); return Math.min(0.95, k.searchBase + gen(id).int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search')); }
 export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0)); }
-// how much an army's officers multiply its troops (v0.9.5: the stats matter more, and the deputies count):
-// the best 统率 leads, the best 武力 fights in front, up to two deputies add their own
+// v0.9.6 (D-83, the 总决策's rule): an army fights in proportion to its 武力 (the best one at its head),
+// so with the same troops the side with the higher 武力 always wins; 统率 decides how many troops an
+// officer can lead (commandOf). A garrison without officers fights at neutralStat.
 export function statMul(ids) {
   const k = K();
-  if (!ids.length) return k.statBase + k.statLead * k.neutralStat / 100 + k.statWar * k.neutralStat / 100;
-  const g = best(ids, 'lead'), war = Math.max(...ids.map((x) => gen(x).war));
-  const deps = ids.filter((x) => x !== g).sort((a, b) => gen(b).lead + gen(b).war - gen(a).lead - gen(a).war).slice(0, 2);
-  return k.statBase + k.statLead * gen(g).lead / 100 + k.statWar * war / 100 + deps.reduce((a, x) => a + k.statDeputy * (gen(x).lead + gen(x).war) / 200, 0);
+  return (ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat) / 100;
 }
+export const commandOf = (id) => Math.round(gen(id).lead * K().leadTroops);
+export const commandOfAll = (ids) => ids.reduce((a, id) => a + commandOf(id), 0);
 // where an officer in c may move: a neighbouring node of ours, or one road further when the first road
 // has a 驿站 relay station (the node in between must be ours too)
 export function moveTargets(s, f, c) {
@@ -273,6 +274,7 @@ export function validOrder(s, f, id, o) {
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
     case 'move': return moveTargets(s, f, c).includes(o.to);
     case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'intercept': return interceptTargets(s, f, c).some((a) => a.id === o.army) && city.troops >= k.minMarch;
     case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= costOf('plot', id);
     default: return false;
   }
@@ -315,7 +317,7 @@ function runOrder(s, f, id, o) {
   } else if (o.cmd === 'move' || o.cmd === 'march') {
     // the officer sets off with his troops; a short road takes one month (he arrives this month)
     const march = o.cmd === 'march';
-    const n = march ? Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac)) : Math.max(0, Math.min(city.troops, Math.floor(o.n || 0)));
+    const n = Math.min(commandOf(id), march ? Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac)) : Math.max(0, Math.min(city.troops, Math.floor(o.n || 0))));
     if (march && n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march' }); return; }
     const route = routeOf(s, f, c, o.to), months = travelMonths(route);
     s.gens[id].c = null; // on the road
@@ -325,7 +327,20 @@ function runOrder(s, f, id, o) {
     if (j) { j.gens.push(id); j.troops += n; }
     else s.armies.push({ id: s.nextArmy++, f, kind: o.cmd, from: c, to: o.to, route, gens: [id], troops: n, terr: march ? terrain(route[route.length - 2], o.to).m : 1, total: months, left: months });
     ev(s, { k: o.cmd, f, c, to: o.to, n, gens: [id], months });
+  } else if (o.cmd === 'intercept') {
+    // sally out against an enemy army on a road through this city: a field battle this month, then home
+    const A = s.armies.find((a) => a.id === o.army), n = Math.min(commandOf(id), city.troops, Math.floor(o.n ?? city.troops * k.marchFrac));
+    if (!A || n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'intercept' }); return; }
+    s.gens[id].c = null; city.troops -= n;
+    const j = s.fields.find((x) => x.b === A && x.a.kind === 'intercept' && x.a.f === f && x.a.from === c);
+    if (j) { j.a.gens.push(id); j.a.troops += n; }
+    else s.fields.push({ a: { id: 0, f, kind: 'intercept', from: c, to: c, route: [c], gens: [id], troops: n }, b: A });
+    ev(s, { k: 'intercept', f, c, g: id, n, fb: A.f, to: A.to });
   }
+}
+// a hostile army on a road that passes through (or ends at) city c can be intercepted from c
+export function interceptTargets(s, f, c) {
+  return (s.armies || []).filter((a) => a.f !== f && !isAlly(s, f, a.f) && a.route.includes(c));
 }
 
 // ---------------------------------------------------------------- computer lords (and 委任 for the player)
@@ -362,9 +377,10 @@ export function aiOrders(s, f, opts = {}) {
       const T = s.cities[t];
       const from = ADJ[t].map((a) => a.c).filter((c) => s.cities[c].owner === f && sup.has(c) && !used.has(c) && free(c).length && s.cities[c].troops >= 800);
       if (!from.length) continue;
-      const ids = from.flatMap((c) => free(c).slice(0, 2));
+      const ids = from.flatMap((c) => free(c).slice(0, 3));
       let troops = 0, tw = 0;
-      for (const c of from) { const x = s.cities[c].troops * k.marchFrac; troops += x; tw += x * terrain(c, t).m; }
+      for (const c of from) { const x = Math.min(s.cities[c].troops * k.marchFrac, commandOfAll(free(c).slice(0, 3))); troops += x; tw += x * terrain(c, t).m; }
+      if (troops < k.minMarch) continue;
       let sc = armyPower(troops, ids) * (tw / troops) * (isWinter(s) ? 1 - k.snowPen : 1) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
       if (T.owner === -1) sc += 0.1;
       if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
@@ -372,9 +388,24 @@ export function aiOrders(s, f, opts = {}) {
     }
     if (!pick1) break;
     for (const c of pick1.from) {
-      const ld = free(c).slice(0, 2), x = Math.floor(s.cities[c].troops * k.marchFrac / ld.length);
-      for (const g of ld) out[g] = { cmd: 'march', to: pick1.t, n: x };
+      const ld = free(c).slice(0, 3);
+      let left = Math.floor(s.cities[c].troops * k.marchFrac);
+      for (const g of ld) { const x = Math.min(commandOf(g), left); left -= x; out[g] = { cmd: 'march', to: pick1.t, n: x }; }
       used.add(c);
+    }
+  }
+  // sallies (v0.9.6): meet an enemy army on a road through our city when our best fighters can beat it
+  for (const c of war ? mine : []) {
+    const C = s.cities[c];
+    for (const A of interceptTargets(s, f, c)) {
+      if (!enemy(A.f) && A.to !== c) continue;
+      const gs = byWar(free(c)).slice(0, 3);
+      if (!gs.length) break;
+      const n = Math.min(Math.floor(C.troops * k.marchFrac), commandOfAll(gs));
+      if (n < k.minMarch || armyPower(n, gs) < armyPower(A.troops, A.gens) * k.aiSally) continue;
+      let left = n;
+      for (const g of gs) { const x = Math.min(commandOf(g), left); left -= x; if (x > 0) out[g] = { cmd: 'intercept', army: A.id, n: x }; }
+      break;
     }
   }
   // everyone else: one job each, most urgent first
@@ -416,7 +447,7 @@ export function aiOrders(s, f, opts = {}) {
 // ---------------------------------------------------------------- the month
 export function beginTurn(s, playerOrders = {}) {
   loadMap(s);
-  s.events = []; s.queue = []; s.armies = s.armies || []; s.nextArmy = s.nextArmy || 1;
+  s.events = []; s.queue = []; s.fields = []; s.arrived = false; s.armies = s.armies || []; s.nextArmy = s.nextArmy || 1;
   const all = [];
   for (const fa of s.factions) {
     if (!fa.alive) continue;
@@ -424,10 +455,24 @@ export function beginTurn(s, playerOrders = {}) {
     for (const id of Object.keys(ords)) all.push([fa.id, id, ords[id]]);
   }
   // domestic first (in a shuffled order so no faction always goes first), armies queue up
-  for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd !== 'march'))) runOrder(s, f, id, o);
+  for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd !== 'march' && o.cmd !== 'intercept'))) runOrder(s, f, id, o);
   for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd === 'march'))) runOrder(s, f, id, o);
-  // the armies arriving this month (left 1): moves into a node of ours just go in; everything else fights.
-  // Armies of one lord arriving at the same place join up and fight as one (terrain: troop-weighted)
+  for (const [f, id, o] of shuffle(s, all.filter(([, , o]) => o.cmd === 'intercept'))) runOrder(s, f, id, o);
+  // two hostile armies coming down the same road from opposite ends meet halfway: a field battle (v0.9.6)
+  for (let i = 0; i < s.armies.length; i++) for (let j = i + 1; j < s.armies.length; j++) {
+    const a = s.armies[i], b = s.armies[j];
+    if (a.f === b.f || isAlly(s, a.f, b.f) || isAlly(s, b.f, a.f)) continue;
+    if (a.from === b.to && a.to === b.from && !s.fields.some((x) => x.a === a || x.b === a || x.a === b || x.b === b)) s.fields.push({ a, b });
+  }
+  s.phase = 'battles';
+  return s.events;
+}
+
+// after the field battles: the armies arriving this month (left 1) reach their goal. Moves into a node
+// of ours just go in; everything else fights. Armies of one lord arriving at the same place join up and
+// fight as one (terrain: troop-weighted)
+function arrivals(s) {
+  s.arrived = true;
   const arriving = s.armies.filter((a) => a.left <= 1);
   s.armies = s.armies.filter((a) => a.left > 1);
   for (const a of arriving) {
@@ -446,12 +491,40 @@ export function beginTurn(s, playerOrders = {}) {
     } else merged.push({ ...m, gens: [...m.gens], froms: [m.from], home: { [m.gens[0]]: m.from } });
   }
   s.queue = merged;
-  s.phase = 'battles';
-  return s.events;
+}
+
+// where on the map two armies meet: partway along the road from a's start
+export function meetPoint(F) {
+  const a = F.a, b = F.b, P = (id) => CITIES[id];
+  if (a.kind === 'intercept') { // out of the city gate towards the enemy
+    const i = b.route.indexOf(a.from), n = b.route[i > 0 ? i - 1 : 1] || b.route[0];
+    return { x: P(a.from).x + (P(n).x - P(a.from).x) * 0.25, z: P(a.from).z + (P(n).z - P(a.from).z) * 0.25 };
+  }
+  const t = 0.5;
+  return { x: P(a.from).x + (P(a.to).x - P(a.from).x) * t, z: P(a.from).z + (P(a.to).z - P(a.from).z) * t };
 }
 
 export function nextBattle(s) {
   loadMap(s);
+  // field battles first (armies meeting on the road, sallies), then the armies that arrive
+  while (s.fields && s.fields.length) {
+    const F = s.fields.shift(), { a, b } = F;
+    if (!s.factions[a.f].alive || !s.factions[b.f].alive || (a.kind !== 'intercept' && !s.armies.includes(a)) || !s.armies.includes(b)) {
+      if (a.kind === 'intercept') homeFrom(s, a, a.troops);
+      continue;
+    }
+    for (const x of [a, b]) x.gens = x.gens.filter((id) => s.gens[id].f === x.f && !s.gens[id].hidden);
+    const m = { field: true, a, b, f: a.f, fb: b.f, to: a.kind === 'intercept' ? a.from : a.to, at: meetPoint(F), troops: a.troops, gens: a.gens };
+    let duel = null;
+    if (a.gens.length && b.gens.length) {
+      const A = best(a.gens, 'war'), D = best(b.gens, 'war'), riv = rivalry(a.gens, b.gens);
+      let p = riv ? K().duelRival : K().duelChance;
+      if (gen(A).war >= 85 && gen(D).war >= 85) p += K().duelBig;
+      if (rnd(s) < p) duel = { a: A, d: D, fa: a.f, fd: b.f, hpA: 100, hpD: 100, n: 0, log: [], rival: riv ? riv.zh : null, rivalEn: riv ? riv.en : null, done: false, win: null };
+    }
+    return { m, duel };
+  }
+  if (!s.arrived) arrivals(s);
   while (s.queue.length) {
     const m = s.queue.shift(), T = s.cities[m.to];
     if (!s.factions[m.f].alive) continue; // the lord fell earlier this month: the army breaks up (its officers already scattered)
@@ -505,8 +578,36 @@ function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
   return troops * statMul(ids) * m;
 }
 
+// an army sent home (an interceptor after its sally, or a beaten army): troops and officers back
+function homeFrom(s, a, troops) { retreat(s, { ...a, home: null }, troops); }
+// a field battle (v0.9.6): no walls, the same rule as everywhere: troops x 武力, fought to the end
+function resolveField(s, m, duelWin, duel) {
+  const k = K(), { a, b } = m;
+  let aMul = isWinter(s) ? 1 - k.snowPen : 1, bMul = aMul;
+  if (duel) {
+    ev(s, { k: 'duel', f: a.f, fd: b.f, c: m.to, a: duel.a, d: duel.d, win: duelWin, rival: duel.rival, field: true });
+    if (duelWin === 'a') { b.troops = Math.round(b.troops * (1 - k.duelLoss)); aMul += k.duelWinAtk; }
+    if (duelWin === 'd') { a.troops = Math.round(a.troops * (1 - k.duelLoss)); bMul += k.duelWinAtk; }
+  }
+  let A = a.troops, B = b.troops;
+  for (let r = 0; r < k.fieldRounds && A > 0 && B > 0; r++) {
+    const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B }) * aMul;
+    const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A }) * bMul;
+    A = Math.max(0, Math.round(A - pb * k.roundLoss)); B = Math.max(0, Math.round(B - pa * k.roundLoss));
+    if (A > 0 && B > 0 && (A < a.troops * k.rout || B < b.troops * k.rout)) break; // one side breaks and runs
+  }
+  const aWon = A * statMul(a.gens) * aMul >= B * statMul(b.gens) * bMul;
+  const W = aWon ? a : b, L = aWon ? b : a, wLeft = aWon ? A : B, lLeft = aWon ? B : A;
+  ev(s, { k: 'field', f: W.f, fl: L.f, c: m.to, at: m.at, lostW: W.troops - wLeft, lostL: L.troops - lLeft, gw: [...W.gens], gl: [...L.gens], intercept: a.kind === 'intercept' });
+  // the loser turns back home with what is left; the winner goes on (an interceptor goes home)
+  if (L.kind !== 'intercept') s.armies = s.armies.filter((x) => x !== L);
+  homeFrom(s, L, lLeft);
+  if (W.kind === 'intercept') homeFrom(s, W, wLeft); else W.troops = wLeft;
+}
+
 export function resolveBattle(s, m, duelWin = null, duel = null) {
   loadMap(s);
+  if (m.field) { resolveField(s, m, duelWin, duel); return; }
   const k = K(), T = s.cities[m.to], o = T.owner, dGens = defenders(s, m.to);
   let aMul = (m.terr ?? 1) * (isWinter(s) ? 1 - k.snowPen : 1), dMul = 1;
   if (duel) {
@@ -523,11 +624,14 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   }
   let A = m.troops, D = T.troops;
   const walls = wallMul(T);
+  // v0.9.6: no dice in the fighting itself (troops x 武力 x walls decide); the siege goes on until one
+  // side breaks, so the stronger side always carries the day
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {
     const pa = sidePower(s, m.f, m.gens, A, { attacking: true, outnumbered: A < D }) * aMul;
     const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A }) * dMul * walls;
-    A = Math.max(0, Math.round(A - pd * k.roundLoss * (0.8 + 0.4 * rnd(s))));
-    D = Math.max(0, Math.round(D - pa * k.roundLoss * (0.8 + 0.4 * rnd(s))));
+    A = Math.max(0, Math.round(A - pd * k.roundLoss));
+    D = Math.max(0, Math.round(D - pa * k.roundLoss));
+    if (A > 0 && A < m.troops * k.rout) break; // the attackers give up
     T.def = Math.max(20, T.def - 2);
     if (D > 0 && D < m.troops * 0.12 && A > D * 3) D = 0; // the garrison gives up
   }
@@ -621,6 +725,7 @@ function randomEvents(s) {
 export function endTurn(s) {
   loadMap(s);
   const k = K();
+  if (s.arrived === false) arrivals(s); // nobody called nextBattle: the arrivals still happen (their battles are lost)
   randomEvents(s);
   for (const fa of s.factions) {
     if (!fa.alive) continue;

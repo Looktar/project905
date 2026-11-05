@@ -4,7 +4,7 @@ import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
   terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
-  statMul, draftAmt, devAmt, searchChance, costOf,
+  statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -101,7 +101,8 @@ describe('real terrain (v0.8)', () => {
       for (const c of CITY_IDS) s.cities[c].owner = -1;
       for (const x of factionGens(s, 0)) s.gens[x].c = 'unv';
       Object.assign(s.cities.unv, { owner: 0, troops: 10000 }); s.factions[0].cap = 'unv';
-      runTurn(s, { [id]: { cmd: 'march', to: 'p_tg', n: 10000 } });
+      const keep = CFG.sg.leadTroops; CFG.sg.leadTroops = 200; // one officer leading the whole big army (統率 limits are tested elsewhere)
+      try { runTurn(s, { [id]: { cmd: 'march', to: 'p_tg', n: 10000 } }); } finally { CFG.sg.leadTroops = keep; }
       if (s.cities.p_tg.owner === 0) won++;
       expect(guardsIn(s, 'p_tg').length).toBeLessThanOrEqual(s.cities.p_tg.owner === 0 ? 0 : 1);
       if (s.cities.p_tg.owner === 0) expect(s.gens[g].guard).toBe(false);
@@ -309,6 +310,68 @@ describe('officers make a real difference (v0.9.5)', () => {
     let wins = 0;
     for (let i = 0; i < 40; i++) { const d = { a: 'lvbu', d: 'huanggai', fa: 0, fd: 1, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null }; if (autoDuel(s, d) === 'a') wins++; }
     expect(wins).toBeGreaterThan(30); // 武力 100 vs 82: still a rock-paper-scissors fight, but a clear favourite
+  });
+});
+
+describe('统率 leads troops, 武力 wins battles, armies meet in the field (v0.9.6)', () => {
+  // a bare board: the player and lord 1 only, nobody else around
+  const duo = () => {
+    const s = newGame(9);
+    for (const f of s.factions.slice(2)) { f.alive = false; for (const x of factionGens(s, f.id)) Object.assign(s.gens[x], { f: -1, hidden: true }); }
+    for (const c of NODE_IDS) s.cities[c].owner = -1;
+    for (const g of Object.values(s.gens)) if (!g.hidden && !g.guard) Object.assign(g, { f: -1, hidden: true, c: CITY_IDS[0] });
+    CFG.sg.eventChance = 0;
+    return s;
+  };
+  const join = (s, id, f, c) => Object.assign(s.gens[id], { f, c, hidden: false, guard: false });
+  afterEach(() => { CFG.sg.eventChance = 0.55; });
+  it('an officer leads at most 统率 x 60 troops', () => {
+    const s = duo();
+    join(s, 'zhangfei', 0, 'btv'); Object.assign(s.cities.btv, { owner: 0, troops: 9000 }); s.factions[0].cap = 'btv';
+    runTurn(s, { zhangfei: { cmd: 'march', to: 'wdb', n: 9000 } });
+    const sent = 9000 - s.cities.btv.troops;
+    expect(commandOf('zhangfei')).toBe(GENERALS.zhangfei.lead * CFG.sg.leadTroops);
+    expect(sent).toBeLessThanOrEqual(commandOf('zhangfei'));
+  });
+  it('same troops: the higher 武力 always wins in the field (two armies meeting on a road)', () => {
+    for (const [strong, weak] of [['lvbu', 'xuchu'], ['guanyu', 'zhangliao'], ['zhangfei', 'liubei']]) {
+      for (const flip of [false, true]) {
+        const s = duo(), [p0, p1] = flip ? [weak, strong] : [strong, weak];
+        join(s, p0, 0, 'btv'); // lord 1's officer joins after the computer gave its orders (no sally of its own)
+        Object.assign(s.cities.btv, { owner: 0, troops: 4000 }); Object.assign(s.cities.wdb, { owner: 1, troops: 4000 });
+        s.factions[0].cap = 'btv'; s.factions[1].cap = 'wdb'; s.turn = 6;
+        CFG.sg.duelChance = 0; CFG.sg.duelRival = 0; CFG.sg.duelBig = 0;
+        try {
+          beginTurn(s, { [p0]: { cmd: 'march', to: 'wdb', n: 3000 } });
+          // lord 1 sends the same 3,000 the other way
+          s.cities.wdb.troops -= 3000; join(s, p1, 1, null);
+          s.armies.push({ id: 99, f: 1, kind: 'march', from: 'wdb', to: 'btv', route: ['wdb', 'btv'], gens: [p1], troops: 3000, terr: 1, total: 2, left: 2 });
+          s.fields.push({ a: s.armies[0], b: s.armies[1] });
+          for (let b = nextBattle(s); b; b = nextBattle(s)) resolveBattle(s, b.m, null, null);
+        } finally { CFG.sg.duelChance = 0.5; CFG.sg.duelRival = 0.85; CFG.sg.duelBig = 0.15; }
+        const fe = s.events.find((e) => e.k === 'field');
+        expect(fe).toBeTruthy();
+        expect(fe.gw).toContain(strong);
+      }
+    }
+  });
+  it('a sally from the city stops an army coming at it', () => {
+    const s = duo();
+    join(s, 'guanyu', 0, 'btv'); join(s, 'xunyu', 1, 'wdb');
+    Object.assign(s.cities.btv, { owner: 0, troops: 5000 }); Object.assign(s.cities.wdb, { owner: 1, troops: 5000 });
+    s.factions[0].cap = 'btv'; s.factions[1].cap = 'wdb'; s.turn = 6;
+    s.gens.xunyu.c = null; s.cities.wdb.troops -= 2500;
+    s.armies.push({ id: 7, f: 1, kind: 'march', from: 'wdb', to: 'btv', route: ['wdb', 'btv'], gens: ['xunyu'], troops: 2500, terr: 1, total: 2, left: 1 });
+    expect(interceptTargets(s, 0, 'btv').map((a) => a.id)).toEqual([7]);
+    expect(validOrder(s, 0, 'guanyu', { cmd: 'intercept', army: 7 })).toBe(true);
+    runTurn(s, { guanyu: { cmd: 'intercept', army: 7, n: 3000 } });
+    expect(s.events.some((e) => e.k === 'field' && e.f === 0 && e.intercept)).toBe(true);
+    expect(s.events.some((e) => e.k === 'skip')).toBe(false); // the order runs once
+    expect(s.cities.btv.owner).toBe(0);          // the enemy never reached the walls
+    expect(s.gens.guanyu.c).toBe('btv');         // and Guan Yu is back home
+    expect(s.armies.length).toBe(0);
+    expect(s.gens.xunyu.c).toBe('wdb');          // the beaten army went home
+    check(s);
   });
 });
 

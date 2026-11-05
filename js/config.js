@@ -110,7 +110,7 @@ export const CFG = {
     goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
     searchBase: 0.15, searchPerInt: 1 / 160, treasure: [0.25, 80, 150], marchFrac: 0.8,
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelSkill: 0.4, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
-    rounds: 8, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
+    rounds: 30, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
     aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
     // v0.8 (D-74): one order per officer a month; passes (real parks, D-75); real terrain
@@ -126,9 +126,11 @@ export const CFG = {
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
     // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
     marchSpeed: 650, relaySpeed: 1.6,
-    // v0.9.5 (D-82): officers matter more. Army multiplier = statBase + statLead x best 统率 + statWar x best 武力
-    // + statDeputy x each of two deputies; duel damage follows (武力 ratio) ^ duelExp
-    statBase: 0.3, statLead: 0.9, statWar: 0.45, statDeputy: 0.15, duelExp: 2.2, duelMin: 0.35, duelMax: 2.8,
+    // duel damage follows (武力 ratio) ^ duelExp
+    duelExp: 2.2, duelMin: 0.35, duelMax: 2.8,
+    // v0.9.6 (D-83): an officer leads 统率 x leadTroops troops; battles (no dice) go on to the end: up to
+    // `rounds` rounds of a siege / fieldRounds in the field, until a side drops under `rout` of its start
+    leadTroops: 60, fieldRounds: 40, rout: 0.25, aiSally: 1.1,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p
