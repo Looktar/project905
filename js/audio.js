@@ -140,3 +140,43 @@ export function fireSirenUpdate(level) {
     fsiren.g.gain.setTargetAtTime(level * 0.035, t, 0.1);
   }
 }
+
+// ---- 万锦三国志 (v0.9.4, D-81): war drums, clashing steel, fanfares, blind-box sparkle
+export function drum(n = 2) {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  for (let i = 0; i < n; i++) {
+    const t0 = t + i * 0.22, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(120, t0); o.frequency.exponentialRampToValueAtTime(48, t0 + 0.25);
+    env(g, t0, 0.005, 0.3, 0.8); o.connect(g).connect(master); o.start(t0); o.stop(t0 + 0.35);
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g2 = ctx.createGain();
+    s.buffer = noiseBuf(0.1); f.type = 'lowpass'; f.frequency.value = 600; env(g2, t0, 0.002, 0.08, 0.3);
+    s.connect(f).connect(g2).connect(master); s.start(t0);
+  }
+}
+export function clash(vol = 1) {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  for (const fr of [1870, 2630, 3410]) tone(fr * (0.97 + Math.random() * 0.06), t, 0.35, 0.05 * vol, 'triangle');
+  const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf(0.15); f.type = 'highpass'; f.frequency.value = 3000; env(g, t, 0.001, 0.12, 0.35 * vol);
+  s.connect(f).connect(g).connect(master); s.start(t);
+}
+export function fanfare(good = true) {
+  if (!ctx) return;
+  const t = ctx.currentTime, notes = good ? [523, 659, 784, 1047] : [392, 349, 311, 262];
+  notes.forEach((fr, i) => tone(fr, t + i * 0.13, i === 3 ? 0.5 : 0.14, 0.12, good ? 'square' : 'triangle'));
+}
+export function sparkle() {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  [1568, 1976, 2349, 3136, 2637].forEach((fr, i) => tone(fr, t + i * 0.06, 0.25, 0.07, 'sine'));
+}
+export function whoosh() {
+  if (!ctx) return;
+  const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf(0.6); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(2600, t + 0.45);
+  s.connect(f).connect(g).connect(master); env(g, t, 0.08, 0.45, 0.3); s.start(t);
+}
+// stop the street loops (engine, sirens) when leaving the streets
+export function quiet() { engineUpdate(false, 0); sirenUpdate(0); fireSirenUpdate(0); }

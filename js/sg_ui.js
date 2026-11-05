@@ -6,6 +6,7 @@ import { CFG } from './config.js';
 import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
+import * as sfx from './audio.js';
 import { GENERALS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
 
@@ -26,7 +27,7 @@ extend({
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
-  sgTargets: '目标（也可以点地图）', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
+  sgTargets: '目标（也可以点地图）', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
@@ -55,7 +56,7 @@ extend({
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
-  sgTargets: 'Targets (or tap the map)', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
+  sgTargets: 'Targets (or tap the map)', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
@@ -99,31 +100,38 @@ function genCard(id, opts = {}) {
 export class Sanguo {
   constructor(onClose) {
     this.onClose = onClose; this.cv = $('sgMap'); this.ctx = this.cv.getContext('2d'); this.ptrs = new Map();
-    this.sel = null; this.mode = null; this.busy = false; this.pulse = 0;
+    this.sel = null; this.mode = null; this.busy = false; this.pulse = 0; this.fx = []; this.shake = 0; this.tween = null; this.skipFx = false;
     $('sgEnd').addEventListener('click', () => this.endMonth());
     $('sgAuto').addEventListener('click', () => this.autoAssign());
     $('sgPanelTab').addEventListener('click', () => this.togglePanel(false));
+    // zoom buttons for those who find pinching fiddly: in, out, back to your capital
+    $('sgZIn').addEventListener('click', () => this.zoomAt(1.5, this.ox, this.oy));
+    $('sgZOut').addEventListener('click', () => this.zoomAt(1 / 1.5, this.ox, this.oy));
+    $('sgZHome').addEventListener('click', () => { this.k = this.s0; this.focus(this.s.factions[E.PLAYER].cap); });
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
     dragScroll($('sg'), '#sgPanel, .sgCard');
     const cv = this.cv;
-    cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
+    cv.addEventListener('pointerdown', (e) => { if (this.busy) this.skipFx = true; if (e.isPrimary) this.ptrs.clear(); /* a lost pointerup (iOS) must not leave a ghost finger */ cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
     cv.addEventListener('pointermove', (e) => {
       const p = this.ptrs.get(e.pointerId);
       if (!p) return;
       const [x, y] = toGamePoint(e.clientX, e.clientY);
       if (this.ptrs.size === 1) { this.cx -= (x - p.x) / this.k; this.cz -= (y - p.y) / this.k; this.clamp(); if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true; }
       else {
-        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
+        // two fingers: zoom about them and move with them
+        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y), m0x = (a.x + b.x) / 2, m0y = (a.y + b.y) / 2;
         p.x = x; p.y = y;
-        const d1 = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d0 > 10) this.zoomAt(d1 / d0, (a.x + b.x) / 2, (a.y + b.y) / 2);
+        const d1 = Math.hypot(a.x - b.x, a.y - b.y), m1x = (a.x + b.x) / 2, m1y = (a.y + b.y) / 2;
+        if (d0 > 10) this.zoomAt(d1 / d0, m1x, m1y);
+        this.cx -= (m1x - m0x) / this.k; this.cz -= (m1y - m0y) / this.k;
       }
       p.x = x; p.y = y;
     });
     const up = (e) => { const p = this.ptrs.get(e.pointerId); this.ptrs.delete(e.pointerId); if (p && !this.moved && !this.ptrs.size) this.tap(p.x, p.y); };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', (e) => this.ptrs.delete(e.pointerId));
+    document.addEventListener('touchend', (e) => { if (!e.touches.length) this.ptrs.clear(); });
     cv.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = toGamePoint(e.clientX, e.clientY); this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y); }, { passive: false });
   }
 
@@ -158,7 +166,7 @@ export class Sanguo {
     const fitW = (aw - 30) / (Math.max(...xs) - Math.min(...xs) + 380), fitH = (ah - 24) / (Math.max(...zs) - Math.min(...zs) + 200);
     // a phone is wide and short: rather than a postage stamp, zoom in so the map fills the width and pan up and down
     const fitS = small ? Math.min(fitW, fitH * 1.7) : Math.min(fitW, fitH);
-    this.sMin = Math.min(fitW, fitH) * 0.85; this.sMax = fitS * 4;
+    this.sMin = Math.min(fitW, fitH) * 0.7; this.sMax = fitS * 5; // room to see the whole board, and to get close
     if (fit || !this.s0) { this.k = fitS; this.s0 = fitS; this.cx = (Math.max(...xs) + Math.min(...xs)) / 2; this.cz = (Math.max(...zs) + Math.min(...zs)) / 2 + 20; }
     this.k = Math.min(this.sMax, Math.max(this.sMin, this.k));
     this.clamp();
@@ -178,7 +186,14 @@ export class Sanguo {
   togglePanel(hide) { this.panelHidden = hide; this.resize(this.W, this.H, false); this.render(); }
   loop() {
     if (!$('sg').classList.contains('show')) return;
-    this.pulse += 1 / 60; this.draw();
+    this.pulse += 1 / 60;
+    if (this.tween) { // a smooth camera move (battle playback)
+      const tw = this.tween, p = Math.min(1, (performance.now() - tw.t0) / tw.dur), e = p * p * (3 - 2 * p);
+      this.cx = tw.x0 + (tw.x1 - tw.x0) * e; this.cz = tw.z0 + (tw.z1 - tw.z0) * e; this.k = tw.k0 + (tw.k1 - tw.k0) * e;
+      if (p >= 1) { this.tween = null; this.clamp(); }
+    }
+    this.shake *= 0.88;
+    this.draw();
     requestAnimationFrame(() => this.loop());
   }
   zoomAt(f, x = this.ox, y = this.oy) {
@@ -232,6 +247,7 @@ export class Sanguo {
     const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, S = CFG.minimap.pxPerM, st = this.s;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     c.fillStyle = '#241b14'; c.fillRect(0, 0, W, H); // the table the map lies on
+    if (this.shake > 0.3) c.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     const [x0, y0] = this.toScreen(-HW, -HH), mw = HW * 2 * s, mh = HH * 2 * s;
     c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 24; c.fillStyle = '#9fd067'; c.fillRect(x0, y0, mw, mh); c.restore();
     c.save(); c.beginPath(); c.rect(x0, y0, mw, mh); c.clip();
@@ -303,7 +319,7 @@ export class Sanguo {
     const free = (r, id) => inside(r) && !taken.some((q) => q.id !== id && r[0] < q.r[2] && r[2] > q.r[0] && r[1] < q.r[3] && r[3] > q.r[1]);
     // the panel, the buttons and the compass sit on top of the map: labels keep clear of them too
     const box = (el) => (el && el.offsetWidth ? [el.offsetLeft - 4, el.offsetTop - 4, el.offsetLeft + el.offsetWidth + 4, el.offsetTop + el.offsetHeight + 4] : null);
-    for (const r of [this.panelHidden ? box($('sgPanelTab')) : [0, 0, this.panelW + 12, H], box($('sgAuto')), box($('sgEnd')), [this.panelW, H - 60, this.panelW + 110, H]]) if (r) taken.push({ id: '', r });
+    for (const r of [this.panelHidden ? box($('sgPanelTab')) : [0, 0, this.panelW + 12, H], box($('sgAuto')), box($('sgEnd')), box($('sgZoom')), [this.panelW, H - 60, this.panelW + 110, H]]) if (r) taken.push({ id: '', r });
     const prio = (id) => (id === this.sel ? 0 : st.cities[id].owner === E.PLAYER ? 1 : CITIES[id].pass ? 3 : 2);
     c.font = `700 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     const lh = fs + 7, tag = 16;
@@ -367,6 +383,36 @@ export class Sanguo {
       c.fillText(lead ? GENERALS[lead].zh.slice(-1) : '兵', 0, 2.5);
       c.restore();
       pill(c, x, y + 24, a.f === E.PLAYER ? '#cfe3ff' : '#ffd6d0', `${kNum(a.troops)} · ${this.eta(a)}`);
+    }
+    // battle effects (v0.9.4): clashing swords, a burst when a city falls, a rising banner
+    const now = performance.now();
+    this.fx = this.fx.filter((f) => now - f.t0 < f.dur);
+    for (const f of this.fx) {
+      const p = (now - f.t0) / f.dur, [x, y] = this.toScreen(CITIES[f.c].x, CITIES[f.c].z);
+      c.save();
+      if (f.type === 'clash') {
+        const r = 26 + 22 * Math.sin(p * Math.PI);
+        for (let i = 0; i < 10; i++) { // sparks
+          const a = i / 10 * 6.283 + p * 2, r0 = r * 0.6, r1 = r * (1 + 0.5 * ((i * 7) % 3) / 3);
+          c.strokeStyle = i % 2 ? f.ca : f.cb; c.lineWidth = 3; c.globalAlpha = 1 - p * 0.6;
+          c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y - 10 + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y - 10 + Math.sin(a) * r1); c.stroke();
+        }
+        c.globalAlpha = 1; c.font = `900 ${Math.round(34 + 10 * Math.sin(p * 20))}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('⚔', x, y - 12);
+        if (f.text) { c.font = '900 13px system-ui, sans-serif'; pill(c, x, y + 34, '#fff', f.text); }
+      } else if (f.type === 'burst') {
+        c.strokeStyle = f.ca; c.lineWidth = 6 * (1 - p); c.globalAlpha = 1 - p;
+        c.beginPath(); c.arc(x, y - 6, 20 + 80 * p, 0, 7); c.stroke();
+      } else if (f.type === 'banner') {
+        const sc = p < 0.15 ? 0.6 + p / 0.15 * 0.5 : 1.1 - Math.min(0.1, (p - 0.15));
+        c.globalAlpha = p > 0.8 ? (1 - p) / 0.2 : 1; c.translate(x, y - 60 - 20 * p); c.scale(sc, sc);
+        c.font = "900 26px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.lineWidth = 6; c.strokeStyle = '#2b211a'; c.strokeText(f.text, 0, 0); c.fillStyle = f.ca; c.fillText(f.text, 0, 0);
+      } else if (f.type === 'puff') {
+        c.strokeStyle = f.ca; c.lineWidth = 3; c.globalAlpha = 0.8 * (1 - p);
+        c.beginPath(); c.arc(x, y - 6, 12 + 30 * p, 0, 7); c.stroke();
+      }
+      c.restore();
     }
     // compass, bottom left of the map area (the corners on the right hold the buttons)
     const nx = this.panelW + (this.panelHidden ? 70 : 32), ny = H - 30;
@@ -522,11 +568,18 @@ export class Sanguo {
     if (this.busy) return;
     const st = this.s;
     this.busy = true; this.mode = null;
+    this.skipFx = false;
+    sfx.drum(2);
     E.beginTurn(st, st.orders);
     for (let b = E.nextBattle(st); b; b = E.nextBattle(st)) {
+      const to = b.m.to, mine = b.m.f === E.PLAYER || st.cities[to].owner === E.PLAYER, fd = st.cities[to].owner;
+      if (mine) await this.battleIntro(b);
       let win = null;
       if (b.duel) win = b.duel.fa === E.PLAYER || b.duel.fd === E.PLAYER ? await this.duelUI(b.duel) : E.autoDuel(st, b.duel);
       E.resolveBattle(st, b.m, win, b.duel);
+      const res = [...st.events].reverse().find((e) => (e.k === 'take' || e.k === 'repel') && e.c === to);
+      if (mine) await this.battleResult(b, res, fd);
+      else this.fx.push({ type: 'puff', c: to, t0: performance.now(), dur: 900, ca: this.fColor(b.m.f) });
     }
     const evs = E.endTurn(st);
     st.orders = {};
@@ -537,6 +590,28 @@ export class Sanguo {
     this.busy = false; this.render();
   }
 
+  // battle playback (v0.9.4): the camera flies to a battle you are in, swords clash, then the result.
+  // A tap on the map skips ahead.
+  wait(ms) {
+    return new Promise((res) => { const t0 = performance.now(); const tick = () => (this.skipFx || performance.now() - t0 >= ms ? res() : requestAnimationFrame(tick)); tick(); });
+  }
+  async battleIntro(b) {
+    const C = CITIES[b.m.to], k1 = Math.max(this.k, this.s0 * 1.25);
+    if (!this.skipFx) { this.tween = { x0: this.cx, z0: this.cz, k0: this.k, x1: C.x, z1: C.z, k1, t0: performance.now(), dur: 450 }; await this.wait(480); }
+    sfx.clash(); this.shake = 10;
+    this.fx.push({ type: 'clash', c: b.m.to, t0: performance.now(), dur: 900, ca: this.fColor(b.m.f), cb: this.fColor(this.s.cities[b.m.to].owner), text: `${kNum(b.m.troops)} ⚔ ${kNum(this.s.cities[b.m.to].troops)}` });
+    setTimeout(() => sfx.clash(0.7), 280);
+    await this.wait(900);
+  }
+  async battleResult(b, res, fd) {
+    if (!res) return;
+    const P = E.PLAYER, took = res.k === 'take', youWon = took ? b.m.f === P : fd === P;
+    const text = took ? (b.m.f === P ? t('sgFxTake') : t('sgFxLost')) : (fd === P ? t('sgFxHeld') : t('sgFxRepelled'));
+    if (took) { this.fx.push({ type: 'burst', c: b.m.to, t0: performance.now(), dur: 700, ca: this.fColor(b.m.f) }); this.shake = 14; }
+    this.fx.push({ type: 'banner', c: b.m.to, t0: performance.now(), dur: 1300, ca: youWon ? '#f2c14e' : '#ff8a80', text });
+    sfx.fanfare(youWon);
+    await this.wait(1100);
+  }
   evText(e) {
     const st = this.s, P = E.PLAYER, f = this.fName(e.f ?? -1);
     switch (e.k) {
@@ -590,6 +665,7 @@ export class Sanguo {
     this.layer(`<h2>${t('sgLog')}<button class="sgX" data-ok="1">✕</button></h2><ul class="sgEv">${lines.map(([e, x]) => { const d = E.dateOf({ turn: e.t }); return `<li><small>${d.year}.${d.month}</small> ${esc(x)}</li>`; }).join('') || `<li>${t('sgQuiet')}</li>`}</ul>`);
   }
   reveal(g, title, line) {
+    sfx.sparkle();
     const bonds = BONDS.filter((b) => b.m.includes(g)).map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)}：${b.m.map((x) => esc(gName(x))).join(' · ')}</div>`).join('');
     return this.layer(`<h2 class="sgCenter">${esc(title)}</h2><div class="sgReveal">${portrait(g, 96)}<div><div class="sgBigName">${esc(gName(g))}</div>${statBars(g)}<div class="sgTrw">${traitTag(g)}</div>${bonds}</div></div>
       <p class="sgCenter">${esc(line)}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip');
@@ -607,14 +683,15 @@ export class Sanguo {
     const st = this.s, mineA = d.fa === E.PLAYER, me = mineA ? d.a : d.d, foe = mineA ? d.d : d.a;
     const L = $('sgLayer');
     L.className = 'show duel';
-    const paint = (msg) => {
+    const paint = (msg, hitMe = 0, hitFoe = 0, big = false) => {
       const hpMe = mineA ? d.hpA : d.hpD, hpFoe = mineA ? d.hpD : d.hpA;
-      const side = (g, hp, col) => `<div class="sgDs">${portrait(g, 84)}<b>${esc(gName(g))}</b><small>${zh() ? '武力' : 'WAR'} ${GENERALS[g].war}</small><i class="sgHp"><b style="width:${hp}%;background:${col}"></b></i><em>${hp}</em></div>`;
+      // a hit: the side shakes and the damage floats up (a big hit, a special move, shakes the card too)
+      const side = (g, hp, col, hit) => `<div class="sgDs${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 84)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<b>${esc(gName(g))}</b><small>${zh() ? '武力' : 'WAR'} ${GENERALS[g].war}</small><i class="sgHp"><b style="width:${hp}%;background:${col}"></b></i><em>${hp}</em></div>`;
       const btns = d.done
         ? `<button class="sgBig" data-dm="ok">${t('sgContinue')}</button>`
         : `<div class="sgDm">${['atk', 'def', 'skill'].map((m) => `<button data-dm="${m}">${t(MOVES[m])}</button>`).join('')}</div><p class="sgRule">${t('sgDuelRule')}</p>`;
-      L.innerHTML = `<div class="sgCard"><h2 class="sgCenter">${t('sgDuel')} <small>${d.rival ? esc(F('sgRival', { r: zh() ? d.rival : d.rivalEn })) : F('sgRound', { n: Math.min(d.n + 1, CFG.sg.duelRounds) })}</small></h2>
-        <div class="sgDuel">${side(me, hpMe, '#2f7de1')}<span class="sgVs">VS</span>${side(foe, hpFoe, '#d64545')}</div>
+      L.innerHTML = `<div class="sgCard${big ? ' jolt' : ''}"><h2 class="sgCenter">${t('sgDuel')} <small>${d.rival ? esc(F('sgRival', { r: zh() ? d.rival : d.rivalEn })) : F('sgRound', { n: Math.min(d.n + 1, CFG.sg.duelRounds) })}</small></h2>
+        <div class="sgDuel">${side(me, hpMe, '#2f7de1', hitMe)}<span class="sgVs">VS</span>${side(foe, hpFoe, '#d64545', hitFoe)}</div>
         <p class="sgCenter sgMsg">${msg}</p>${btns}</div>`;
     };
     paint(esc(F('sgDuelVs', { a: gName(d.a), d: gName(d.d) })));
@@ -629,7 +706,10 @@ export class Sanguo {
         const hits = [r.dmgA && F('sgHit', { g: gName(d.a), n: r.dmgA }), r.dmgD && F('sgHit', { g: gName(d.d), n: r.dmgD })].filter(Boolean).join(' · ');
         let msg = `${esc(F('sgMoves', { a: t(MOVES[myMv]), d: t(MOVES[foeMv]) }))}<br>${esc(hits)}`;
         if (d.done) msg += `<br><b>${esc(d.win ? F('sgDuelWin', { g: gName(d.win === 'a' ? d.a : d.d) }) : t('sgDuelDraw'))}</b>`;
-        paint(msg);
+        const hitMe = mineA ? r.dmgA : r.dmgD, hitFoe = mineA ? r.dmgD : r.dmgA, big = Math.max(hitMe, hitFoe) >= 25;
+        if (hitMe || hitFoe) { sfx.punch(big ? 1.2 : 0.8); if (big) sfx.clash(0.6); } else sfx.clash(0.4);
+        if (d.done) setTimeout(() => (d.win ? sfx.fanfare((d.win === 'a') === mineA) : sfx.drum(1)), 250);
+        paint(msg, hitMe, hitFoe, big);
       };
       L.addEventListener('click', h);
     });
