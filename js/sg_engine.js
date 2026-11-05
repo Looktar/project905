@@ -104,12 +104,35 @@ const best = (ids, k) => ids.reduce((m, id) => (m && gen(m)[k] >= gen(id)[k] ? m
 export const dateOf = (s) => ({ year: K().startYear + Math.floor(s.turn / 12), month: (s.turn % 12) + 1 });
 export const adjacent = (a, b) => ADJ[a].some((x) => x.c === b);
 export const linkOf = (a, b) => ADJ[a].find((x) => x.c === b) || null;
-// the road an army takes from a to b: the direct road, or two roads through a node of ours (relay moves)
-export function routeOf(s, f, a, b) {
-  if (adjacent(a, b)) return [a, b];
-  const via = ADJ[a].find(({ c: n, station }) => station && s.cities[n].owner === f && adjacent(n, b));
-  return via ? [a, via.c, b] : [a, b];
+// the road an army takes from a to b (v0.9.8): the quickest way through nodes of f (any number of
+// roads, 驿站 roads count faster); the last road may end at someone else's node. Falls back to [a, b].
+const legTime = (x, y, l) => Math.hypot(CITIES[x].x - CITIES[y].x, CITIES[x].z - CITIES[y].z) / (K().marchSpeed * (l.station ? K().relaySpeed : 1));
+function roads(s, f, a) { // quickest times from a through f's own nodes; foreign nodes are reached but not passed
+  const d = { [a]: 0 }, prev = {}, done = new Set();
+  for (;;) {
+    let c = null;
+    for (const n in d) if (!done.has(n) && (c === null || d[n] < d[c])) c = n;
+    if (c === null) break;
+    done.add(c);
+    if (c !== a && s.cities[c].owner !== f) continue;
+    for (const l of ADJ[c]) { const t = d[c] + legTime(c, l.c, l); if (d[l.c] === undefined || t < d[l.c] - 1e-9) { d[l.c] = t; prev[l.c] = c; } }
+  }
+  return { d, prev };
 }
+export function routeOf(s, f, a, b) {
+  loadMap(s);
+  const { prev } = roads(s, f, a);
+  if (prev[b] === undefined) return [a, b];
+  const r = [b];
+  while (r[0] !== a) r.unshift(prev[r[0]]);
+  return r;
+}
+// every node an officer in c can reach within maxMarch months: own nodes (move) or others' (march)
+function reach(s, f, c) {
+  const { d } = roads(s, f, c), lim = K().maxMarch;
+  return Object.keys(d).filter((n) => n !== c && Math.max(1, Math.ceil(d[n] - 0.15)) <= lim);
+}
+export const marchTargets = (s, f, c) => { loadMap(s); return reach(s, f, c).filter((n) => s.cities[n].owner !== f); };
 // months on the road (v0.9.3): road length / marching speed, quicker on a road with a 驿站
 export function travelMonths(route) {
   const k = K();
@@ -249,17 +272,10 @@ export function statMul(ids) {
 }
 export const commandOf = (id) => Math.round(gen(id).lead * K().leadTroops);
 export const commandOfAll = (ids) => ids.reduce((a, id) => a + commandOf(id), 0);
-// where an officer in c may move: a neighbouring node of ours, or one road further when the first road
-// has a 驿站 relay station (the node in between must be ours too)
+// where an officer in c may move (v0.9.8): any node of ours joined to c through our own nodes
 export function moveTargets(s, f, c) {
   loadMap(s);
-  const out = new Set();
-  for (const { c: n, station } of ADJ[c]) {
-    if (s.cities[n].owner !== f) continue;
-    out.add(n);
-    if (station) for (const { c: m } of ADJ[n]) if (m !== c && s.cities[m].owner === f) out.add(m);
-  }
-  return [...out];
+  return reach(s, f, c).filter((n) => s.cities[n].owner === f);
 }
 export function validOrder(s, f, id, o) {
   loadMap(s);
@@ -273,7 +289,7 @@ export function validOrder(s, f, id, o) {
     case 'search': return !city.pass;
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
     case 'move': return moveTargets(s, f, c).includes(o.to);
-    case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch;
     case 'intercept': return interceptTargets(s, f, c).some((a) => a.id === o.army) && city.troops >= k.minMarch;
     case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= costOf('plot', id);
     default: return false;
@@ -462,7 +478,10 @@ export function beginTurn(s, playerOrders = {}) {
   for (let i = 0; i < s.armies.length; i++) for (let j = i + 1; j < s.armies.length; j++) {
     const a = s.armies[i], b = s.armies[j];
     if (a.f === b.f || isAlly(s, a.f, b.f) || isAlly(s, b.f, a.f)) continue;
-    if (a.from === b.to && a.to === b.from && !s.fields.some((x) => x.a === a || x.b === a || x.a === b || x.b === b)) s.fields.push({ a, b });
+    // routes can be several roads long (v0.9.8): they meet on the first road they take in opposite directions
+    const back = new Set(b.route.slice(1).map((x, i) => x + '>' + b.route[i]));
+    const leg = a.route.slice(1).map((x, i) => a.route[i] + '>' + x).find((l) => back.has(l));
+    if (leg && !s.fields.some((x) => x.a === a || x.b === a || x.a === b || x.b === b)) s.fields.push({ a, b, leg: leg.split('>') });
   }
   s.phase = 'battles';
   return s.events;
@@ -478,6 +497,13 @@ function arrivals(s) {
   for (const a of arriving) {
     if (!s.factions[a.f].alive) continue;
     a.gens = a.gens.filter((id) => s.gens[id].f === a.f && !s.gens[id].hidden);
+    // the road is cut (v0.9.8): someone took a node of ours on the way, so the army fights there instead
+    const cut = a.route.slice(1, -1).find((n) => s.cities[n].owner !== a.f);
+    if (cut) {
+      const i = a.route.indexOf(cut);
+      ev(s, { k: 'blocked', f: a.f, c: cut, to: a.to, gens: [...a.gens], fd: s.cities[cut].owner });
+      Object.assign(a, { to: cut, route: a.route.slice(0, i + 1), terr: terrain(a.route[i - 1], cut).m });
+    }
     if (s.cities[a.to].owner === a.f) { enterCity(s, a); if (a.kind === 'move') ev(s, { k: 'arrive', f: a.f, c: a.to, n: a.troops, gens: [...a.gens] }); }
     else s.queue.push(a);
   }
@@ -500,8 +526,8 @@ export function meetPoint(F) {
     const i = b.route.indexOf(a.from), n = b.route[i > 0 ? i - 1 : 1] || b.route[0];
     return { x: P(a.from).x + (P(n).x - P(a.from).x) * 0.25, z: P(a.from).z + (P(n).z - P(a.from).z) * 0.25 };
   }
-  const t = 0.5;
-  return { x: P(a.from).x + (P(a.to).x - P(a.from).x) * t, z: P(a.from).z + (P(a.to).z - P(a.from).z) * t };
+  const [p, q] = F.leg || [a.from, a.to];
+  return { x: (P(p).x + P(q).x) / 2, z: (P(p).z + P(q).z) / 2 };
 }
 
 export function nextBattle(s) {

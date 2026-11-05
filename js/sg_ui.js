@@ -12,7 +12,7 @@ import { ELEV } from './sg_elev.js';
 
 extend({
   sgStart: '⚔ 万锦三国志', sgTitle: '万锦三国志', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
-  sgLog: '战报', sgMenu: '菜单', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgHide: '收起面板，看全图', sgContinue: '继续',
+  sgLog: '战报', sgMenu: '菜单', sgMusicOn: '🎵 音乐：开', sgMusicOff: '🎵 音乐：关', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgHide: '收起面板，看全图', sgContinue: '继续',
   sgYou: '你', sgUnclaimed: '空城', sgArmy: '{n}军',
   sgCmdDev: '内政', sgCmdDevS: '开发 +金粮', sgCmdDraft: '征兵', sgCmdDraftS: '花金换兵', sgCmdSearch: '搜索', sgCmdSearchS: '找在野武将', sgCmdMove: '调动', sgCmdMoveS: '兵将去邻城',
   sgCmdMarch: '出征', sgCmdMarchS: '攻打邻城', sgCmdRest: '待命', sgCmdFort: '筑城', sgCmdFortS: '城防 +', sgCmdPlot: '计略', sgRumor: '流言', sgRumorS: '敌兵逃散', sgFire: '火计', sgFireS: '烧城防', sgChance: '成功 {n}%', sgPickKind: '选计略，再选目标', sgRumoured: '传闻在这里：{g}', sgWinter: '冬天下雪：进攻 −10%', sgHarvestNote: '九月秋收：粮翻几倍', sgOrder: '本月命令', sgPickTarget: '点地图上发光的城池选目标', sgCancel: '取消',
@@ -33,7 +33,7 @@ extend({
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
   ev_blizzard: '{c} 暴风雪，冻跑了 {n} 兵', ev_icestorm: '{c} 遭遇冰暴，城防 −{n}', ev_flood: '胭脂河涨水淹了 {c}：开发 −4，兵 −{n}', ev_riot: '{c} 民变，兵 −{n}',
   ev_sighting: '传闻：{g} 藏在 {c}', ev_cny: '春节庙会！各家每座城多收 {n} 金', evHarvest: '九月秋收，粮仓满了！', evFound: '{c}：{by} 找到了在野武将 {g}！', evFoundAI: '{f} 在 {c} 找到了 {g}',
-  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}，路上 {m} 个月', evArrive: '{g} 带 {n} 兵到达 {c}',
+  evTreasure: '{c}：没找到人，捡到 {n} 金', evNothing: '{c}：搜了一圈，什么也没找到', evMove: '{g}：{c} → {to}，带兵 {n}，路上 {m} 个月', evArrive: '{g} 带 {n} 兵到达 {c}', evBlocked: '{g}：去 {to} 的路被 {c} 截断，就地攻打 {c}',
   evMarch: '{f} 从 {c} 出兵 {n} 攻打 {to}，{m} 个月后到', evDuel: '单挑 {a} 对 {d}：{w}', evDuelDraw: '平手', evDuelWon: '{g} 胜',
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
@@ -41,7 +41,7 @@ extend({
   sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑仍然靠猜拳。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
-  sgLog: 'Log', sgMenu: 'Menu', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
+  sgLog: 'Log', sgMenu: 'Menu', sgMusicOn: '🎵 Music: on', sgMusicOff: '🎵 Music: off', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
   sgYou: 'You', sgUnclaimed: 'Unclaimed', sgArmy: "{n}'s army",
   sgCmdDev: 'Build', sgCmdDevS: '+gold & food', sgCmdDraft: 'Draft', sgCmdDraftS: 'gold → troops', sgCmdSearch: 'Seek', sgCmdSearchS: 'find free officers', sgCmdMove: 'Move', sgCmdMoveS: 'to a city of yours',
   sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgCmdFort: 'Walls', sgCmdFortS: 'walls +', sgCmdPlot: 'Plot', sgRumor: 'Rumour', sgRumorS: 'troops desert', sgFire: 'Fire', sgFireS: 'burn the walls', sgChance: '{n}% chance', sgPickKind: 'Pick a plot, then a target', sgRumoured: 'Rumoured to be here: {g}', sgWinter: 'Winter snow: attacking −10%', sgHarvestNote: 'September harvest: food several times over', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
@@ -62,7 +62,7 @@ extend({
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
   ev_blizzard: 'Blizzard in {c}: {n} troops slip away', ev_icestorm: 'Ice storm in {c}: walls −{n}', ev_flood: 'The Rouge floods {c}: dev −4, troops −{n}', ev_riot: 'Unrest in {c}: troops −{n}',
   ev_sighting: 'Rumour: {g} is hiding in {c}', ev_cny: 'Lunar New Year fair! Every lord earns {n} more gold per city', evHarvest: 'September harvest: the granaries are full!', evFound: '{c}: {by} found {g}!', evFoundAI: '{f} found {g} in {c}',
-  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops, {m} mo on the road', evArrive: '{g} reached {c} with {n} troops',
+  evTreasure: '{c}: nobody found, but {n} gold', evNothing: '{c}: searched, found nothing', evMove: '{g}: {c} → {to} with {n} troops, {m} mo on the road', evArrive: '{g} reached {c} with {n} troops', evBlocked: '{g}: the road to {to} is cut at {c}, attacking {c} instead',
   evMarch: '{f} marches {n} from {c} on {to}, arriving in {m} mo', evDuel: 'Duel {a} vs {d}: {w}', evDuelDraw: 'draw', evDuelWon: '{g} wins',
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
@@ -165,8 +165,12 @@ export class Sanguo {
   }
 
   // ---------------------------------------------------------------- open / save
+  // background music (v0.9.8): on by default, remembered per browser
+  get music() { try { return localStorage.getItem('p905sgbgm') !== '0'; } catch (e) { return true; } }
+  set music(v) { try { localStorage.setItem('p905sgbgm', v ? '1' : '0'); } catch (e) { /* ignore */ } }
   open(world, W, H) {
     this.w = world;
+    sfx.setBgmMood('calm'); sfx.bgm(this.music);
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
     const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
@@ -323,8 +327,13 @@ export class Sanguo {
       const from = st.gens[id].c, key = from + o.to + o.cmd;
       if (seen.has(key)) continue;
       seen.add(key);
-      const [ax, ay] = this.toScreen(CITIES[from].x, CITIES[from].z), [bx, by] = this.toScreen(CITIES[o.to].x, CITIES[o.to].z);
-      arrow(c, ax, ay, bx, by, o.cmd === 'march' ? '#e23d3d' : '#2f7de1', this.pulse);
+      // along the actual roads (v0.9.8: an order can go several roads far); the arrow head on the last one
+      const r = E.routeOf(st, E.PLAYER, from, o.to), colr = o.cmd === 'march' ? '#e23d3d' : '#2f7de1';
+      for (let i = 1; i < r.length; i++) {
+        const [ax, ay] = this.toScreen(CITIES[r[i - 1]].x, CITIES[r[i - 1]].z), [bx, by] = this.toScreen(CITIES[r[i]].x, CITIES[r[i]].z);
+        if (i === r.length - 1) arrow(c, ax, ay, bx, by, colr, this.pulse);
+        else { c.strokeStyle = colr; c.lineWidth = 4; c.setLineDash([]); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); }
+      }
     }
     // targets while picking
     if (this.mode) for (const tc of this.mode.targets) {
@@ -516,10 +525,11 @@ export class Sanguo {
     const st = this.s, troops = Math.min(E.commandOf(id), Math.floor(this.avail(c, id) * 0.8));
     let r;
     if (army) r = E.armyPower(troops, [id]) / Math.max(1, E.armyPower(army.troops, army.gens));
-    else { const T = st.cities[n]; r = E.armyPower(troops, [id]) * E.terrain(c, n).m / Math.max(1, E.armyPower(T.troops, E.defenders(st, n)) * E.wallMul(T)); }
+    else { const T = st.cities[n]; r = E.armyPower(troops, [id]) * E.terrain(this.lastHop(c, n), n).m / Math.max(1, E.armyPower(T.troops, E.defenders(st, n)) * E.wallMul(T)); }
     const [k, cls] = r >= 1.6 ? ['sgOddsA', 'a'] : r >= 1.15 ? ['sgOddsB', 'b'] : r >= 0.85 ? ['sgOddsC', 'c'] : ['sgOddsD', 'd'];
     return ` <b class="sgOdds o${cls}">${t(k)}</b>`;
   }
+  lastHop(c, n) { const r = E.routeOf(this.s, E.PLAYER, c, n); return r[r.length - 2]; } // the road an army ends on
   armyOf(g) { return (this.s.armies || []).find((a) => a.gens.includes(g)) || null; }
   eta(a) { return a.left <= 1 ? t('sgEtaNow') : F('sgEta', { n: a.left }); }
   orderText(o) {
@@ -537,7 +547,7 @@ export class Sanguo {
       const o = st.orders[id], m = this.mode && this.mode.id === id ? this.mode : null, cur = o ? o.cmd : null;
       const can = (cmd) => {
         if (cur === cmd) return true;
-        if (cmd === 'march') return ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
+        if (cmd === 'march') return E.marchTargets(st, E.PLAYER, c).some((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
         if (cmd === 'move') return E.moveTargets(st, E.PLAYER, c).length > 0;
         if (cmd === 'intercept') return st.cities[c].troops >= CFG.sg.minMarch;
         if (cmd === 'plot') return gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id) && ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n }));
@@ -563,7 +573,7 @@ export class Sanguo {
         h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${E.PLOTS.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(kd === 'fire' ? 'sgFire' : 'sgRumor')} <small>${t(kd === 'fire' ? 'sgFireS' : 'sgRumorS')}</small></button>`).join('')}</div>`;
         if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m) {
-        h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(c, n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+        h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(this.lastHop(c, n), n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
         const av = Math.min(E.commandOf(id), this.avail(c, id)), opts = o.cmd === 'move' ? [0, 0.5, 1] : [0.5, 0.8, 1]; // 统率 caps the troops
         h += `<div class="sgSeg"><span>${t('sgMoveTroops')}</span>${opts.map((f) => { const n = Math.floor(av * f); return `<button data-g="${id}" data-n="${n}" class="${o.n === n ? 'on' : ''}">${kNum(n)}</button>`; }).join('')}</div>`;
@@ -593,7 +603,7 @@ export class Sanguo {
         delete st.orders[id];
         this.mode = { id, c, cmd, kind: null, targets: ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n })) };
       } else if (cmd === 'march' || cmd === 'move') {
-        const targets = cmd === 'march' ? ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n })) : E.moveTargets(st, E.PLAYER, c);
+        const targets = (cmd === 'march' ? E.marchTargets(st, E.PLAYER, c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n })) : E.moveTargets(st, E.PLAYER, c)).sort((a, b) => E.travelMonths(E.routeOf(st, E.PLAYER, c, a)) - E.travelMonths(E.routeOf(st, E.PLAYER, c, b)));
         delete st.orders[id];
         this.mode = { id, c, cmd, targets };
         if (targets.length === 1) { this.setTarget(targets[0]); return; }
@@ -628,7 +638,7 @@ export class Sanguo {
     const st = this.s;
     this.busy = true; this.mode = null;
     this.skipFx = false;
-    sfx.drum(2);
+    sfx.drum(2); sfx.setBgmMood('battle'); // the music quickens while the month's battles play
     E.beginTurn(st, st.orders);
     for (let b = E.nextBattle(st); b; b = E.nextBattle(st)) {
       const to = b.m.to, mine = b.m.field ? b.m.f === E.PLAYER || b.m.fb === E.PLAYER : b.m.f === E.PLAYER || st.cities[to].owner === E.PLAYER, fd = b.m.field ? b.m.fb : st.cities[to].owner;
@@ -646,6 +656,7 @@ export class Sanguo {
     for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) }));
     this.render();
     await this.report(evs);
+    sfx.setBgmMood('calm');
     if (st.over) await this.gameOver();
     this.busy = false; this.render();
   }
@@ -776,6 +787,7 @@ export class Sanguo {
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
       case 'nothing': return e.f === P ? F('evNothing', { c: cName(e.c) }) : null;
       case 'move': return e.f === P ? F('evMove', { g: gName(e.gens[0]), c: cName(e.c), to: cName(e.to), n: e.n, m: e.months || 1 }) : null;
+      case 'blocked': return e.f === P || e.fd === P ? F('evBlocked', { g: e.gens.map(gName).join('、'), c: cName(e.c), to: cName(e.to) }) : null;
       case 'arrive': return e.f === P ? F('evArrive', { g: e.gens.map(gName).join('、'), c: cName(e.c), n: e.n }) : null;
       case 'march': return e.f === P || st.cities[e.to].owner === P || (e.to && st.factions.some((x) => x.player && x.cap === e.to)) ? F('evMarch', { f, c: cName(e.c), to: cName(e.to), n: e.n.toLocaleString(), m: e.months || 1 }) : null;
       case 'duel': return F('evDuel', { a: gName(e.a), d: gName(e.d), w: e.win ? F('evDuelWon', { g: gName(e.win === 'a' ? e.a : e.d) }) : t('evDuelDraw') });
@@ -883,8 +895,9 @@ export class Sanguo {
   async menu() {
     if (this.busy) return;
     const r = await this.layer(`<h2>${t('sgMenu')}<button class="sgX" data-ok="x">✕</button></h2>
-      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}</button>`);
-    if (r === 'back') { this.save(); this.onClose(); }
+      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}</button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
+    if (r === 'back') { this.save(); sfx.bgm(false); this.onClose(); }
+    else if (r === 'music') { this.music = !this.music; sfx.bgm(this.music); this.menu(); }
     else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText'))}</p>`);
     else if (r === 'new') this.newGame(true);
   }

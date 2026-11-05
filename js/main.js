@@ -170,7 +170,7 @@ $('muteBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); setti
 let paused = false; // the game pauses while a panel is open
 const anyModal = () => !!document.querySelector('.modal.show');
 function openModal(id) { $(id).classList.add('show'); paused = true; sfx.setMuted(true); }
-function closeModal(id) { $(id).classList.remove('show'); paused = anyModal(); if (!paused) sfx.setMuted(settings.mute); }
+function closeModal(id) { if (id === 'sg') sfx.bgm(false); $(id).classList.remove('show'); paused = anyModal(); if (!paused) sfx.setMuted(settings.mute); }
 for (const m of document.querySelectorAll('.modal')) {
   m.addEventListener('pointerdown', (e) => e.stopPropagation()); // never start the joystick under a panel
   m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
