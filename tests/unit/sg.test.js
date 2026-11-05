@@ -4,6 +4,7 @@ import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
   terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
+  statMul, draftAmt, devAmt, searchChance, costOf,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -292,6 +293,22 @@ describe('armies on the road (v0.9.3)', () => {
     }
     expect(sent).toBeGreaterThan(10);
     expect(again).toBe(0);
+  });
+});
+
+describe('officers make a real difference (v0.9.5)', () => {
+  it('stats drive every order and every battle; deputies count; good administrators pay less', () => {
+    const s = newGame(1);
+    expect(statMul(['lvbu']) / statMul(['xunyu'])).toBeGreaterThan(1.6);           // a great general vs a scholar
+    expect(statMul(['caocao', 'xiahoudun', 'xuchu'])).toBeGreaterThan(statMul(['caocao']) + 0.2); // deputies help
+    expect(draftAmt('caocao')).toBeGreaterThan(draftAmt('diaochan') * 2);
+    expect(devAmt(s, 0, 'xunyu')).toBeGreaterThan(devAmt(s, 0, 'zhangfei') * 3);
+    expect(searchChance(s, 0, 'zhugeliang')).toBeGreaterThan(searchChance(s, 0, 'xuchu') + 0.35);
+    expect(costOf('dev', 'xunyu')).toBeLessThan(costOf('dev', 'lvbu') * 0.7);
+    // duels: a big gap in 武力 is decisive
+    let wins = 0;
+    for (let i = 0; i < 40; i++) { const d = { a: 'lvbu', d: 'huanggai', fa: 0, fd: 1, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null }; if (autoDuel(s, d) === 'a') wins++; }
+    expect(wins).toBeGreaterThan(30); // 武力 100 vs 82: still a rock-paper-scissors fight, but a clear favourite
   });
 });
 

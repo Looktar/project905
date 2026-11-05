@@ -231,7 +231,23 @@ export function plotChance(s, id, c) {
   const k = K(), d = defenders(s, c), dInt = d.length ? Math.max(...d.map((x) => gen(x).int)) : k.neutralStat;
   return Math.max(0.1, Math.min(k.plotMax, k.plotBase + (gen(id).int - dInt) * k.plotInt + fx(id, 'plot')));
 }
-export const orderCost = (o) => (o && COST[o.cmd] ? K()[COST[o.cmd]] : 0);
+// v0.9.5 (D-82): a good administrator (政治) gets things done for less: x1.15 at 政治 20 down to x0.75 at 100
+export const costOf = (cmd, id) => (COST[cmd] ? Math.round(K()[COST[cmd]] * (id && GENERALS[id] ? Math.min(1.2, Math.max(0.7, 1.25 - gen(id).pol / 200)) : 1)) : 0);
+export const orderCost = (o, id) => (o && COST[o.cmd] ? costOf(o.cmd, id) : 0);
+// what an officer would achieve (the numbers the order buttons show, and what runOrder does)
+export function devAmt(s, f, id) { const k = K(); return Math.round((k.devBase + gen(id).pol * k.devPerPol) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev'))); }
+export function draftAmt(id) { const k = K(); return Math.round((k.draftBase + gen(id).lead * k.draftPerLead) * (1 + fx(id, 'draft'))); }
+export function searchChance(s, f, id) { const k = K(); return Math.min(0.95, k.searchBase + gen(id).int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search')); }
+export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0)); }
+// how much an army's officers multiply its troops (v0.9.5: the stats matter more, and the deputies count):
+// the best 统率 leads, the best 武力 fights in front, up to two deputies add their own
+export function statMul(ids) {
+  const k = K();
+  if (!ids.length) return k.statBase + k.statLead * k.neutralStat / 100 + k.statWar * k.neutralStat / 100;
+  const g = best(ids, 'lead'), war = Math.max(...ids.map((x) => gen(x).war));
+  const deps = ids.filter((x) => x !== g).sort((a, b) => gen(b).lead + gen(b).war - gen(a).lead - gen(a).war).slice(0, 2);
+  return k.statBase + k.statLead * gen(g).lead / 100 + k.statWar * war / 100 + deps.reduce((a, x) => a + k.statDeputy * (gen(x).lead + gen(x).war) / 200, 0);
+}
 // where an officer in c may move: a neighbouring node of ours, or one road further when the first road
 // has a 驿站 relay station (the node in between must be ours too)
 export function moveTargets(s, f, c) {
@@ -251,13 +267,13 @@ export function validOrder(s, f, id, o) {
   const c = G.c, city = s.cities[c], fa = s.factions[f], k = K();
   if (city.owner !== f) return false;
   switch (o.cmd) {
-    case 'dev': return !city.pass && fa.gold >= k.devCost && city.dev < 100;
-    case 'draft': return !city.pass && fa.gold >= k.draftCost && city.troops < capOf(city);
+    case 'dev': return !city.pass && fa.gold >= costOf('dev', id) && city.dev < 100;
+    case 'draft': return !city.pass && fa.gold >= costOf('draft', id) && city.troops < capOf(city);
     case 'search': return !city.pass;
-    case 'fort': return fa.gold >= k.fortCost && city.def < defMaxOf(city);
+    case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
     case 'move': return moveTargets(s, f, c).includes(o.to);
     case 'march': return adjacent(c, o.to) && s.cities[o.to].owner !== f && supplied(s, f).has(c) && city.troops >= k.minMarch;
-    case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= k.plotCost;
+    case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= costOf('plot', id);
     default: return false;
   }
 }
@@ -267,16 +283,16 @@ function runOrder(s, f, id, o) {
   if (!validOrder(s, f, id, o)) { if (s.gens[id] && s.gens[id].f === f) ev(s, { k: 'skip', f, g: id, cmd: o && o.cmd }); return; }
   const c = s.gens[id].c, city = s.cities[c], G = gen(id);
   if (o.cmd === 'dev') {
-    const amt = Math.round((k.devBase + G.pol * k.devPerPol) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev')));
-    fa.gold -= k.devCost; city.dev = Math.min(100, city.dev + amt);
+    const amt = devAmt(s, f, id);
+    fa.gold -= costOf('dev', id); city.dev = Math.min(100, city.dev + amt);
     ev(s, { k: 'dev', f, c, g: id, n: amt });
   } else if (o.cmd === 'draft') {
-    const amt = Math.min(capOf(city) - city.troops, Math.round((k.draftBase + G.lead * k.draftPerLead) * (1 + fx(id, 'draft'))));
-    fa.gold -= k.draftCost; city.troops += amt;
+    const amt = Math.min(capOf(city) - city.troops, draftAmt(id));
+    fa.gold -= costOf('draft', id); city.troops += amt;
     ev(s, { k: 'draft', f, c, g: id, n: amt });
   } else if (o.cmd === 'search') {
     const hid = hiddenIn(s, c);
-    const p = k.searchBase + G.int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search');
+    const p = searchChance(s, f, id);
     if (hid.length && rnd(s) < p) {
       const nid = pick(s, hid);
       Object.assign(s.gens[nid], { f, c, hidden: false, rumor: false, loyal: 75 + fx(nid, 'loyal') });
@@ -286,12 +302,12 @@ function runOrder(s, f, id, o) {
       fa.gold += n; ev(s, { k: 'treasure', f, c, g: id, n });
     } else ev(s, { k: 'nothing', f, c, g: id, left: hid.length });
   } else if (o.cmd === 'fort') {
-    const amt = Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0));
-    fa.gold -= k.fortCost; city.def = Math.min(defMaxOf(city), city.def + amt);
+    const amt = fortAmt(id);
+    fa.gold -= costOf('fort', id); city.def = Math.min(defMaxOf(city), city.def + amt);
     ev(s, { k: 'fort', f, c, g: id, n: amt });
   } else if (o.cmd === 'plot') {
     const T = s.cities[o.to], ok = rnd(s) < plotChance(s, id, o.to);
-    fa.gold -= k.plotCost;
+    fa.gold -= costOf('plot', id);
     let n = 0;
     if (ok && o.kind === 'rumor') { n = Math.round(T.troops * (k.rumorBase + G.int * k.rumorPerInt)); T.troops -= n; }
     if (ok && o.kind === 'fire') { n = Math.min(T.def - 10, Math.round(k.fireBase + G.int * k.firePerInt)); T.def -= Math.max(0, n); T.troops = Math.round(T.troops * 0.97); }
@@ -313,11 +329,7 @@ function runOrder(s, f, id, o) {
 }
 
 // ---------------------------------------------------------------- computer lords (and 委任 for the player)
-const armyPower = (troops, ids) => {
-  const k = K(), g = ids.length ? best(ids, 'lead') : null, lead = g ? gen(g).lead : k.neutralStat;
-  const war = ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat;
-  return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100);
-};
+export const armyPower = (troops, ids) => troops * statMul(ids);
 // opts.war = false: domestic only (the player's "auto-assign"); opts.skip: officers that already have orders;
 // opts.gold: gold left to spend
 export function aiOrders(s, f, opts = {}) {
@@ -470,9 +482,9 @@ export function duelRound(s, d, mA = null, mD = null) {
   mA = mA || aiMove(s); mD = mD || aiMove(s);
   const wa = gen(d.a).war, wd = gen(d.d).war;
   const bonus = (id, f) => 1 + fx(id, 'duel') + bondFx(s, f, [id], 'duel');
-  const hit = (w, l, id, f, skill) => k.duelHit * Math.min(2.2, Math.max(0.45, (w / l) ** 1.6)) * bonus(id, f) * (0.85 + 0.3 * rnd(s)) * (skill ? 1 + k.duelSkill : 1);
+  const hit = (w, l, id, f, skill) => k.duelHit * Math.min(k.duelMax, Math.max(k.duelMin, (w / l) ** k.duelExp)) * bonus(id, f) * (0.85 + 0.3 * rnd(s)) * (skill ? 1 + k.duelSkill : 1);
   let dmgA = 0, dmgD = 0; // damage taken by a / d
-  if (mA === mD) { dmgA = k.duelTie * Math.min(2, (wd / wa) ** 1.6); dmgD = k.duelTie * Math.min(2, (wa / wd) ** 1.6); }
+  if (mA === mD) { dmgA = k.duelTie * Math.min(2.5, (wd / wa) ** k.duelExp); dmgD = k.duelTie * Math.min(2.5, (wa / wd) ** k.duelExp); }
   else if (BEATS[mA] === mD) dmgD = hit(wa, wd, d.a, d.fa, mA === 'skill');
   else dmgA = hit(wd, wa, d.d, d.fd, mD === 'skill');
   d.hpA = Math.max(0, Math.round(d.hpA - dmgA)); d.hpD = Math.max(0, Math.round(d.hpD - dmgD)); d.n++;
@@ -486,12 +498,11 @@ export function duelRound(s, d, mA = null, mD = null) {
 export function autoDuel(s, d) { while (!d.done) duelRound(s, d); return d.win; }
 
 function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
-  const k = K(), g = ids.length ? best(ids, 'lead') : null, lead = g ? gen(g).lead : k.neutralStat;
-  const war = ids.length ? Math.max(...ids.map((x) => gen(x).war)) : k.neutralStat;
+  const g = ids.length ? best(ids, 'lead') : null;
   let m = 1;
   for (const id of ids) m += (fx(id, 'atk') + (attacking ? fx(id, 'raid') : 0) + (outnumbered ? fx(id, 'few') : 0)) * (id === g ? 1 : 0.5) + (attacking ? 0 : fx(id, 'def') * (id === g ? 1 : 0.5));
   if (f >= 0) m += bondFx(s, f, ids, 'atk') + (attacking ? 0 : bondFx(s, f, ids, 'def'));
-  return troops * (0.6 + 0.4 * lead / 100 + 0.2 * war / 100) * m;
+  return troops * statMul(ids) * m;
 }
 
 export function resolveBattle(s, m, duelWin = null, duel = null) {
@@ -667,7 +678,7 @@ export function runTurn(s, orders = {}) {
 export function autoPlayer(s) { return aiOrders(s, PLAYER); }
 // 委任: give every officer without an order a peaceful job (develop, draft, search, fortify, spread out)
 export function autoAssign(s, orders = {}) {
-  const spent = Object.values(orders).reduce((a, o) => a + orderCost(o), 0);
+  const spent = Object.entries(orders).reduce((a, [id, o]) => a + orderCost(o, id), 0);
   return { ...aiOrders(s, PLAYER, { war: false, skip: new Set(Object.keys(orders)), gold: s.factions[PLAYER].gold - spent }), ...orders };
 }
 export function factionName(s, f, zh = true) {
