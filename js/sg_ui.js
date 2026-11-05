@@ -27,7 +27,7 @@ extend({
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
-  sgTargets: '目标（也可以点地图）', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
+  sgTargets: '目标（也可以点地图）', sgOfficersBtn: '武将', sgGarrisonCard: '守军', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
@@ -56,7 +56,7 @@ extend({
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
-  sgTargets: 'Targets (or tap the map)', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
+  sgTargets: 'Targets (or tap the map)', sgOfficersBtn: 'Officers', sgGarrisonCard: 'Garrison', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
@@ -80,7 +80,14 @@ const cName = (id) => (zh() ? CITIES[id].zh : CITIES[id].en);
 const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a' };
 const kNum = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
 const MOVES = { atk: 'sgAtk', def: 'sgDefM', skill: 'sgSkill' };
-const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195; return F('sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + (E.isWinter(s) ? ' ❄' : d.month === 9 ? ' 🌾' : ''); };
+// the weather of a month (flavour, v0.9.7): snow in winter, the rest picked from the season and the month
+export function weatherOf(s) {
+  const m = E.dateOf(s).month, r = (s.turn * 7 + (s.seed || 0)) % 3;
+  const w = E.isWinter(s) ? 'snow' : m === 9 ? 'harvest' : m <= 5 ? ['sun', 'rain', 'cloud'][r] : m <= 8 ? ['sun', 'hot', 'sun'][r] : ['sun', 'wind', 'cloud'][r];
+  return { snow: ['雪', '❄'], harvest: ['秋收', '🌾'], sun: ['晴', '☀'], rain: ['雨', '☂'], cloud: ['阴', '☁'], hot: ['炎热', '☀'], wind: ['秋风', '🍂'] }[w];
+}
+const WEATHER_EN = { 雪: 'snow', 秋收: 'harvest', 晴: 'fair', 雨: 'rain', 阴: 'cloudy', 炎热: 'hot', 秋风: 'windy' };
+const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F('sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
 const CMD_KEY = { dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
 
 // v0.9.5 (D-82): rarity from the two best stats (UR: a 100 or two great ones), letter grades per stat
@@ -102,6 +109,18 @@ function statBars(id) {
     .map(([l, v], i) => row(l, v, ['#7fb2f0', '#f08a6e', '#b79cf0', '#7fd1a1'][i])).join('');
 }
 function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span class="sgTr">${esc(zh() ? tr[0] : tr[1])}</span><small>${esc(zh() ? tr[2] : tr[3])}</small>`; }
+// a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
+// rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
+const KTAG = { shu: ['蜀', 'Shu'], wei: ['魏', 'Wei'], wu: ['吴', 'Wu'], qun: ['群', 'Qun'] };
+const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
+function tallCard(id, opts = {}) {
+  const g = GENERALS[id], tr = tierOf(id), top = [['统', 'L', g.lead], ['武', 'W', g.war], ['智', 'I', g.int], ['政', 'P', g.pol]].sort((a, b) => b[2] - a[2])[0];
+  const bar = opts.troops !== undefined ? `<i class="sgCbar"><b style="width:${Math.max(0, Math.min(100, opts.pct ?? 100))}%"></b></i><em class="sgCtroops">${kNum(opts.troops)}</em>` : '';
+  return `<div class="sgCardT t${tr} k${g.k}${opts.big ? ' big' : ''}${opts.cls ? ' ' + opts.cls : ''}" ${opts.data || ''}>
+    <i class="sgCtag${zh() ? '' : ' v'}">${KTAG[g.k][zh() ? 0 : 1]}</i><i class="sgCstar">${'★'.repeat(STARS[tr])}</i>
+    <b class="sgCglyph">${esc(g.zh.slice(-1))}</b><i class="sgCtier">${tr}</i>
+    <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${bar}</div>`;
+}
 function genCard(id, opts = {}) {
   return `<div class="sgG${opts.on ? ' on' : ''}${opts.pick ? ' pick' : ''}" ${opts.data || ''}>${portrait(id)}<div class="sgGi"><b>${esc(gName(id))}</b>${statBars(id)}<div class="sgTrw">${traitTag(id)}</div></div></div>`;
 }
@@ -119,6 +138,7 @@ export class Sanguo {
     $('sgZHome').addEventListener('click', () => { this.k = this.s0; this.focus(this.s.factions[E.PLAYER].cap); });
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
+    $('sgGenBtn').addEventListener('click', () => this.openGenerals());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
     dragScroll($('sg'), '#sgPanel, .sgCard');
     const cv = this.cv;
@@ -335,7 +355,10 @@ export class Sanguo {
     for (const id of [...NODE_IDS].sort((a, b) => prio(a) - prio(b))) {
       const C = st.cities[id], col = this.fColor(C.owner), [x, y] = pos[id], P = CITIES[id];
       const zoomedOut = this.k < this.s0 * 1.4, dep = !!P.depot;
-      const texts = P.pass && zoomedOut ? [kNum(C.troops)] : [`${cName(id)} · ${kNum(C.troops)}`, kNum(C.troops)];
+      // a clean board (v0.9.7): zoomed out, other lords' cities show their name only; tap one (or zoom in) for numbers
+      const showN = !zoomedOut || C.owner === E.PLAYER || id === this.sel || (this.mode && this.mode.targets.includes(id));
+      const texts = P.pass && zoomedOut ? [showN ? kNum(C.troops) : ''] : showN ? [`${cName(id)} · ${kNum(C.troops)}`, kNum(C.troops)] : [cName(id)];
+      if (!texts[0]) continue;
       const spots = (w) => {
         const below = [x, y + 18 * ts + 9], above = [x, y - 44 * ts], right = [x + 26 * ts + w / 2, y - 6 * ts], left = [x - 26 * ts - w / 2, y - 6 * ts];
         return P.pass ? [right, left, above, below] : [below, above, right, left];
@@ -441,7 +464,10 @@ export class Sanguo {
     $('sgEnd').textContent = t('sgEnd');
     const idle = E.factionGens(st, E.PLAYER).filter((g) => st.gens[g].c && !st.orders[g]).length;
     $('sgAuto').innerHTML = `${t('sgAuto')}${idle ? `<i>${idle}</i>` : ''}`; $('sgAuto').title = t('sgAutoT');
-    $('sgLogBtn').textContent = t('sgLog'); $('sgMenuBtn').textContent = t('sgMenu'); $('sgTitle').textContent = t('sgTitle');
+    // a phone's top bar is tight: round one-character buttons there (like the App Store game's 城 / 将 / 军 dock)
+    $('sgLogBtn').textContent = this.small && zh() ? '报' : t('sgLog'); $('sgMenuBtn').textContent = this.small ? '≡' : t('sgMenu'); $('sgTitle').textContent = t('sgTitle');
+    $('sgGenBtn').textContent = zh() ? '将' : t('sgOfficersBtn');
+    for (const id of ['sgGenBtn', 'sgLogBtn']) $(id).classList.toggle('pill', this.small && !zh()); // English words do not fit a round button
     $('sgPanel').innerHTML = this.sel ? this.cityPanel(this.sel) : this.sidePanel();
     this.save();
   }
@@ -611,6 +637,7 @@ export class Sanguo {
       if (b.duel) win = b.duel.fa === E.PLAYER || b.duel.fd === E.PLAYER ? await this.duelUI(b.duel) : E.autoDuel(st, b.duel);
       E.resolveBattle(st, b.m, win, b.duel);
       const res = [...st.events].reverse().find((e) => (b.m.field ? e.k === 'field' : e.k === 'take' || e.k === 'repel') && e.c === to);
+      if (mine && b.m.rounds) await this.battleScreen(b, res, fd);
       if (mine) await this.battleResult(b, res, fd);
       else this.fx.push({ type: 'puff', c: to, at: b.m.at, t0: performance.now(), dur: 900, ca: this.fColor(b.m.f) });
     }
@@ -637,6 +664,96 @@ export class Sanguo {
     setTimeout(() => sfx.clash(0.7), 280);
     await this.wait(900);
   }
+  // the battle screen (v0.9.7): your officers on the left, theirs on the right, troop bars running down
+  // round by round as the battle was fought; a tap skips to the end
+  async battleScreen(b, res, fd) {
+    const st = this.s, P = E.PLAYER, m = b.m, rounds = m.rounds, mineLeft = m.f === P;
+    const [gA, gB] = m.sideGens, [fA, fB] = [m.f, m.field ? m.fb : fd];
+    const left = mineLeft ? 0 : 1, sides = [[gA, fA], [gB, fB]];
+    const where = m.field ? `${cName(m.to)} ${zh() ? '城外' : 'outskirts'}` : cName(m.to), [w, ic] = weatherOf(st);
+    const col = (si) => {
+      const [gs, f] = sides[si], t0 = rounds[0][si], cmd = E.commandOfAll(gs) || 1;
+      const cards = gs.length ? gs.slice(0, 3).map((g, i) => tallCard(g, { troops: Math.round(t0 * E.commandOf(g) / cmd), pct: 100, data: `data-bi="${si}-${i}"` })).join('')
+        : `<div class="sgCardT tR kqun garrison"><b class="sgCglyph">${zh() ? '守' : 'G'}</b><span class="sgCname">${t('sgGarrisonCard')}</span><i class="sgCbar"><b style="width:100%"></b></i><em class="sgCtroops">${kNum(t0)}</em></div>`;
+      return `<div class="sgBside${si === left ? ' me' : ''}"><div class="sgBhead"><b style="color:${this.fColor(f)}">${esc(this.fName(f))}</b><i class="sgBtotal"><b data-bt="${si}" style="width:100%;background:${this.fColor(f)}"></b></i><em data-bn="${si}">${kNum(t0)}</em></div><div class="sgBcards">${cards}</div></div>`;
+    };
+    const L = $('sgLayer');
+    L.className = 'show battle';
+    L.innerHTML = `<div class="sgCard sgBattle"><h2 class="sgCenter">${esc(where)} · ${ic} ${zh() ? w : WEATHER_EN[w]}</h2>
+      <div class="sgBrow">${col(left)}<span class="sgVs">VS</span>${col(1 - left)}</div><p class="sgCenter sgBres"></p><button class="sgBig" data-ok="1" style="visibility:hidden">${t('sgContinue')}</button></div>`;
+    let skip = false;
+    const onTap = () => { skip = true; };
+    L.addEventListener('pointerdown', onTap);
+    const set = (r) => {
+      for (const si of [0, 1]) {
+        const t0 = Math.max(1, rounds[0][si]), v = r[si], pct = v / t0 * 100, gs = sides[si][0], cmd = E.commandOfAll(gs) || 1;
+        const bar = L.querySelector(`[data-bt="${si}"]`); if (bar) bar.style.width = pct + '%';
+        const n = L.querySelector(`[data-bn="${si}"]`); if (n) n.textContent = kNum(v);
+        gs.slice(0, 3).forEach((g, i) => { const c = L.querySelector(`[data-bi="${si}-${i}"]`); if (!c) return; c.querySelector('.sgCbar b').style.width = pct + '%'; c.querySelector('.sgCtroops').textContent = kNum(v * E.commandOf(g) / cmd); });
+        if (!gs.length) { const c = L.querySelector(`.sgBside${si === left ? '.me' : ':not(.me)'} .garrison`); if (c) { c.querySelector('.sgCbar b').style.width = pct + '%'; c.querySelector('.sgCtroops').textContent = kNum(v); } }
+      }
+    };
+    for (let i = 1; i < rounds.length && !skip && !this.skipFx; i++) {
+      set(rounds[i]);
+      const lost = [rounds[i - 1][0] - rounds[i][0], rounds[i - 1][1] - rounds[i][1]];
+      for (const si of [0, 1]) if (lost[si] > rounds[0][si] * 0.06) { const side = L.querySelectorAll('.sgBside')[si === left ? 0 : 1]; side.classList.remove('hit'); void side.offsetWidth; side.classList.add('hit'); }
+      if (i % 3 === 1) sfx.clash(0.5);
+      await new Promise((r) => setTimeout(r, 110));
+    }
+    set(rounds[rounds.length - 1]);
+    L.removeEventListener('pointerdown', onTap);
+    const youWon = res ? (res.k === 'field' ? res.f === P : res.k === 'take' ? m.f === P : fd === P) : false;
+    const txt = !res ? '' : res.k === 'field' ? t(youWon ? 'sgFxField' : 'sgFxFieldLost') : res.k === 'take' ? t(m.f === P ? 'sgFxTake' : 'sgFxLost') : t(fd === P ? 'sgFxHeld' : 'sgFxRepelled');
+    const out = L.querySelector('.sgBres'); out.textContent = txt; out.className = 'sgCenter sgBres ' + (youWon ? 'won' : 'lost');
+    L.querySelector('[data-ok]').style.visibility = 'visible';
+    sfx.fanfare(youWon);
+    await new Promise((res2) => { const h = (e) => { if (!e.target.closest('[data-ok]')) return; L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; res2(); }; L.addEventListener('click', h); });
+    b.shown = true; // the map banner afterwards stays short
+  }
+  // the 将 page (v0.9.7): tabs on the left (all / by kingdom / enemy officers), a grid of cards, and a detail page
+  openGenerals() {
+    if (this.busy) return;
+    const st = this.s, P = E.PLAYER, L = $('sgLayer');
+    let tab = 'all', detail = null;
+    const mine = () => E.byLead(E.factionGens(st, P)), foes = () => Object.values(st.gens).filter((g) => !g.hidden && g.f !== P && (g.f >= 0 || g.guard)).map((g) => g.id);
+    const where = (id) => { const G = st.gens[id]; return G.guard ? `${cName(G.c)} · ${t('sgGuard')}` : G.c ? cName(G.c) : this.armyOf(id) ? F('sgMarching', { to: cName(this.armyOf(id).to), eta: this.eta(this.armyOf(id)) }) : t('sgOnRoad'); };
+    const paint = () => {
+      if (detail) {
+        const g = GENERALS[detail], G = st.gens[detail], tr = TRAITS[g.trait], bonds = BONDS.filter((x) => x.m.includes(detail));
+        const row = (k, v) => `<div class="sgDrow"><span>${k}</span><b>${v}</b><i>›</i></div>`;
+        const stat = (l, v) => `${v} <u class="g${grade(v)}">${grade(v)}</u>`;
+        L.innerHTML = `<div class="sgCard sgPage"><div class="sgPhead"><button class="sgBack" data-back="1">‹</button><b>${esc(gName(detail))}</b><button class="sgX" data-ok="1">✕</button></div>
+          <div class="sgDetail">${tallCard(detail, { big: true })}<div class="sgDlist">
+          ${row(zh() ? '统率' : 'Leadership', stat('', g.lead) + ` · ${zh() ? '带兵' : 'leads'} ≤${kNum(E.commandOf(detail))}`)}
+          ${row(zh() ? '武力' : 'War', stat('', g.war) + ` · ${zh() ? '战斗力' : 'fighting'} ×${(g.war / 100).toFixed(2)}`)}
+          ${row(zh() ? '智力' : 'Intellect', stat('', g.int) + ` · ${zh() ? '搜索' : 'search'} ${Math.round(E.searchChance(st, P, detail) * 100)}%`)}
+          ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)}`)}
+          ${row(zh() ? '特技' : 'Trait', `${esc(zh() ? tr[0] : tr[1])} · ${esc(zh() ? tr[2] : tr[3])}`)}
+          ${bonds.length ? row(t('sgBonds'), bonds.map((x) => esc(zh() ? x.zh : x.en)).join('、')) : ''}
+          ${row(zh() ? '所在' : 'Where', esc(where(detail)))}
+          ${G.f === P ? row(t('sgOrder'), esc(st.orders[detail] ? this.orderText(st.orders[detail]) : t('sgCmdRest'))) : row(t('sgOwner'), esc(this.fName(G.f)))}
+          </div></div></div>`;
+        return;
+      }
+      const list = (tab === 'foe' ? foes() : mine()).filter((id) => tab === 'all' || tab === 'foe' || GENERALS[id].k === tab);
+      const tabs = [['all', zh() ? '全部' : 'All'], ['wei', zh() ? '魏' : 'Wei'], ['shu', zh() ? '蜀' : 'Shu'], ['wu', zh() ? '吴' : 'Wu'], ['qun', zh() ? '群' : 'Qun'], ['foe', zh() ? '敌将' : 'Enemy']];
+      L.innerHTML = `<div class="sgCard sgPage"><div class="sgPhead"><b>${t('sgOfficersBtn')} · ${mine().length}</b><button class="sgX" data-ok="1">✕</button></div>
+        <div class="sgPbody"><div class="sgTabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div class="sgGrid2">${list.map((id) => tallCard(id, { data: `data-gid="${id}"` })).join('') || `<p class="sgHint">${t('sgNone')}</p>`}</div></div></div>`;
+    };
+    L.className = 'show page';
+    paint();
+    const h = (e) => {
+      const b = e.target.closest('[data-tab],[data-gid],[data-back],[data-ok]');
+      if (!b) return;
+      if (b.dataset.ok) { L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; return; }
+      if (b.dataset.back) detail = null;
+      else if (b.dataset.tab) tab = b.dataset.tab;
+      else if (b.dataset.gid) detail = b.dataset.gid;
+      paint();
+    };
+    L.addEventListener('click', h);
+  }
   async battleResult(b, res, fd) {
     if (!res) return;
     const P = E.PLAYER, at = b.m.at;
@@ -645,8 +762,8 @@ export class Sanguo {
     else { took = res.k === 'take'; youWon = took ? b.m.f === P : fd === P; text = took ? (b.m.f === P ? t('sgFxTake') : t('sgFxLost')) : (fd === P ? t('sgFxHeld') : t('sgFxRepelled')); }
     if (took) { this.fx.push({ type: 'burst', c: b.m.to, at, t0: performance.now(), dur: 700, ca: this.fColor(res.f) }); this.shake = 14; }
     this.fx.push({ type: 'banner', c: b.m.to, at, t0: performance.now(), dur: 1300, ca: youWon ? '#f2c14e' : '#ff8a80', text });
-    sfx.fanfare(youWon);
-    await this.wait(1100);
+    if (!b.shown) sfx.fanfare(youWon);
+    await this.wait(b.shown ? 350 : 1100);
   }
   evText(e) {
     const st = this.s, P = E.PLAYER, f = this.fName(e.f ?? -1);

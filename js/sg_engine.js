@@ -590,10 +590,12 @@ function resolveField(s, m, duelWin, duel) {
     if (duelWin === 'd') { a.troops = Math.round(a.troops * (1 - k.duelLoss)); bMul += k.duelWinAtk; }
   }
   let A = a.troops, B = b.troops;
+  m.rounds = [[A, B]]; m.sideGens = [[...a.gens], [...b.gens]]; // the battle screen plays these back
   for (let r = 0; r < k.fieldRounds && A > 0 && B > 0; r++) {
     const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B }) * aMul;
     const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A }) * bMul;
     A = Math.max(0, Math.round(A - pb * k.roundLoss)); B = Math.max(0, Math.round(B - pa * k.roundLoss));
+    m.rounds.push([A, B]);
     if (A > 0 && B > 0 && (A < a.troops * k.rout || B < b.troops * k.rout)) break; // one side breaks and runs
   }
   const aWon = A * statMul(a.gens) * aMul >= B * statMul(b.gens) * bMul;
@@ -624,6 +626,7 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   }
   let A = m.troops, D = T.troops;
   const walls = wallMul(T);
+  m.rounds = [[A, D]]; m.sideGens = [[...m.gens], [...dGens]]; // the battle screen plays these back
   // v0.9.6: no dice in the fighting itself (troops x 武力 x walls decide); the siege goes on until one
   // side breaks, so the stronger side always carries the day
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {
@@ -631,9 +634,10 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
     const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A }) * dMul * walls;
     A = Math.max(0, Math.round(A - pd * k.roundLoss));
     D = Math.max(0, Math.round(D - pa * k.roundLoss));
+    m.rounds.push([A, D]);
     if (A > 0 && A < m.troops * k.rout) break; // the attackers give up
     T.def = Math.max(20, T.def - 2);
-    if (D > 0 && D < m.troops * 0.12 && A > D * 3) D = 0; // the garrison gives up
+    if (D > 0 && D < m.troops * 0.12 && A > D * 3) { D = 0; m.rounds.push([A, 0]); } // the garrison gives up
   }
   const won = D <= 0 && A > 0;
   ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A, pass: !!T.pass });
