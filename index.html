@@ -212,6 +212,41 @@ body.touch #bD.hide{display:none}
 .sgO .sgCmd{min-height:36px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden;line-height:1.1}.sgO .sgCmd small{display:block;font-size:9.5px;font-weight:700;color:#d9c8ae;margin-top:1px}.sgO .sgCmd.on small{color:#5a4632}
 .sgO .sgSeg,.sgO .sgChips{margin-top:6px}.sgO .sgPick{margin:6px 0 4px}
 .sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
+/* v0.9.7 (D-84): tall officer cards, the 将 page, the battle screen (ideas from the App Store 三国志 game, own code art) */
+.sgCardT{position:relative;width:88px;height:120px;flex:none;border-radius:8px;box-sizing:border-box;border:2px solid #b8c0c8;background:radial-gradient(circle at 50% 46%,var(--kc) 0,var(--kc) 26%,transparent 27%),repeating-radial-gradient(circle at 30% 30%,rgba(120,90,50,.08) 0 6px,transparent 6px 12px),linear-gradient(160deg,#f3e6c8,#d8c196);box-shadow:0 2px 0 rgba(0,0,0,.35);overflow:hidden;cursor:pointer;color:#2b211a}
+.sgCardT.kshu{--kc:rgba(47,143,78,.85)}.sgCardT.kwei{--kc:rgba(47,95,174,.85)}.sgCardT.kwu{--kc:rgba(192,57,43,.85)}.sgCardT.kqun{--kc:rgba(107,79,138,.85)}
+.sgCardT.tSR{border-color:#b98cf0}.sgCardT.tSSR{border-color:#f2c14e;box-shadow:0 0 10px rgba(242,193,78,.55)}.sgCardT.tUR{border-color:#ff9a5c;box-shadow:0 0 12px rgba(255,140,80,.8)}
+.sgCtag{position:absolute;left:4px;top:4px;font-style:normal;background:#2b211a;color:#f5ebdd;font:900 11px 'STKaiti','KaiTi','Kaiti SC',serif;padding:3px 4px;border-radius:7px}.sgCtag.v{writing-mode:vertical-rl;letter-spacing:1px;padding:4px 2px}
+.sgCstar{position:absolute;right:4px;top:3px;font-style:normal;font-size:9px;color:#c0392b;letter-spacing:-1px}
+.sgCglyph{position:absolute;left:0;right:0;top:26px;text-align:center;font:900 44px/1 'STKaiti','KaiTi','Kaiti SC',serif;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.sgCtier{position:absolute;right:4px;top:15px;font:900 8px system-ui,sans-serif;font-style:normal;background:#d7dde3;border-radius:4px;padding:0 3px}
+.sgCardT.tSR .sgCtier{background:#c9a6ff}.sgCardT.tSSR .sgCtier{background:#f2c14e}.sgCardT.tUR .sgCtier{background:linear-gradient(90deg,#ff7a59,#f2c14e,#7fd1a1)}
+.sgCname{position:absolute;left:5px;right:30px;bottom:4px;font:900 12px 'STKaiti','KaiTi','Kaiti SC',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html:lang(en) .sgCname{font:800 10px system-ui,sans-serif;right:26px;bottom:5px}
+.sgCstat{position:absolute;right:4px;bottom:5px;font:800 9px system-ui,sans-serif;color:#5a4632}
+.sgCbar{position:absolute;left:5px;right:5px;bottom:19px;height:5px;background:rgba(43,33,26,.35);border-radius:3px;overflow:hidden}.sgCbar b{display:block;height:5px;background:#e8463a;transition:width .1s linear}
+.sgCtroops{position:absolute;right:5px;bottom:24px;font:900 10px system-ui,sans-serif;font-style:normal;color:#2b211a}
+.sgCardT.big{width:150px;height:205px}.sgCardT.big .sgCglyph{top:48px;font-size:76px}.sgCardT.big .sgCname{font-size:17px}.sgCardT.big .sgCstat{font-size:12px}.sgCardT.big .sgCname{right:40px}.sgCardT.big .sgCtag{font-size:14px}.sgCardT.big .sgCstar{font-size:13px}.sgCardT.big .sgCtier{top:20px;font-size:10px}
+.sgCardT.garrison{background:linear-gradient(160deg,#d9cfc0,#b5a285)}.sgCardT.garrison .sgCglyph{color:#5a4632;text-shadow:none}
+#sgLayer.page .sgCard,#sgLayer.battle .sgCard{width:min(760px,100%)}
+.sgPhead{display:flex;align-items:center;gap:8px;margin:-4px 0 8px;font:900 20px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e}.sgPhead .sgX{margin-left:auto}
+.sgBack{width:34px;height:34px;border-radius:50%;background:#6b2b2b;color:#f5ebdd;border:1.5px solid #f2c14e;font:900 20px inherit;font-family:inherit;cursor:pointer}
+.sgPbody{display:flex;gap:10px}.sgTabs{display:flex;flex-direction:column;gap:6px;flex:none}
+.sgTabs button{width:64px;height:34px;border-radius:8px;background:#6b2b2b;color:#f5ebdd;border:1.5px solid #8a6a3a;font:900 15px 'STKaiti','KaiTi','Kaiti SC',serif;cursor:pointer}.sgTabs button.on{background:#f2c14e;color:#2b211a;border-color:#fff}
+.sgGrid2{flex:1;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;background:linear-gradient(#f0e4c8,#e2cfa6);border-radius:10px;padding:8px;min-height:130px}
+.sgDetail{display:flex;gap:14px;align-items:flex-start}.sgDlist{flex:1;min-width:0;background:linear-gradient(#f0e4c8,#e2cfa6);border-radius:10px;padding:4px 12px;color:#2b211a}
+.sgDrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1.5px solid rgba(90,70,50,.3);font-size:14px}.sgDrow span{font:900 15px 'STKaiti','KaiTi','Kaiti SC',serif;min-width:44px;white-space:nowrap;flex:none;color:#6b2b2b}.sgDrow b{flex:1;font-weight:700}.sgDrow i{font-style:normal;color:#8a6a3a;font-weight:900}
+.sgDrow u{text-decoration:none;font-weight:900}.sgDrow u.gS{color:#d9541e}.sgDrow u.gA{color:#b8860b}.sgDrow u.gB{color:#2f8f4e}.sgDrow u.gC{color:#7d6f60}.sgDrow u.gD{color:#a09080}
+.sgBrow{display:flex;align-items:flex-start;gap:8px}.sgBside{flex:1;min-width:0}.sgBhead{display:flex;align-items:center;gap:6px;margin-bottom:6px}.sgBhead b{font-size:14px;white-space:nowrap}
+.sgBtotal{flex:1;height:9px;background:#4a3a2c;border-radius:5px;overflow:hidden}.sgBtotal b{display:block;height:9px;transition:width .1s linear}.sgBhead em{font-style:normal;font-weight:900;font-size:13px;min-width:38px;text-align:right}
+.sgBcards{display:flex;gap:6px;flex-wrap:wrap}.sgBside.hit .sgBcards{animation:sgJolt .25s}
+.sgBres{font:900 26px 'STKaiti','KaiTi','Kaiti SC',serif;min-height:34px;margin:8px 0 0}.sgBres.won{color:#f2c14e}.sgBres.lost{color:#ff8a80}
+#sg.small .sgCardT{width:74px;height:100px}#sg.small .sgCglyph{top:22px;font-size:36px}#sg.small .sgCardT.big{width:120px;height:164px}#sg.small .sgCardT.big .sgCglyph{top:40px;font-size:60px}
+#sg.small .sgDrow{padding:5px 0;font-size:12px}#sg.small .sgTabs button{width:52px;height:30px;font-size:13px}
+#sgTop #sgGenBtn{min-width:34px;padding:0 10px;font-family:'STKaiti','KaiTi','Kaiti SC',serif;font-weight:900;color:#f2c14e;border-color:#f2c14e}
+#sg.small #sgTop #sgGenBtn,#sg.small #sgTop #sgLogBtn,#sg.small #sgTop #sgMenuBtn{width:30px;min-width:30px;padding:0;border-radius:50%;font-family:'STKaiti','KaiTi','Kaiti SC',serif;font-weight:900;font-size:14px}
+#sg.small #sgTop #sgGenBtn.pill,#sg.small #sgTop #sgLogBtn.pill{width:auto;min-width:0;padding:0 7px;border-radius:15px;font:700 11px system-ui,sans-serif}
+
 /* v0.9.5 (D-82): rarity frames, stat grades, battle odds */
 .sgP{position:relative}
 .sgP.tR{border-color:#b8c0c8}.sgP.tSR{border-color:#b98cf0;box-shadow:0 0 0 2px rgba(185,140,240,.35)}
@@ -292,7 +327,7 @@ body.touch #bD.hide{display:none}
   </div>
   <div id="sg" class="modal">
     <canvas id="sgMap"></canvas>
-    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgAuto"></button><button id="sgEnd"></button><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
+    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgAuto"></button><button id="sgEnd"></button><button id="sgGenBtn"></button><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
     <div id="sgPanel"></div>
     <button id="sgPanelTab">»</button>
     <div id="sgZoom"><button id="sgZIn">+</button><button id="sgZOut">−</button><button id="sgZHome">◎</button></div>
@@ -342,8 +377,8 @@ body.touch #bD.hide{display:none}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=9ef977177f","./js/bigmap.js":"./js/bigmap.js?v=9ef977177f","./js/config.js":"./js/config.js?v=9ef977177f","./js/fire.js":"./js/fire.js?v=9ef977177f","./js/game.js":"./js/game.js?v=9ef977177f","./js/geo.js":"./js/geo.js?v=9ef977177f","./js/glb.js":"./js/glb.js?v=9ef977177f","./js/hud.js":"./js/hud.js?v=9ef977177f","./js/i18n.js":"./js/i18n.js?v=9ef977177f","./js/input.js":"./js/input.js?v=9ef977177f","./js/main.js":"./js/main.js?v=9ef977177f","./js/math.js":"./js/math.js?v=9ef977177f","./js/missions.js":"./js/missions.js?v=9ef977177f","./js/models.js":"./js/models.js?v=9ef977177f","./js/nav.js":"./js/nav.js?v=9ef977177f","./js/orient.js":"./js/orient.js?v=9ef977177f","./js/poi.js":"./js/poi.js?v=9ef977177f","./js/pranks.js":"./js/pranks.js?v=9ef977177f","./js/props.js":"./js/props.js?v=9ef977177f","./js/renderer.js":"./js/renderer.js?v=9ef977177f","./js/sg_data.js":"./js/sg_data.js?v=9ef977177f","./js/sg_elev.js":"./js/sg_elev.js?v=9ef977177f","./js/sg_engine.js":"./js/sg_engine.js?v=9ef977177f","./js/sg_sites.js":"./js/sg_sites.js?v=9ef977177f","./js/sg_ui.js":"./js/sg_ui.js?v=9ef977177f","./js/signals.js":"./js/signals.js?v=9ef977177f","./js/world.js":"./js/world.js?v=9ef977177f"}}</script>
-<script type="module" src="js/main.js?v=9ef977177f"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=0d07f47a81","./js/bigmap.js":"./js/bigmap.js?v=0d07f47a81","./js/config.js":"./js/config.js?v=0d07f47a81","./js/fire.js":"./js/fire.js?v=0d07f47a81","./js/game.js":"./js/game.js?v=0d07f47a81","./js/geo.js":"./js/geo.js?v=0d07f47a81","./js/glb.js":"./js/glb.js?v=0d07f47a81","./js/hud.js":"./js/hud.js?v=0d07f47a81","./js/i18n.js":"./js/i18n.js?v=0d07f47a81","./js/input.js":"./js/input.js?v=0d07f47a81","./js/main.js":"./js/main.js?v=0d07f47a81","./js/math.js":"./js/math.js?v=0d07f47a81","./js/missions.js":"./js/missions.js?v=0d07f47a81","./js/models.js":"./js/models.js?v=0d07f47a81","./js/nav.js":"./js/nav.js?v=0d07f47a81","./js/orient.js":"./js/orient.js?v=0d07f47a81","./js/poi.js":"./js/poi.js?v=0d07f47a81","./js/pranks.js":"./js/pranks.js?v=0d07f47a81","./js/props.js":"./js/props.js?v=0d07f47a81","./js/renderer.js":"./js/renderer.js?v=0d07f47a81","./js/sg_data.js":"./js/sg_data.js?v=0d07f47a81","./js/sg_elev.js":"./js/sg_elev.js?v=0d07f47a81","./js/sg_engine.js":"./js/sg_engine.js?v=0d07f47a81","./js/sg_sites.js":"./js/sg_sites.js?v=0d07f47a81","./js/sg_ui.js":"./js/sg_ui.js?v=0d07f47a81","./js/signals.js":"./js/signals.js?v=0d07f47a81","./js/world.js":"./js/world.js?v=0d07f47a81"}}</script>
+<script type="module" src="js/main.js?v=0d07f47a81"></script>
 <!-- stamp:end -->
 </body>
 </html>
