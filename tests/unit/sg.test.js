@@ -4,7 +4,7 @@ import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
   terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
-  statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets,
+  statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets, routeOf, marchTargets,
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
@@ -172,7 +172,7 @@ describe('relay stations and supply depots (v0.8.2)', () => {
     expect(moveTargets(s, 0, 'wdb')).toContain('dtm');  // ... or Warden Ave
     s.cities.esn.owner = 1;
     expect(moveTargets(s, 0, 'wdb')).not.toContain('pac'); // the middle city must be ours
-    expect(moveTargets(s, 0, 'dtm')).not.toContain('pac'); // Warden Ave has no relay
+    expect(moveTargets(s, 0, 'dtm')).not.toContain('pac'); // no road of ours leads there
   });
   it('补给站 (malls) feed their own supply line', () => {
     expect(CITY_IDS.filter((c) => CITIES[c].depot).sort()).toEqual(['btv', 'mkv', 'pac', 'wdb']);
@@ -539,5 +539,48 @@ describe('whole games', () => {
     s.events = []; endTurn(s);
     expect(s.coalition).toBe(2);
     expect(s.events.some((e) => e.k === 'coalition' && e.f === 2)).toBe(true);
+  });
+});
+
+describe('orders reach beyond the next city (v0.9.8)', () => {
+  // a chain of three nodes a - b - c where a and c are not neighbours
+  const chain = () => {
+    for (const a of NODE_IDS) for (const { c: b } of ADJ[a]) for (const { c } of ADJ[b]) if (c !== a && !ADJ[a].some((x) => x.c === c)) return [a, b, c];
+    return null;
+  };
+  it('moves and attacks go along our own roads, never through someone else\'s node', () => {
+    const s = newGame(4), [a, b, c] = chain();
+    for (const n of NODE_IDS) s.cities[n].owner = 1;
+    s.cities[a].owner = 0; s.cities[b].owner = 0;
+    expect(marchTargets(s, 0, a)).toContain(c);                 // attack c from a, through b
+    expect(routeOf(s, 0, a, c)).toEqual([a, b, c]);
+    s.cities[c].owner = 0;
+    expect(moveTargets(s, 0, a)).toContain(c);                  // move straight to c
+    s.cities[b].owner = 1;
+    expect(moveTargets(s, 0, a)).not.toContain(c);              // b is not ours any more
+    expect(marchTargets(s, 0, a)).not.toContain(ADJ[c].map((x) => x.c).find((n) => n !== b && !ADJ[a].some((y) => y.c === n)) || 'none');
+    // every target is within maxMarch months, and every route only passes through our own nodes
+    const t = newGame(5);
+    for (const n of NODE_IDS) t.cities[n].owner = 0;
+    t.cities[NODE_IDS[NODE_IDS.length - 1]].owner = 1;
+    for (const n of moveTargets(t, 0, NODE_IDS[0])) {
+      const r = routeOf(t, 0, NODE_IDS[0], n);
+      expect(travelMonths(r)).toBeLessThanOrEqual(CFG.sg.maxMarch);
+      for (const x of r.slice(1, -1)) expect(t.cities[x].owner).toBe(0);
+    }
+  });
+  it('a far order is valid and its army follows the roads; a road cut on the way means a fight there', () => {
+    const s = newGame(4), [a, b, c] = chain(), g = factionGens(s, 0)[0];
+    for (const n of NODE_IDS) if (s.cities[n].owner === 0) s.cities[n].owner = 1;
+    for (const n of [a, b]) Object.assign(s.cities[n], { owner: 0, troops: 5000 });
+    s.cities[c].owner = 1; s.factions[0].cap = a; Object.assign(s.gens[g], { c: a });
+    expect(validOrder(s, 0, g, { cmd: 'march', to: c, n: 2000 })).toBe(true);
+    beginTurn(s, { [g]: { cmd: 'march', to: c, n: 2000 } });
+    const army = s.armies.find((x) => x.gens.includes(g)) || [...s.queue].find((x) => x.gens.includes(g));
+    expect(army.route).toEqual([a, b, c]);
+    // someone takes b before the army gets there
+    army.left = 1; s.cities[b].owner = 2;
+    for (let m = nextBattle(s); m; m = nextBattle(s)) resolveBattle(s, m.m, null, m.duel);
+    expect(s.events.some((e) => e.k === 'blocked' && e.c === b && e.to === c)).toBe(true);
   });
 });

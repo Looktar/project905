@@ -125,7 +125,7 @@ export const CFG = {
     // v0.9 (D-77): random boards
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
     // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
-    marchSpeed: 650, relaySpeed: 1.6,
+    marchSpeed: 650, relaySpeed: 1.6, maxMarch: 4, // months: the farthest an order may send an army (v0.9.8)
     // duel damage follows (武力 ratio) ^ duelExp
     duelExp: 2.2, duelMin: 0.35, duelMax: 2.8,
     // v0.9.6 (D-83): an officer leads 统率 x leadTroops troops; battles (no dice) go on to the end: up to
