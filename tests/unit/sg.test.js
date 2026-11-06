@@ -1,7 +1,7 @@
 // 万锦三国志 (D-73): the strategy rules, run headless.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer,
+  newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer, newDuel, feintChance,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
   terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
   statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets, routeOf, marchTargets,
@@ -308,8 +308,8 @@ describe('officers make a real difference (v0.9.5)', () => {
     expect(costOf('dev', 'xunyu')).toBeLessThan(costOf('dev', 'lvbu') * 0.7);
     // duels: a big gap in 武力 is decisive
     let wins = 0;
-    for (let i = 0; i < 40; i++) { const d = { a: 'lvbu', d: 'huanggai', fa: 0, fd: 1, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null }; if (autoDuel(s, d) === 'a') wins++; }
-    expect(wins).toBeGreaterThan(30); // 武力 100 vs 82: still a rock-paper-scissors fight, but a clear favourite
+    for (let i = 0; i < 40; i++) if (autoDuel(s, newDuel(s, 'lvbu', 'huanggai', 1, 2)) === 'a') wins++;
+    expect(wins).toBeGreaterThan(30); // 武力 100 vs 82: a clear favourite
   });
 });
 
@@ -484,18 +484,52 @@ describe('supply lines', () => {
 
 describe('duels and bonds', () => {
   oneMonthRoads();
-  it('rock-paper-scissors rounds, stronger arms hit harder; a duel always ends', () => {
+  it('duels (v0.9.9): read the stance; 智力 decides who can be fooled, 武力 the damage, a big gap one blow', () => {
     const s = newGame(1);
-    const d = { a: 'lvbu', d: 'xunyu', fa: 0, fd: 1, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null };
-    duelRound(s, d, 'atk', 'skill'); // atk beats skill
-    expect(d.hpD).toBeLessThan(100); expect(d.hpA).toBe(100);
-    const d2 = { ...d, hpA: 100, hpD: 100, n: 0, log: [], done: false };
-    duelRound(s, d2, 'atk', 'def'); // def beats atk
-    expect(d2.hpA).toBeLessThan(100);
-    expect(100 - d2.hpA).toBeLessThan(100 - d.hpD); // Xun Yu hits Lü Bu softly
-    let lvWins = 0;
-    for (let i = 0; i < 40; i++) { const x = { ...d, hpA: 100, hpD: 100, n: 0, log: [], done: false, win: null }; if (autoDuel(s, x) === 'a') lvWins++; expect(x.done).toBe(true); expect(x.n).toBeLessThanOrEqual(CFG.sg.duelRounds); }
-    expect(lvWins).toBeGreaterThan(30);
+    // 吕布 (武力 100) reads 荀彧's (14) strike and blocks it: one blow ends it
+    const d = newDuel(s, 'lvbu', 'xunyu', 0, 1);
+    Object.assign(d, { next: 'atk', tell: 'atk', feint: false });
+    duelRound(s, d, 'def');
+    expect(d.hpD).toBe(0); expect(d.done).toBe(true); expect(d.win).toBe('a');
+    // between equals the damage depends on the moves: a special breaks a guard harder than a strike lands
+    const e = newDuel(s, 'zhaoyun', 'machao', 0, 1), hp0 = e.hpD;
+    Object.assign(e, { next: 'def', tell: 'def', feint: false, spA: 100 });
+    duelRound(s, e, 'skill');
+    const f = newDuel(s, 'zhaoyun', 'machao', 0, 1);
+    Object.assign(f, { next: 'skill', tell: 'skill', feint: false });
+    duelRound(s, f, 'atk');
+    expect(hp0 - e.hpD).toBeGreaterThan(f.maxD - f.hpD);
+    expect(e.spA).toBe(100 - CFG.sg.duelSkillCost);
+    // 必杀 needs 斗志: without it the answer is a plain strike
+    const g = newDuel(s, 'zhaoyun', 'machao', 0, 1);
+    Object.assign(g, { next: 'def', tell: 'def', feint: false, spA: 0 });
+    duelRound(s, g, 'skill');
+    expect(g.log[0].mA).toBe('atk');
+    // the cleverer reader always sees the true stance; a duller one is sometimes fooled, and a feint baits
+    expect(feintChance('zhugeliang', 'lvbu')).toBe(0);
+    expect(feintChance('lvbu', 'zhugeliang')).toBeGreaterThan(0.25);
+    const BEATS = { atk: 'skill', skill: 'def', def: 'atk' }, BEATEN = { atk: 'def', skill: 'atk', def: 'skill' };
+    let feints = 0;
+    for (let i = 0; i < 300; i++) {
+      const smart = newDuel(s, 'zhaoyun', 'machao', 0, 1); // 赵云 智力 76 reads 马超 44
+      expect(smart.tell).toBe(smart.next);
+      const dull = newDuel(s, 'machao', 'zhaoyun', 0, 1);
+      if (dull.tell !== dull.next) { feints++; expect(BEATS[dull.next]).toBe(BEATEN[dull.tell]); }
+    }
+    expect(feints / 300).toBeGreaterThan(feintChance('machao', 'zhaoyun') - 0.08);
+    expect(feints / 300).toBeLessThan(feintChance('machao', 'zhaoyun') + 0.08);
+    // reading pays: answering what you see beats guessing, and every duel ends within duelRounds
+    let read = 0, guess = 0;
+    for (let i = 0; i < 200; i++) {
+      const x = newDuel(s, 'xuchu', 'dianwei', 0, 1);
+      while (!x.done) duelRound(s, x, BEATEN[x.tell] === 'skill' && x.spA < CFG.sg.duelSkillCost ? 'atk' : BEATEN[x.tell]);
+      if (x.win === 'a') read++;
+      const y = newDuel(s, 'xuchu', 'dianwei', 0, 1);
+      while (!y.done) duelRound(s, y, ['atk', 'def', 'skill'][i % 3]);
+      if (y.win === 'a') guess++;
+      expect(x.n).toBeLessThanOrEqual(CFG.sg.duelRounds);
+    }
+    expect(read).toBeGreaterThan(guess + 40);
   });
   it('bonds switch on with enough members; rivals are found across armies', () => {
     const s = newGame(2);

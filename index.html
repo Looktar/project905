@@ -197,6 +197,21 @@ body.touch #bD.hide{display:none}
 .sgDm button{min-height:50px;background:#d64545;color:#fff;border:2px solid #fff;border-radius:12px;font:900 18px inherit;font-family:inherit;cursor:pointer}
 .sgDm button:nth-child(2){background:#2f7de1}.sgDm button:nth-child(3){background:#7c55c9}
 .sgRule{font-size:12px;color:#d9c8ae;text-align:center;margin:6px 0 0}
+/* v0.9.9 (D-86) duels: the opponent's stance, how far to trust it, fighting spirit */
+.sgStance{margin:8px 0;padding:8px 12px;border-radius:10px;background:#3a2c20;border:2px solid #8a6a3a;text-align:center}
+.sgStance b{display:block;font:900 17px 'STKaiti','KaiTi','Kaiti SC',serif;color:#fff}.sgStance small{display:block;font-weight:800;color:#f2c14e;margin-top:2px}
+.sgStance.satk{border-color:#d64545}.sgStance.sdef{border-color:#2f7de1}.sgStance.sskill{border-color:#a57ce8;box-shadow:0 0 10px rgba(165,124,232,.5)}
+.sgTrust{display:block;font-style:normal;font-size:12px;margin-top:4px}.sgTrust.ok{color:#7fd1a1}.sgTrust.warn{color:#ffb35c}
+.sgSp{display:block;width:100%;height:5px;background:#4a3a2c;border-radius:3px;overflow:hidden}.sgSp b{display:block;height:5px;background:#f2c14e;transition:width .35s}
+.sgDs small.sgSpN{font-size:10px;color:#f2c14e}
+.sgDm button small{display:block;font:700 10px system-ui,sans-serif;opacity:.85}.sgDm button:disabled{opacity:.35;cursor:not-allowed}
+.sgLink{background:none;border:0;color:#f2c14e;text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+.sgKoWarn{color:#ff8a5c;font-weight:900;margin:4px 0}.sgFeint{color:#ffb35c}
+#sg.small .sgDs.sm{flex-direction:row;align-items:center;gap:6px;width:46%}.sgDi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sgDi b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sgDi b small{font-size:10.5px;font-weight:600}.sgDi span{display:flex;align-items:center;gap:5px}.sgDi span .sgHp,.sgDi span .sgSp{flex:1}
+.sgDi em{font-size:12px;min-width:22px}#sg.small .sgDuel{gap:4px}#sg.small .sgDuel .sgVs{font-size:20px}#sg.small .sgMsg{min-height:0;font-size:12px;margin:4px 0;line-height:1.35}
+#sg.small .sgDm button{min-height:40px;font-size:16px}#sg.small .sgRule{font-size:10.5px;margin-top:4px}
+#sg.small .sgStance{margin:4px 0;padding:4px 8px}#sg.small .sgStance b{font-size:14px}#sg.small .sgTrust{font-size:10.5px}
 .sgHelp{white-space:pre-line;font-size:14px;line-height:1.55;color:#f5ebdd}
 #sgTop #sgAuto{display:flex;align-items:center;gap:5px;color:#f2c14e;border-color:#f2c14e}
 #sgAuto i{font-style:normal;background:#f2c14e;color:#2b211a;border-radius:999px;min-width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 4px}
@@ -377,8 +392,8 @@ html:lang(en) .sgCname{font:800 10px system-ui,sans-serif;right:26px;bottom:5px}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=0953bc9f61","./js/bigmap.js":"./js/bigmap.js?v=0953bc9f61","./js/config.js":"./js/config.js?v=0953bc9f61","./js/fire.js":"./js/fire.js?v=0953bc9f61","./js/game.js":"./js/game.js?v=0953bc9f61","./js/geo.js":"./js/geo.js?v=0953bc9f61","./js/glb.js":"./js/glb.js?v=0953bc9f61","./js/hud.js":"./js/hud.js?v=0953bc9f61","./js/i18n.js":"./js/i18n.js?v=0953bc9f61","./js/input.js":"./js/input.js?v=0953bc9f61","./js/main.js":"./js/main.js?v=0953bc9f61","./js/math.js":"./js/math.js?v=0953bc9f61","./js/missions.js":"./js/missions.js?v=0953bc9f61","./js/models.js":"./js/models.js?v=0953bc9f61","./js/nav.js":"./js/nav.js?v=0953bc9f61","./js/orient.js":"./js/orient.js?v=0953bc9f61","./js/poi.js":"./js/poi.js?v=0953bc9f61","./js/pranks.js":"./js/pranks.js?v=0953bc9f61","./js/props.js":"./js/props.js?v=0953bc9f61","./js/renderer.js":"./js/renderer.js?v=0953bc9f61","./js/sg_data.js":"./js/sg_data.js?v=0953bc9f61","./js/sg_elev.js":"./js/sg_elev.js?v=0953bc9f61","./js/sg_engine.js":"./js/sg_engine.js?v=0953bc9f61","./js/sg_sites.js":"./js/sg_sites.js?v=0953bc9f61","./js/sg_ui.js":"./js/sg_ui.js?v=0953bc9f61","./js/signals.js":"./js/signals.js?v=0953bc9f61","./js/world.js":"./js/world.js?v=0953bc9f61"}}</script>
-<script type="module" src="js/main.js?v=0953bc9f61"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=8bfbe3b4ab","./js/bigmap.js":"./js/bigmap.js?v=8bfbe3b4ab","./js/config.js":"./js/config.js?v=8bfbe3b4ab","./js/fire.js":"./js/fire.js?v=8bfbe3b4ab","./js/game.js":"./js/game.js?v=8bfbe3b4ab","./js/geo.js":"./js/geo.js?v=8bfbe3b4ab","./js/glb.js":"./js/glb.js?v=8bfbe3b4ab","./js/hud.js":"./js/hud.js?v=8bfbe3b4ab","./js/i18n.js":"./js/i18n.js?v=8bfbe3b4ab","./js/input.js":"./js/input.js?v=8bfbe3b4ab","./js/main.js":"./js/main.js?v=8bfbe3b4ab","./js/math.js":"./js/math.js?v=8bfbe3b4ab","./js/missions.js":"./js/missions.js?v=8bfbe3b4ab","./js/models.js":"./js/models.js?v=8bfbe3b4ab","./js/nav.js":"./js/nav.js?v=8bfbe3b4ab","./js/orient.js":"./js/orient.js?v=8bfbe3b4ab","./js/poi.js":"./js/poi.js?v=8bfbe3b4ab","./js/pranks.js":"./js/pranks.js?v=8bfbe3b4ab","./js/props.js":"./js/props.js?v=8bfbe3b4ab","./js/renderer.js":"./js/renderer.js?v=8bfbe3b4ab","./js/sg_data.js":"./js/sg_data.js?v=8bfbe3b4ab","./js/sg_elev.js":"./js/sg_elev.js?v=8bfbe3b4ab","./js/sg_engine.js":"./js/sg_engine.js?v=8bfbe3b4ab","./js/sg_sites.js":"./js/sg_sites.js?v=8bfbe3b4ab","./js/sg_ui.js":"./js/sg_ui.js?v=8bfbe3b4ab","./js/signals.js":"./js/signals.js?v=8bfbe3b4ab","./js/world.js":"./js/world.js?v=8bfbe3b4ab"}}</script>
+<script type="module" src="js/main.js?v=8bfbe3b4ab"></script>
 <!-- stamp:end -->
 </body>
 </html>

@@ -10,7 +10,7 @@
 //
 // A month:  beginTurn(s, playerOrders)  -> domestic orders of every faction run, armies queue up
 //           nextBattle(s)               -> the next army arrives: { m, duel } (duel may be null)
-//           duelRound(s, duel, a, d)    -> one exchange of a duel (null move = computer picks)
+//           duelRound(s, duel, move)    -> one round of a duel: the reader's answer to the stance (null = computer)
 //           resolveBattle(s, m, winner) -> the siege is fought ('a' / 'd' / null = duel result)
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
@@ -546,7 +546,7 @@ export function nextBattle(s) {
       const A = best(a.gens, 'war'), D = best(b.gens, 'war'), riv = rivalry(a.gens, b.gens);
       let p = riv ? K().duelRival : K().duelChance;
       if (gen(A).war >= 85 && gen(D).war >= 85) p += K().duelBig;
-      if (rnd(s) < p) duel = { a: A, d: D, fa: a.f, fd: b.f, hpA: 100, hpD: 100, n: 0, log: [], rival: riv ? riv.zh : null, rivalEn: riv ? riv.en : null, done: false, win: null };
+      if (rnd(s) < p) duel = newDuel(s, A, D, a.f, b.f, riv);
     }
     return { m, duel };
   }
@@ -566,7 +566,7 @@ export function nextBattle(s) {
         // with a rivalry, the rivals themselves step forward
         let A = a, D = d;
         if (riv) { A = m.gens.find((x) => riv.a.includes(x) || riv.b.includes(x)) || a; D = dGens.find((x) => riv.a.includes(x) || riv.b.includes(x)) || d; }
-        duel = { a: A, d: D, fa: m.f, fd: T.owner, hpA: 100, hpD: 100, n: 0, log: [], rival: riv ? riv.zh : null, rivalEn: riv ? riv.en : null, done: false, win: null };
+        duel = newDuel(s, A, D, m.f, T.owner, riv);
       }
     }
     return { m, duel };
@@ -574,23 +574,83 @@ export function nextBattle(s) {
   return null;
 }
 
-const BEATS = { atk: 'skill', skill: 'def', def: 'atk' }; // move -> the move it beats
-export function aiMove(s) { const r = rnd(s); return r < 0.4 ? 'atk' : r < 0.7 ? 'def' : 'skill'; }
-export function duelRound(s, d, mA = null, mD = null) {
-  const k = K();
-  mA = mA || aiMove(s); mD = mD || aiMove(s);
-  const wa = gen(d.a).war, wd = gen(d.d).war;
-  const bonus = (id, f) => 1 + fx(id, 'duel') + bondFx(s, f, [id], 'duel');
-  const hit = (w, l, id, f, skill) => k.duelHit * Math.min(k.duelMax, Math.max(k.duelMin, (w / l) ** k.duelExp)) * bonus(id, f) * (0.85 + 0.3 * rnd(s)) * (skill ? 1 + k.duelSkill : 1);
-  let dmgA = 0, dmgD = 0; // damage taken by a / d
-  if (mA === mD) { dmgA = k.duelTie * Math.min(2.5, (wd / wa) ** k.duelExp); dmgD = k.duelTie * Math.min(2.5, (wa / wd) ** k.duelExp); }
-  else if (BEATS[mA] === mD) dmgD = hit(wa, wd, d.a, d.fa, mA === 'skill');
-  else dmgA = hit(wd, wa, d.d, d.fd, mD === 'skill');
-  d.hpA = Math.max(0, Math.round(d.hpA - dmgA)); d.hpD = Math.max(0, Math.round(d.hpD - dmgD)); d.n++;
-  d.log.push({ mA, mD, dmgA: Math.round(dmgA), dmgD: Math.round(dmgD) });
+// ---- duels (v0.9.9, D-86): reading the opponent. Each round the side that is not reading (the computer)
+// settles on a move and takes a stance; the reader (you, or the attacker in a computer duel) sees the
+// stance and answers. A reader with the higher 智力 always sees the true stance; a cleverer opponent
+// sometimes feints: he shows the stance that baits the wrong answer. 武力 sets the damage (a big gap:
+// one blow is enough), 统率 the stamina and the fighting spirit (斗志) a special move needs. The damage
+// has no dice: the only luck is in the reading.
+const BEATS = { atk: 'skill', skill: 'def', def: 'atk' };  // move -> the move it beats
+const BEATEN = { atk: 'def', skill: 'atk', def: 'skill' }; // move -> the move that beats it
+export const DUEL_MOVES = ['atk', 'def', 'skill'];
+const side = (d, x) => (x === 'a' ? { g: d.a, f: d.fa, hp: 'hpA', sp: 'spA' } : { g: d.d, f: d.fd, hp: 'hpD', sp: 'spD' });
+export function feintChance(reader, foe) {
+  const k = K(), dif = gen(foe).int - gen(reader).int;
+  return dif <= 0 ? 0 : Math.min(k.feintMax, k.feintBase + dif * k.feintPerInt);
+}
+export const canSkill = (d, x) => d[side(d, x).sp] >= K().duelSkillCost;
+// the computer side picks its move and shows a stance (true, or a feint)
+function duelIntent(s, d) {
+  const who = d.reader === 'a' ? 'd' : 'a', r = rnd(s), mine = canSkill(d, who);
+  // a reader short of 斗志 cannot break a guard, so the computer guards more against him; one who will
+  // see through any feint gets the safest moves (a strike only risks a counter, a guard only a tie)
+  const read = feintChance(side(d, d.reader).g, side(d, who).g) === 0;
+  const w = canSkill(d, d.reader) ? (read ? { atk: 0.6, def: 0.15, skill: 0.25 } : { atk: 0.4, def: 0.25, skill: 0.35 })
+    : (read ? { atk: 0.35, def: 0.55, skill: 0.1 } : { atk: 0.3, def: 0.5, skill: 0.2 });
+  if (!mine) { w.atk += w.skill * 0.5; w.def += w.skill * 0.5; w.skill = 0; }
+  const mv = r < w.atk ? 'atk' : r < w.atk + w.def ? 'def' : 'skill';
+  const p = feintChance(side(d, d.reader).g, side(d, who).g);
+  d.feintP = p; d.next = mv; d.feint = rnd(s) < p;
+  d.tell = d.feint ? BEATEN[mv] : mv; // a feint shows the stance whose answer his real move beats
+}
+export function newDuel(s, a, dd, fa, fd, riv = null) {
+  const k = K(), hp = (g) => Math.round(k.duelHp + gen(g).lead * k.duelHpLead), sp = (g) => Math.round(gen(g).lead * k.duelSpLead);
+  const d = { a, d: dd, fa, fd, reader: fd === PLAYER && fa !== PLAYER ? 'd' : 'a', alt: fa !== PLAYER && fd !== PLAYER, hpA: hp(a), hpD: hp(dd), maxA: hp(a), maxD: hp(dd), spA: sp(a), spD: sp(dd),
+    n: 0, log: [], rival: riv ? riv.zh : null, rivalEn: riv ? riv.en : null, done: false, win: null };
+  duelIntent(s, d);
+  return d;
+}
+// the computer reading a stance (computer duels, and the 自动 button): mostly answers what it sees
+export function aiAnswer(s, d) {
+  const want = rnd(s) < K().duelAiRead ? BEATEN[d.tell] : DUEL_MOVES[Math.floor(rnd(s) * 3)];
+  return want === 'skill' && !canSkill(d, d.reader) ? 'atk' : want;
+}
+// one round: mv is the reader's move (null: the computer answers for him)
+export function duelRound(s, d, mv = null) {
+  const k = K(), R = d.reader, O = R === 'a' ? 'd' : 'a';
+  mv = mv || aiAnswer(s, d);
+  if (mv === 'skill' && !canSkill(d, R)) mv = 'atk';
+  const moves = { [R]: mv, [O]: d.next }, dmg = { a: 0, d: 0 }, sp = { a: 0, d: 0 };
+  const bonus = (x) => 1 + fx(side(d, x).g, 'duel') + bondFx(s, side(d, x).f, [side(d, x).g], 'duel');
+  const war = (x) => gen(side(d, x).g).war;
+  const hit = (w, l, kind) => {
+    if (kind !== 'tie' && kind !== 'chip' && war(w) - war(l) >= k.duelKoGap) return d[side(d, l).hp]; // 武力悬殊: one blow
+    const mul = { skill: k.duelSkillMul, atk: 1, counter: k.duelCounter, chip: k.duelChip, tie: k.duelTie / k.duelHit }[kind];
+    return k.duelHit * Math.min(k.duelMax, Math.max(k.duelMin, (war(w) / war(l)) ** k.duelExp)) * bonus(w) * mul;
+  };
+  for (const x of ['a', 'd']) if (moves[x] === 'skill') sp[x] -= k.duelSkillCost;
+  let won = null;
+  if (moves.a === moves.d) { dmg.a = hit('d', 'a', 'tie'); dmg.d = hit('a', 'd', 'tie'); sp.a += k.duelSpTie; sp.d += k.duelSpTie; }
+  else {
+    won = BEATS[moves.a] === moves.d ? 'a' : 'd';
+    const l = won === 'a' ? 'd' : 'a', m = moves[won];
+    dmg[l] = hit(won, l, m === 'skill' ? 'skill' : m === 'def' ? 'counter' : 'atk');
+    sp[l] += k.duelSpHit;
+    if (m === 'def') { sp[won] += k.duelSpBlock; dmg[won] = hit(l, won, 'chip'); } // a block still jars the arm
+  }
+  for (const x of ['a', 'd']) {
+    const S = side(d, x);
+    d[S.hp] = Math.max(0, Math.round(d[S.hp] - dmg[x]));
+    d[S.sp] = Math.max(0, Math.min(100, d[S.sp] + sp[x]));
+  }
+  d.n++;
+  d.log.push({ mA: moves.a, mD: moves.d, dmgA: Math.round(dmg.a), dmgD: Math.round(dmg.d), tell: d.tell, feint: d.feint, won });
   if (d.hpA <= 0 || d.hpD <= 0 || d.n >= k.duelRounds) {
     d.done = true;
-    d.win = d.hpA <= 0 && d.hpD <= 0 ? null : d.hpD <= 0 ? 'a' : d.hpA <= 0 ? 'd' : Math.abs(d.hpA - d.hpD) < 8 ? null : d.hpA > d.hpD ? 'a' : 'd';
+    d.win = d.hpA <= 0 && d.hpD <= 0 ? null : d.hpD <= 0 ? 'a' : d.hpA <= 0 ? 'd' : Math.abs(d.hpA - d.hpD) < k.duelDraw ? null : d.hpA > d.hpD ? 'a' : 'd';
+  } else {
+    if (d.alt) d.reader = d.reader === 'a' ? 'd' : 'a'; // a computer duel: the two take turns reading
+    duelIntent(s, d);
   }
   return d;
 }
