@@ -21,7 +21,10 @@ extend({
   sgOwner: '势力', sgYourSide: '你的势力', sgPickCity: '点城池查看、下命令。和本城连成一片的城才有粮道，才能出征。',
   sgBonds: '羁绊', sgBondOn: '已激活', sgAllGens: '全部武将',
   sgReport: '本月急报', sgQuiet: '这个月很太平。', sgBlind: '开盲盒！', sgBlindStart: '开局盲盒', sgJoined: '{g} 加入了你的势力！', sgRecruited: '{g} 被你俘虏后归降了！',
-  sgDuel: '单挑！', sgDuelVs: '{a} 对 {d}', sgAtk: '猛攻', sgDefM: '防守', sgSkill: '必杀', sgDuelRule: '猛攻克必杀 · 必杀破防守 · 防守挡猛攻',
+  sgDuel: '单挑！', sgDuelVs: '{a} 对 {d}', sgAtk: '猛攻', sgDefM: '防守', sgSkill: '必杀', sgDuelRule: '猛攻克必杀 · 必杀破防守 · 防守挡猛攻（反击）', sgLooksatk: '看样子要猛攻', sgLooksdef: '看样子要防守', sgLooksskill: '看样子要放必杀',
+  sgTrustOk: '看破：你的智力 {a} 不低于对方的 {b}，这个架势一定是真的', sgTrustWarn: '对方智力 {b} 比你的 {a} 高：约 {n}% 的可能是佯攻',
+  sgSpirit: '斗志', sgSkillCost: '{n} 斗志', sgDuelAuto: '交给电脑打', sgKoGap: '武力悬殊：{g} 一击就能打倒对手！',
+  sgRoundWon: '读对了！', sgRoundLost: '吃亏了…', sgRoundTie: '势均力敌', sgFeint: '（佯攻！）',
   sgDuelWin: '{g} 赢了单挑！', sgDuelDraw: '不分胜负！', sgRound: '第 {n} 回合', sgMoves: '你：{a} · 对方：{d}', sgHit: '{g} 受到 {n} 伤害', sgRival: '宿敌相见：{r}',
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
@@ -38,7 +41,7 @@ extend({
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑仍然靠猜拳。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：猛攻克必杀、必杀破防守、防守挡猛攻。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑靠读招（见下）。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：对手每回合先亮架势，你读招应对（猛攻克必杀、必杀破防守、防守挡猛攻并反击）。你的智力不低于对手，架势一定是真的；对手智力更高，有时会佯攻骗你。武力决定伤害，武力相差 25 以上一击就能打倒对手；统率决定体力和斗志，必杀要花 50 斗志。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgMusicOn: '🎵 Music: on', sgMusicOff: '🎵 Music: off', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
@@ -50,7 +53,10 @@ extend({
   sgOwner: 'Owner', sgYourSide: 'Your forces', sgPickCity: 'Tap a city to see it and give orders. Only cities linked to your capital are supplied and can attack.',
   sgBonds: 'Bonds', sgBondOn: 'active', sgAllGens: 'All officers',
   sgReport: 'This month', sgQuiet: 'A quiet month.', sgBlind: 'Blind box!', sgBlindStart: 'Starting blind boxes', sgJoined: '{g} joins you!', sgRecruited: '{g} was captured and joins you!',
-  sgDuel: 'Duel!', sgDuelVs: '{a} vs {d}', sgAtk: 'Strike', sgDefM: 'Guard', sgSkill: 'Special', sgDuelRule: 'Strike beats Special · Special breaks Guard · Guard stops Strike',
+  sgDuel: 'Duel!', sgDuelVs: '{a} vs {d}', sgAtk: 'Strike', sgDefM: 'Guard', sgSkill: 'Special', sgDuelRule: 'Strike beats Special · Special breaks Guard · Guard stops Strike (and counters)', sgLooksatk: 'Looks like a strike', sgLooksdef: 'Looks like a guard', sgLooksskill: 'Looks like a special',
+  sgTrustOk: 'Read: your INT {a} is no lower than his {b}, so this stance is real', sgTrustWarn: 'His INT {b} beats your {a}: about a {n}% chance it is a feint',
+  sgSpirit: 'Spirit', sgSkillCost: '{n} spirit', sgDuelAuto: 'Let the computer fight', sgKoGap: 'A huge gap in WAR: {g} can finish it in one blow!',
+  sgRoundWon: 'Read it right!', sgRoundLost: 'Caught out…', sgRoundTie: 'An even exchange', sgFeint: '(a feint!)',
   sgDuelWin: '{g} wins the duel!', sgDuelDraw: 'A draw!', sgRound: 'Round {n}', sgMoves: 'You: {a} · Them: {d}', sgHit: '{g} takes {n}', sgRival: 'Rivals meet: {r}',
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
@@ -67,7 +73,7 @@ extend({
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are still rock-paper-scissors.\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: Strike beats Special, Special breaks Guard, Guard stops Strike. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are about reading your opponent (below).\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: each round your opponent takes a stance first and you answer it (Strike beats Special, Special breaks Guard, Guard stops Strike and counters). If your INT is no lower than his, the stance is real; a cleverer opponent sometimes feints. WAR sets the damage, and a gap of 25 or more ends it in one blow; LEAD gives stamina and spirit, and a Special costs 50 spirit. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 const SAVE = 'p905sg';
@@ -80,6 +86,12 @@ const cName = (id) => (zh() ? CITIES[id].zh : CITIES[id].en);
 const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a' };
 const kNum = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
 const MOVES = { atk: 'sgAtk', def: 'sgDefM', skill: 'sgSkill' };
+// what the opponent's stance looks like (v0.9.9): [zh lines, en lines] per move
+const STANCES = {
+  atk: [['{g} 举起兵器，大喝一声冲了过来', '{g} 催马疾进，兵器高高扬起', '{g} 怒目圆睁，抢先出手'], ['{g} raises his weapon and charges with a roar', '{g} spurs his horse on, weapon held high', '{g} glares and moves to strike first']],
+  def: [['{g} 横兵护身，稳住马步', '{g} 勒住战马，严阵以待', '{g} 收招退半步，守得滴水不漏'], ['{g} holds his weapon across his body and steadies himself', '{g} reins in and waits, guard up', '{g} steps back half a pace, guard tight']],
+  skill: [['{g} 气势暴涨，正在蓄力', '{g} 眼中精光一闪，杀招将至', '{g} 深吸一口气，兵器嗡嗡作响'], ['{g} swells with fury, gathering power', '{g}\'s eyes flash: a killing blow is coming', '{g} draws a deep breath, his weapon humming']],
+};
 // the weather of a month (flavour, v0.9.7): snow in winter, the rest picked from the season and the month
 export function weatherOf(s) {
   const m = E.dateOf(s).month, r = (s.turn * 7 + (s.seed || 0)) % 3;
@@ -847,36 +859,63 @@ export class Sanguo {
       <p>${esc(F('sgIntro', { a, b, c, p: cName(PASS_IDS.find((x) => CITIES[x].big) || PASS_IDS[0]) }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
     this.sel = st.factions[E.PLAYER].cap; this.focus(this.sel); this.render();
   }
+  // the duel (v0.9.9, D-86): the opponent takes a stance, you read it and answer. Your 智力 against his
+  // says whether the stance can be trusted; 斗志 pays for 必杀; a big gap in 武力 ends it in one blow
   duelUI(d) {
-    const st = this.s, mineA = d.fa === E.PLAYER, me = mineA ? d.a : d.d, foe = mineA ? d.d : d.a;
+    const st = this.s, R = d.reader, me = R === 'a' ? d.a : d.d, foe = R === 'a' ? d.d : d.a, k = CFG.sg;
+    const hpOf = (g) => (g === d.a ? [d.hpA, d.maxA, d.spA] : [d.hpD, d.maxD, d.spD]);
     const L = $('sgLayer');
     L.className = 'show duel';
+    const stance = () => {
+      const lines = STANCES[d.tell][zh() ? 0 : 1], line = lines[(d.n + st.turn) % lines.length];
+      const gm = GENERALS[me], gf = GENERALS[foe];
+      const trust = d.feintP <= 0 ? `<i class="sgTrust ok">🔍 ${esc(F('sgTrustOk', { a: gm.int, b: gf.int }))}</i>`
+        : `<i class="sgTrust warn">⚠ ${esc(F('sgTrustWarn', { a: gm.int, b: gf.int, n: Math.round(d.feintP * 100) }))}</i>`;
+      return `<div class="sgStance s${d.tell}"><b>${esc(F(line, { g: gName(foe) }))}</b><small>${esc(t('sgLooks' + d.tell))}</small>${trust}</div>`;
+    };
     const paint = (msg, hitMe = 0, hitFoe = 0, big = false) => {
-      const hpMe = mineA ? d.hpA : d.hpD, hpFoe = mineA ? d.hpD : d.hpA;
-      // a hit: the side shakes and the damage floats up (a big hit, a special move, shakes the card too)
-      const side = (g, hp, col, hit) => `<div class="sgDs${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 84)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<b>${esc(gName(g))}</b><small>${zh() ? '武力' : 'WAR'} ${GENERALS[g].war}</small><i class="sgHp"><b style="width:${hp}%;background:${col}"></b></i><em>${hp}</em></div>`;
+      const side = (g, col, hit) => {
+        const [hp, max, sp] = hpOf(g), G = GENERALS[g];
+        if (this.small) { // a phone in landscape: portrait beside the bars, so the stance and buttons fit
+          return `<div class="sgDs sm${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 46)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<div class="sgDi">
+            <b>${esc(gName(g))} <small>${zh() ? `武${G.war} 智${G.int} 统${G.lead}` : `W${G.war} I${G.int} L${G.lead}`}</small></b>
+            <span><i class="sgHp"><b style="width:${hp / max * 100}%;background:${col}"></b></i><em>${hp}</em></span>
+            <span><i class="sgSp"><b style="width:${sp}%"></b></i><small class="sgSpN">${t('sgSpirit')} ${sp}</small></span></div></div>`;
+        }
+        return `<div class="sgDs${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 76)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<b>${esc(gName(g))}</b>
+          <small>${zh() ? `武${G.war} 智${G.int} 统${G.lead}` : `W${G.war} I${G.int} L${G.lead}`}</small>
+          <i class="sgHp"><b style="width:${hp / max * 100}%;background:${col}"></b></i><em>${hp}</em>
+          <i class="sgSp" title="${esc(t('sgSpirit'))}"><b style="width:${sp}%"></b></i><small class="sgSpN">${t('sgSpirit')} ${sp}</small></div>`;
+      };
+      const can = E.canSkill(d, R);
       const btns = d.done
         ? `<button class="sgBig" data-dm="ok">${t('sgContinue')}</button>`
-        : `<div class="sgDm">${['atk', 'def', 'skill'].map((m) => `<button data-dm="${m}">${t(MOVES[m])}</button>`).join('')}</div><p class="sgRule">${t('sgDuelRule')}</p>`;
-      L.innerHTML = `<div class="sgCard${big ? ' jolt' : ''}"><h2 class="sgCenter">${t('sgDuel')} <small>${d.rival ? esc(F('sgRival', { r: zh() ? d.rival : d.rivalEn })) : F('sgRound', { n: Math.min(d.n + 1, CFG.sg.duelRounds) })}</small></h2>
-        <div class="sgDuel">${side(me, hpMe, '#2f7de1', hitMe)}<span class="sgVs">VS</span>${side(foe, hpFoe, '#d64545', hitFoe)}</div>
-        <p class="sgCenter sgMsg">${msg}</p>${btns}</div>`;
+        : `${stance()}<div class="sgDm"><button data-dm="atk">${t('sgAtk')}</button><button data-dm="def">${t('sgDefM')}</button><button data-dm="skill"${can ? '' : ' disabled'}>${t('sgSkill')}<small>${F('sgSkillCost', { n: k.duelSkillCost })}</small></button></div>
+          <p class="sgRule">${t('sgDuelRule')} · <button class="sgLink" data-dm="auto">${t('sgDuelAuto')}</button></p>`;
+      const gap = GENERALS[d.a].war - GENERALS[d.d].war, ko = Math.abs(gap) >= k.duelKoGap && d.n === 0 && !d.done ? `<p class="sgCenter sgKoWarn">${esc(F('sgKoGap', { g: gName(gap > 0 ? d.a : d.d) }))}</p>` : '';
+      L.innerHTML = `<div class="sgCard${big ? ' jolt' : ''}"><h2 class="sgCenter">${t('sgDuel')} <small>${d.rival ? esc(F('sgRival', { r: zh() ? d.rival : d.rivalEn })) + ' · ' : ''}${F('sgRound', { n: Math.min(d.n + 1, k.duelRounds) })}/${k.duelRounds}</small></h2>
+        <div class="sgDuel">${side(me, '#2f7de1', hitMe)}<span class="sgVs">VS</span>${side(foe, '#d64545', hitFoe)}</div>
+        ${ko}${msg ? `<p class="sgCenter sgMsg">${msg}</p>` : ''}${btns}</div>`;
     };
-    paint(esc(F('sgDuelVs', { a: gName(d.a), d: gName(d.d) })));
+    paint(this.small ? '' : esc(F('sgDuelVs', { a: gName(d.a), d: gName(d.d) })));
     return new Promise((res) => {
       const h = (e) => {
         const b = e.target.closest('[data-dm]');
-        if (!b) return;
+        if (!b || b.disabled) return;
         if (b.dataset.dm === 'ok') { L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; res(d.win); return; }
-        const mv = b.dataset.dm;
-        E.duelRound(st, d, mineA ? mv : null, mineA ? null : mv);
-        const r = d.log[d.log.length - 1], myMv = mineA ? r.mA : r.mD, foeMv = mineA ? r.mD : r.mA;
+        const auto = b.dataset.dm === 'auto';
+        do {
+          E.duelRound(st, d, auto ? null : b.dataset.dm);
+        } while (auto && !d.done);
+        const r = d.log[d.log.length - 1], myMv = R === 'a' ? r.mA : r.mD, foeMv = R === 'a' ? r.mD : r.mA;
+        const hitMe = R === 'a' ? r.dmgA : r.dmgD, hitFoe = R === 'a' ? r.dmgD : r.dmgA, big = Math.max(hitMe, hitFoe) >= 25;
+        const iWon = r.won === R, verdict = !r.won ? t('sgRoundTie') : iWon ? t('sgRoundWon') : t('sgRoundLost');
+        let msg = `${esc(F('sgMoves', { a: t(MOVES[myMv]), d: t(MOVES[foeMv]) }))}${r.feint ? ` <b class="sgFeint">${esc(t('sgFeint'))}</b>` : ''}<br><b>${esc(verdict)}</b>`;
         const hits = [r.dmgA && F('sgHit', { g: gName(d.a), n: r.dmgA }), r.dmgD && F('sgHit', { g: gName(d.d), n: r.dmgD })].filter(Boolean).join(' · ');
-        let msg = `${esc(F('sgMoves', { a: t(MOVES[myMv]), d: t(MOVES[foeMv]) }))}<br>${esc(hits)}`;
+        if (hits) msg += ` · ${esc(hits)}`;
         if (d.done) msg += `<br><b>${esc(d.win ? F('sgDuelWin', { g: gName(d.win === 'a' ? d.a : d.d) }) : t('sgDuelDraw'))}</b>`;
-        const hitMe = mineA ? r.dmgA : r.dmgD, hitFoe = mineA ? r.dmgD : r.dmgA, big = Math.max(hitMe, hitFoe) >= 25;
         if (hitMe || hitFoe) { sfx.punch(big ? 1.2 : 0.8); if (big) sfx.clash(0.6); } else sfx.clash(0.4);
-        if (d.done) setTimeout(() => (d.win ? sfx.fanfare((d.win === 'a') === mineA) : sfx.drum(1)), 250);
+        if (d.done) setTimeout(() => (d.win ? sfx.fanfare(d.win === R) : sfx.drum(1)), 250);
         paint(msg, hitMe, hitFoe, big);
       };
       L.addEventListener('click', h);

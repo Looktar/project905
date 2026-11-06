@@ -109,7 +109,7 @@ export const CFG = {
     maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, truce: 6, devCost: 50, draftCost: 100, draftBase: 150, draftPerLead: 10, devBase: 1, devPerPol: 1 / 7,
     goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
     searchBase: 0.15, searchPerInt: 1 / 160, treasure: [0.25, 80, 150], marchFrac: 0.8,
-    duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelSkill: 0.4, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
+    duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
     rounds: 30, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
     aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
@@ -128,6 +128,12 @@ export const CFG = {
     marchSpeed: 650, relaySpeed: 1.6, maxMarch: 4, // months: the farthest an order may send an army (v0.9.8)
     // duel damage follows (武力 ratio) ^ duelExp
     duelExp: 2.2, duelMin: 0.35, duelMax: 2.8,
+    // duels v0.9.9 (D-86): reading stances. Stamina 80 + 统率/5, 斗志 starts at 统率/2; 必杀 costs 50 斗志
+    // and hits x1.8; a block counters x0.75 but still takes 30% of the blow; a 武力 gap of 25+ means one blow finishes it. A cleverer foe
+    // feints with 5% + 0.4% per point of 智力 he has over you (at most 40%)
+    duelHp: 80, duelHpLead: 0.2, duelSpLead: 0.5, duelSkillCost: 50, duelSkillMul: 1.8, duelCounter: 0.75, duelChip: 0.3,
+    duelSpHit: 20, duelSpBlock: 15, duelSpTie: 10, duelKoGap: 25, duelDraw: 8,
+    feintBase: 0.05, feintPerInt: 0.004, feintMax: 0.4, duelAiRead: 0.7,
     // v0.9.6 (D-83): an officer leads 统率 x leadTroops troops; battles (no dice) go on to the end: up to
     // `rounds` rounds of a siege / fieldRounds in the field, until a side drops under `rout` of its start
     leadTroops: 60, fieldRounds: 40, rout: 0.25, aiSally: 1.1,
