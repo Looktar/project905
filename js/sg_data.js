@@ -47,6 +47,34 @@ export const TRAITS = {
   yongmeng: ['勇猛', 'Valiant', '单挑伤害 +15%', 'Duel damage +15%'],
   shouye: ['守备', 'Garrison', '守城 +15%', 'Defence +15%'],
   zhengzhi: ['能吏', 'Able Official', '内政 +30%', 'Development +30%'],
+  // v1.0 (D-87): signature traits of the great generals of the other eras
+  bingsheng: ['兵圣', 'Sage of War', '攻击 +20%，计略更容易', 'Attack +20%, better stratagems'],
+  rentu: ['人屠', 'The Butcher', '攻击 +25%', 'Attack +25%'],
+  wuzu: ['魏武卒', 'Wei Infantry', '攻击 +10%，守城 +15%', 'Attack +10%, defence +15%'],
+  wenzhong: ['稳重', 'Steady', '守城 +20%，攻击 +8%', 'Defence +20%, attack +8%'],
+  bawang: ['霸王', 'The Hegemon', '单挑伤害 +35%，进攻时攻击 +20%', 'Duel damage +35%, attack +20% when attacking'],
+  bingxian: ['兵仙', 'Immortal of War', '攻击 +25%', 'Attack +25%'],
+  mousheng: ['谋圣', 'Sage of Plans', '攻击 +18%（计谋），计略更容易', 'Attack +18% (stratagems), better stratagems'],
+  changsheng: ['常胜', 'Ever Victorious', '攻击 +15%，守城 +10%', 'Attack +15%, defence +10%'],
+  guanjun: ['冠军侯', 'Champion Marquis', '进攻时攻击 +30%', 'Attack +30% when attacking'],
+  xiliu: ['细柳营', 'Xiliu Camp', '守城 +20%，攻击 +10%', 'Defence +20%, attack +10%'],
+  feishui: ['淝水', 'Fei River', '兵比敌少时攻击 +35%', 'Attack +35% when outnumbered'],
+  baipao: ['白袍', 'White Robes', '进攻时攻击 +25%，兵少时 +15%', 'Attack +25% when attacking, +15% when outnumbered'],
+  lanling: ['兰陵入阵', 'Prince of Lanling', '单挑伤害 +25%，攻击 +10%', 'Duel damage +25%, attack +10%'],
+  junshen: ['军神', 'God of War', '攻击 +25%', 'Attack +25%'],
+  tiance: ['天策', 'Heavenly Strategy', '进攻时攻击 +15%，内政 +15%，登用更容易', 'Attack +15% when attacking, development +15%, easier recruiting'],
+  menshen: ['门神', 'Door God', '守城 +15%，单挑伤害 +15%', 'Defence +15%, duel damage +15%'],
+  sanbanfu: ['三板斧', 'Three Axe Blows', '单挑伤害 +25%', 'Duel damage +25%'],
+  zaizao: ['再造', 'Restorer', '守城 +20%，登用更容易', 'Defence +20%, easier recruiting'],
+  niangzi: ['娘子军', 'Women\'s Army', '征兵 +30%，登用更容易', 'Drafting +30%, easier recruiting'],
+  jingzhong: ['精忠', 'Utmost Loyalty', '攻击 +20%，忠诚高', 'Attack +20%, very loyal'],
+  wudi: ['杨无敌', 'Invincible Yang', '单挑伤害 +20%，攻击 +10%', 'Duel damage +20%, attack +10%'],
+  tianjiao: ['天骄', 'Son of Heaven', '进攻时攻击 +25%', 'Attack +25% when attacking'],
+  kaiguo: ['开国', 'Founding General', '攻击 +15%，守城 +10%', 'Attack +15%, defence +10%'],
+  changshiwan: ['常十万', 'Chang of 100,000', '兵比敌少时攻击 +35%，单挑伤害 +10%', 'Attack +35% when outnumbered, duel damage +10%'],
+  yuanyang: ['鸳鸯阵', 'Mandarin Duck Formation', '攻击 +15%，守城 +15%', 'Attack +15%, defence +15%'],
+  xinxue: ['心学', 'School of Mind', '攻击 +12%（计谋），计略更容易', 'Attack +12% (stratagems), better stratagems'],
+  baigan: ['白杆兵', 'White Pole Army', '守城 +20%，单挑伤害 +10%', 'Defence +20%, duel damage +10%'],
 };
 
 // trait key -> numeric effects (multipliers are additive bonuses)
@@ -62,6 +90,13 @@ export const TRAIT_FX = {
   baonue: { draft: 0.4 }, biyue: { search: 0.2, recruit: 0.2 }, mingmen: { draft: 0.4, dev: 0.2 }, baima: { raid: 0.18 },
   yaoshu: { atk: 0.18 }, qiqin: { def: 0.2 }, feidao: { duel: 0.2 }, xianzhen: { atk: 0.15 }, yongmeng: { duel: 0.15 },
   shouye: { def: 0.15 }, zhengzhi: { dev: 0.3 },
+  bingsheng: { atk: 0.2, plot: 0.15 }, rentu: { atk: 0.25 }, wuzu: { atk: 0.1, def: 0.15 }, wenzhong: { def: 0.2, atk: 0.08 },
+  bawang: { duel: 0.35, raid: 0.2 }, bingxian: { atk: 0.25 }, mousheng: { atk: 0.18, plot: 0.25 }, changsheng: { atk: 0.15, def: 0.1 },
+  guanjun: { raid: 0.3 }, xiliu: { def: 0.2, atk: 0.1 }, feishui: { few: 0.35 }, baipao: { raid: 0.25, few: 0.15 },
+  lanling: { duel: 0.25, atk: 0.1 }, junshen: { atk: 0.25 }, tiance: { raid: 0.15, dev: 0.15, recruit: 0.2 }, menshen: { def: 0.15, duel: 0.15 },
+  sanbanfu: { duel: 0.25 }, zaizao: { def: 0.2, recruit: 0.2 }, niangzi: { draft: 0.3, recruit: 0.15 }, jingzhong: { atk: 0.2, loyal: 20 },
+  wudi: { duel: 0.2, atk: 0.1 }, tianjiao: { raid: 0.25 }, kaiguo: { atk: 0.15, def: 0.1 }, changshiwan: { few: 0.35, duel: 0.1 },
+  yuanyang: { atk: 0.15, def: 0.15 }, xinxue: { atk: 0.12, plot: 0.2 }, baigan: { def: 0.2, duel: 0.1 },
 };
 // v0.8.1 (D-75): officers famous for stratagems are better at 计略 (rumours, fire)
 for (const [k, v] of Object.entries({ shensuan: 0.2, guicai: 0.2, lianhuan: 0.15, qimou: 0.15, huoshen: 0.2, huoshao: 0.2, kurou: 0.1, yaoshu: 0.1, waijiao: 0.05 })) TRAIT_FX[k].plot = v;
@@ -117,8 +152,99 @@ const G = [
   ['chengong', '陈宫', 'Chen Gong', 72, 45, 90, 80, 'qimou', 'qun'],
   ['jiaxu', '贾诩', 'Jia Xu', 80, 40, 97, 85, 'guicai', 'qun'],
 ];
-export const GENERALS = Object.fromEntries(G.map(([id, zh, en, lead, war, int, pol, trait, k]) => [id, { id, zh, en, lead, war, int, pol, trait, k }]));
-export const GEN_IDS = G.map((g) => g[0]);
+// v1.0 (D-87) 万锦群英传: great generals of every era up to the mid-Qing (before 1840). Again our own
+// estimates from the histories. [id, zh, en, 统率, 武力, 智力, 政治, trait, era, dynasty tag zh, en]
+// eras: xq 先秦, qh 秦汉 (楚汉 and the two Han), st 晋隋唐, sy 宋元, mq 明清
+const G2 = [
+  ['fuhao', '妇好', 'Fu Hao', 88, 85, 75, 65, 'niangzi', 'xq', '商', 'Shang'],
+  ['sunwu', '孙武', 'Sun Wu', 97, 62, 100, 78, 'bingsheng', 'xq', '吴', 'Wu'],
+  ['wuzixu', '伍子胥', 'Wu Zixu', 88, 80, 90, 78, 'ganglie', 'xq', '吴', 'Wu'],
+  ['wuqi', '吴起', 'Wu Qi', 96, 80, 92, 88, 'wuzu', 'xq', '魏', 'Wei'],
+  ['sunbin', '孙膑', 'Sun Bin', 90, 30, 98, 75, 'shensuan', 'xq', '齐', 'Qi'],
+  ['tiandan', '田单', 'Tian Dan', 85, 70, 92, 78, 'huoshen', 'xq', '齐', 'Qi'],
+  ['yueyi', '乐毅', 'Yue Yi', 93, 78, 88, 82, 'qimou', 'xq', '燕', 'Yan'],
+  ['baiqi', '白起', 'Bai Qi', 99, 90, 92, 40, 'rentu', 'xq', '秦', 'Qin'],
+  ['wangjian', '王翦', 'Wang Jian', 97, 85, 90, 72, 'wenzhong', 'xq', '秦', 'Qin'],
+  ['lianpo', '廉颇', 'Lian Po', 92, 88, 75, 60, 'tiebi', 'xq', '赵', 'Zhao'],
+  ['limu', '李牧', 'Li Mu', 95, 84, 90, 70, 'shouye', 'xq', '赵', 'Zhao'],
+  ['xiangyu', '项羽', 'Xiang Yu', 95, 100, 60, 30, 'bawang', 'qh', '楚', 'Chu'],
+  ['fanzeng', '范增', 'Fan Zeng', 70, 30, 93, 80, 'qimou', 'qh', '楚', 'Chu'],
+  ['yingbu', '英布', 'Ying Bu', 85, 93, 50, 30, 'xianzhen', 'qh', '楚', 'Chu'],
+  ['longju', '龙且', 'Long Ju', 80, 90, 40, 30, 'yongmeng', 'qh', '楚', 'Chu'],
+  ['zhonglimo', '钟离眜', 'Zhongli Mo', 82, 86, 55, 40, 'shouye', 'qh', '楚', 'Chu'],
+  ['liubang', '刘邦', 'Liu Bang', 80, 65, 82, 90, 'renmin', 'qh', '汉', 'Han'],
+  ['hanxin', '韩信', 'Han Xin', 100, 80, 95, 60, 'bingxian', 'qh', '汉', 'Han'],
+  ['zhangliang', '张良', 'Zhang Liang', 85, 30, 100, 90, 'mousheng', 'qh', '汉', 'Han'],
+  ['xiaohe', '萧何', 'Xiao He', 60, 25, 92, 100, 'wangzuo', 'qh', '汉', 'Han'],
+  ['fankuai', '樊哙', 'Fan Kuai', 75, 92, 40, 30, 'yongmeng', 'qh', '汉', 'Han'],
+  ['pengyue', '彭越', 'Peng Yue', 82, 82, 72, 50, 'shensu', 'qh', '汉', 'Han'],
+  ['zhouyafu', '周亚夫', 'Zhou Yafu', 94, 80, 85, 65, 'xiliu', 'qh', '汉', 'Han'],
+  ['weiqing', '卫青', 'Wei Qing', 98, 88, 85, 75, 'changsheng', 'qh', '汉', 'Han'],
+  ['huoqubing', '霍去病', 'Huo Qubing', 96, 95, 78, 40, 'guanjun', 'qh', '汉', 'Han'],
+  ['liguang', '李广', 'Li Guang', 85, 92, 60, 45, 'feijiang', 'qh', '汉', 'Han'],
+  ['mayuan', '马援', 'Ma Yuan', 90, 85, 80, 70, 'ganglie', 'qh', '汉', 'Han'],
+  ['banchao', '班超', 'Ban Chao', 85, 80, 88, 85, 'waijiao', 'qh', '汉', 'Han'],
+  ['xiexuan', '谢玄', 'Xie Xuan', 92, 75, 88, 75, 'feishui', 'st', '晋', 'Jin'],
+  ['chenqingzhi', '陈庆之', 'Chen Qingzhi', 96, 60, 90, 70, 'baipao', 'st', '梁', 'Liang'],
+  ['gaochanggong', '高长恭', 'Gao Changgong', 90, 94, 70, 55, 'lanling', 'st', '齐', 'Qi'],
+  ['hulvguang', '斛律光', 'Hulü Guang', 92, 90, 72, 55, 'shenshe', 'st', '齐', 'Qi'],
+  ['yangsu', '杨素', 'Yang Su', 93, 85, 88, 75, 'danlve', 'st', '隋', 'Sui'],
+  ['hanqinhu', '韩擒虎', 'Han Qinhu', 88, 88, 70, 55, 'yongmeng', 'st', '隋', 'Sui'],
+  ['lishimin', '李世民', 'Li Shimin', 95, 85, 92, 95, 'tiance', 'st', '唐', 'Tang'],
+  ['lijing', '李靖', 'Li Jing', 100, 82, 95, 80, 'junshen', 'st', '唐', 'Tang'],
+  ['liji', '李勣', 'Li Ji', 92, 80, 88, 75, 'qimou', 'st', '唐', 'Tang'],
+  ['qinqiong', '秦琼', 'Qin Qiong', 82, 94, 60, 50, 'menshen', 'st', '唐', 'Tang'],
+  ['yuchigong', '尉迟恭', 'Yuchi Gong', 80, 95, 45, 40, 'ganglie', 'st', '唐', 'Tang'],
+  ['chengyaojin', '程咬金', 'Cheng Yaojin', 70, 88, 40, 35, 'sanbanfu', 'st', '唐', 'Tang'],
+  ['pingyang', '平阳公主', 'Princess Pingyang', 85, 75, 80, 70, 'niangzi', 'st', '唐', 'Tang'],
+  ['sudingfang', '苏定方', 'Su Dingfang', 94, 88, 78, 55, 'shensu', 'st', '唐', 'Tang'],
+  ['xuerengui', '薛仁贵', 'Xue Rengui', 90, 95, 65, 50, 'shenshe', 'st', '唐', 'Tang'],
+  ['guoziyi', '郭子仪', 'Guo Ziyi', 96, 75, 85, 88, 'zaizao', 'st', '唐', 'Tang'],
+  ['liguangbi', '李光弼', 'Li Guangbi', 95, 80, 85, 60, 'tiebi', 'st', '唐', 'Tang'],
+  ['yangye', '杨业', 'Yang Ye', 90, 93, 70, 55, 'wudi', 'sy', '宋', 'Song'],
+  ['diqing', '狄青', 'Di Qing', 90, 92, 72, 55, 'xianzhen', 'sy', '宋', 'Song'],
+  ['zongze', '宗泽', 'Zong Ze', 85, 65, 82, 85, 'shouye', 'sy', '宋', 'Song'],
+  ['yuefei', '岳飞', 'Yue Fei', 100, 95, 85, 70, 'jingzhong', 'sy', '宋', 'Song'],
+  ['hanshizhong', '韩世忠', 'Han Shizhong', 92, 90, 78, 60, 'danlve', 'sy', '宋', 'Song'],
+  ['lianghongyu', '梁红玉', 'Liang Hongyu', 82, 80, 82, 65, 'ganglie', 'sy', '宋', 'Song'],
+  ['jinwuzhu', '金兀术', 'Jin Wuzhu', 90, 90, 75, 60, 'shensu', 'sy', '金', 'Jin'],
+  ['chengjisihan', '成吉思汗', 'Genghis Khan', 100, 85, 90, 85, 'tianjiao', 'sy', '元', 'Yuan'],
+  ['muhuali', '木华黎', 'Muqali', 95, 88, 85, 75, 'danlve', 'sy', '元', 'Yuan'],
+  ['subutai', '速不台', 'Subutai', 98, 88, 88, 55, 'shensu', 'sy', '元', 'Yuan'],
+  ['boyan', '伯颜', 'Bayan', 93, 80, 88, 80, 'qimou', 'sy', '元', 'Yuan'],
+  ['xuda', '徐达', 'Xu Da', 99, 88, 90, 80, 'kaiguo', 'mq', '明', 'Ming'],
+  ['changyuchun', '常遇春', 'Chang Yuchun', 92, 97, 60, 40, 'changshiwan', 'mq', '明', 'Ming'],
+  ['yuqian', '于谦', 'Yu Qian', 88, 50, 90, 92, 'tiebi', 'mq', '明', 'Ming'],
+  ['wangyangming', '王阳明', 'Wang Yangming', 90, 60, 98, 90, 'xinxue', 'mq', '明', 'Ming'],
+  ['qijiguang', '戚继光', 'Qi Jiguang', 96, 85, 88, 75, 'yuanyang', 'mq', '明', 'Ming'],
+  ['yudayou', '俞大猷', 'Yu Dayou', 92, 88, 80, 60, 'shouye', 'mq', '明', 'Ming'],
+  ['qinliangyu', '秦良玉', 'Qin Liangyu', 90, 85, 78, 70, 'baigan', 'mq', '明', 'Ming'],
+  ['yuanchonghuan', '袁崇焕', 'Yuan Chonghuan', 90, 70, 85, 70, 'tiebi', 'mq', '明', 'Ming'],
+  ['zhengchenggong', '郑成功', 'Koxinga', 92, 82, 82, 75, 'jinfan', 'mq', '明', 'Ming'],
+  ['shilang', '施琅', 'Shi Lang', 90, 75, 85, 70, 'jinfan', 'mq', '清', 'Qing'],
+  ['niangengyao', '年羹尧', 'Nian Gengyao', 92, 80, 82, 60, 'shensu', 'mq', '清', 'Qing'],
+  ['yuezhongqi', '岳钟琪', 'Yue Zhongqi', 88, 85, 78, 65, 'yongmeng', 'mq', '清', 'Qing'],
+  ['zhaohui', '兆惠', 'Zhao Hui', 90, 82, 80, 60, 'shouye', 'mq', '清', 'Qing'],
+  ['fukangan', '福康安', 'Fuk\'anggan', 88, 75, 78, 70, 'mingmen', 'mq', '清', 'Qing'],
+];
+const SG_TAG = { shu: ['蜀', 'Shu'], wei: ['魏', 'Wei'], wu: ['吴', 'Wu'], qun: ['群', 'Qun'] };
+// era -> [zh, en, short zh, short en] (the short ones label the tabs of the 将 page)
+export const ERAS = { sg: ['三国', 'Three Kingdoms', '三国', '3 Kgdms'], xq: ['先秦', 'Pre-Qin', '先秦', 'Pre-Qin'], qh: ['秦汉', 'Qin & Han', '秦汉', 'Qin-Han'], st: ['晋隋唐', 'Jin to Tang', '隋唐', 'Jin-Tang'], sy: ['宋元', 'Song & Yuan', '宋元', 'Song-Yuan'], mq: ['明清', 'Ming & Qing', '明清', 'Ming-Qing'] };
+export const GENERALS = Object.fromEntries([
+  ...G.map(([id, zh, en, lead, war, int, pol, trait, k]) => [id, { id, zh, en, lead, war, int, pol, trait, k, era: 'sg', tag: SG_TAG[k] }]),
+  ...G2.map(([id, zh, en, lead, war, int, pol, trait, era, tz, te]) => [id, { id, zh, en, lead, war, int, pol, trait, k: era, era, tag: [tz, te] }]),
+]);
+export const SANGUO_IDS = G.map((g) => g[0]);
+export const GEN_IDS = Object.keys(GENERALS);
+// the one character on a portrait: the last of the name, or the first when another officer already has it
+{
+  const used = new Set();
+  for (const id of GEN_IDS) {
+    const g = GENERALS[id], cand = [g.zh.slice(-1), g.zh[0], ...g.zh];
+    g.glyph = cand.find((c) => !used.has(c)) || g.zh.slice(-1);
+    used.add(g.glyph);
+  }
+}
 
 // bonds: same army (scope 'army') or anywhere in the faction ('faction'), `need` members.
 // fx: atk / def bonus for the army or city, dev / search bonus for the faction, duel bonus for members
@@ -133,6 +259,21 @@ export const BONDS = [
   { id: 'xiahou', zh: '夏侯兄弟', en: 'The Xiahou Brothers', m: ['xiahoudun', 'xiahouyuan'], need: 2, scope: 'army', fx: { atk: 0.15 } },
   { id: 'hebei', zh: '河北双雄', en: 'Heroes of Hebei', m: ['yanliang', 'wenchou'], need: 2, scope: 'army', fx: { atk: 0.15 } },
   { id: 'nanman', zh: '南蛮王夫妻', en: 'King & Queen of the Nanman', m: ['menghuo', 'zhurong'], need: 2, scope: 'army', fx: { def: 0.2, atk: 0.1 } },
+  // v1.0 (D-87): the other eras, and a few across the ages
+  { id: 'zhanguo', zh: '战国四将', en: 'Four Generals of the Warring States', m: ['baiqi', 'wangjian', 'lianpo', 'limu'], need: 2, scope: 'faction', fx: { atk: 0.12 } },
+  { id: 'sunwu2', zh: '孙吴兵法', en: 'The Art of War', m: ['sunwu', 'wuqi', 'sunbin'], need: 2, scope: 'faction', fx: { atk: 0.1, search: 0.1 } },
+  { id: 'hanchu', zh: '汉初三杰', en: 'Three Heroes of Early Han', m: ['zhangliang', 'xiaohe', 'hanxin'], need: 2, scope: 'faction', fx: { dev: 0.2, atk: 0.08 } },
+  { id: 'chujun', zh: '西楚霸业', en: 'The Hegemon of Western Chu', m: ['xiangyu', 'fanzeng', 'yingbu', 'longju', 'zhonglimo'], need: 2, scope: 'army', fx: { atk: 0.15 } },
+  { id: 'weihuo', zh: '卫霍', en: 'Wei and Huo', m: ['weiqing', 'huoqubing'], need: 2, scope: 'army', fx: { atk: 0.2 } },
+  { id: 'lingyan', zh: '凌烟阁', en: 'Pavilion of Lingyan', m: ['lishimin', 'lijing', 'liji', 'qinqiong', 'yuchigong', 'chengyaojin'], need: 3, scope: 'faction', fx: { atk: 0.12 } },
+  { id: 'menshen2', zh: '门神', en: 'The Door Gods', m: ['qinqiong', 'yuchigong'], need: 2, scope: 'army', fx: { def: 0.25 } },
+  { id: 'hanliang', zh: '韩梁夫妻', en: 'Han and Liang', m: ['hanshizhong', 'lianghongyu'], need: 2, scope: 'army', fx: { atk: 0.15, def: 0.1 } },
+  { id: 'mengu', zh: '蒙古铁骑', en: 'Mongol Horsemen', m: ['chengjisihan', 'muhuali', 'subutai', 'boyan'], need: 2, scope: 'army', fx: { atk: 0.15 } },
+  { id: 'xuchang', zh: '徐常', en: 'Xu and Chang', m: ['xuda', 'changyuchun'], need: 2, scope: 'army', fx: { atk: 0.2 } },
+  { id: 'qiyu', zh: '抗倭双雄', en: 'The Pirate Fighters', m: ['qijiguang', 'yudayou'], need: 2, scope: 'army', fx: { def: 0.2, atk: 0.1 } },
+  { id: 'nvjiang', zh: '巾帼英雄', en: 'Heroines', m: ['fuhao', 'pingyang', 'lianghongyu', 'qinliangyu', 'zhurong'], need: 2, scope: 'faction', fx: { def: 0.1, atk: 0.08 } },
+  { id: 'baipao2', zh: '白袍将军', en: 'The White-robed Generals', m: ['chenqingzhi', 'xuerengui'], need: 2, scope: 'army', fx: { atk: 0.15 } },
+  { id: 'feijiang2', zh: '飞将', en: 'The Flying Generals', m: ['liguang', 'lvbu'], need: 2, scope: 'faction', fx: { duel: 0.15 } },
 ];
 
 // rivals: when a member of one side meets a member of the other in battle, a duel is very likely
@@ -143,6 +284,14 @@ export const RIVALS = [
   { a: ['machao'], b: ['caocao', 'xuchu'], zh: '割须弃袍', en: 'Cut beard, dropped robe' },
   { a: ['zhugeliang'], b: ['simayi', 'zhouyu'], zh: '斗智', en: 'Battle of wits' },
   { a: ['lvbu'], b: ['dongzhuo'], zh: '凤仪亭', en: 'Phoenix Pavilion' },
+  { a: ['xiangyu'], b: ['liubang', 'hanxin'], zh: '楚汉相争', en: 'Chu against Han' },
+  { a: ['baiqi'], b: ['lianpo', 'limu'], zh: '长平之战', en: 'Changping' },
+  { a: ['yuefei'], b: ['jinwuzhu'], zh: '直捣黄龙', en: 'On to Huanglong' },
+  { a: ['zhengchenggong'], b: ['shilang'], zh: '海峡恩怨', en: 'Across the strait' },
+  { a: ['guanyu'], b: ['qinqiong'], zh: '关公战秦琼', en: 'Guan Yu fights Qin Qiong' },
+  { a: ['hanxin'], b: ['lijing'], zh: '兵仙对军神', en: 'Two gods of war' },
+  { a: ['lvbu'], b: ['xiangyu'], zh: '天下无双', en: 'Peerless' },
+  { a: ['huoqubing'], b: ['chengjisihan'], zh: '漠北争雄', en: 'North of the desert' },
 ];
 
 // the classic map. The 12 cities and the passes: [id, zh, en, game x, game z] (positions in maps/markham.json game

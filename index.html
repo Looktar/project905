@@ -204,7 +204,7 @@ body.touch #bD.hide{display:none}
 .sgTrust{display:block;font-style:normal;font-size:12px;margin-top:4px}.sgTrust.ok{color:#7fd1a1}.sgTrust.warn{color:#ffb35c}
 .sgSp{display:block;width:100%;height:5px;background:#4a3a2c;border-radius:3px;overflow:hidden}.sgSp b{display:block;height:5px;background:#f2c14e;transition:width .35s}
 .sgDs small.sgSpN{font-size:10px;color:#f2c14e}
-.sgDm button small{display:block;font:700 10px system-ui,sans-serif;opacity:.85}.sgDm button:disabled{opacity:.35;cursor:not-allowed}
+.sgBig small{display:block;font:600 11px system-ui,sans-serif;opacity:.8;margin-top:2px}.sgDm button small{display:block;font:700 10px system-ui,sans-serif;opacity:.85}.sgDm button:disabled{opacity:.35;cursor:not-allowed}
 .sgLink{background:none;border:0;color:#f2c14e;text-decoration:underline;font:inherit;cursor:pointer;padding:0}
 .sgKoWarn{color:#ff8a5c;font-weight:900;margin:4px 0}.sgFeint{color:#ffb35c}
 #sg.small .sgDs.sm{flex-direction:row;align-items:center;gap:6px;width:46%}.sgDi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -229,7 +229,7 @@ body.touch #bD.hide{display:none}
 .sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
 /* v0.9.7 (D-84): tall officer cards, the 将 page, the battle screen (ideas from the App Store 三国志 game, own code art) */
 .sgCardT{position:relative;width:88px;height:120px;flex:none;border-radius:8px;box-sizing:border-box;border:2px solid #b8c0c8;background:radial-gradient(circle at 50% 46%,var(--kc) 0,var(--kc) 26%,transparent 27%),repeating-radial-gradient(circle at 30% 30%,rgba(120,90,50,.08) 0 6px,transparent 6px 12px),linear-gradient(160deg,#f3e6c8,#d8c196);box-shadow:0 2px 0 rgba(0,0,0,.35);overflow:hidden;cursor:pointer;color:#2b211a}
-.sgCardT.kshu{--kc:rgba(47,143,78,.85)}.sgCardT.kwei{--kc:rgba(47,95,174,.85)}.sgCardT.kwu{--kc:rgba(192,57,43,.85)}.sgCardT.kqun{--kc:rgba(107,79,138,.85)}
+.sgCardT.kxq{--kc:rgba(138,109,59,.85)}.sgCardT.kqh{--kc:rgba(168,85,42,.85)}.sgCardT.kst{--kc:rgba(184,134,11,.85)}.sgCardT.ksy{--kc:rgba(46,125,122,.85)}.sgCardT.kmq{--kc:rgba(176,58,91,.85)}.sgCardT.kshu{--kc:rgba(47,143,78,.85)}.sgCardT.kwei{--kc:rgba(47,95,174,.85)}.sgCardT.kwu{--kc:rgba(192,57,43,.85)}.sgCardT.kqun{--kc:rgba(107,79,138,.85)}
 .sgCardT.tSR{border-color:#b98cf0}.sgCardT.tSSR{border-color:#f2c14e;box-shadow:0 0 10px rgba(242,193,78,.55)}.sgCardT.tUR{border-color:#ff9a5c;box-shadow:0 0 12px rgba(255,140,80,.8)}
 .sgCtag{position:absolute;left:4px;top:4px;font-style:normal;background:#2b211a;color:#f5ebdd;font:900 11px 'STKaiti','KaiTi','Kaiti SC',serif;padding:3px 4px;border-radius:7px}.sgCtag.v{writing-mode:vertical-rl;letter-spacing:1px;padding:4px 2px}
 .sgCstar{position:absolute;right:4px;top:3px;font-style:normal;font-size:9px;color:#c0392b;letter-spacing:-1px}
@@ -258,6 +258,7 @@ html:lang(en) .sgCname{font:800 10px system-ui,sans-serif;right:26px;bottom:5px}
 .sgBres{font:900 26px 'STKaiti','KaiTi','Kaiti SC',serif;min-height:34px;margin:8px 0 0}.sgBres.won{color:#f2c14e}.sgBres.lost{color:#ff8a80}
 #sg.small .sgCardT{width:74px;height:100px}#sg.small .sgCglyph{top:22px;font-size:36px}#sg.small .sgCardT.big{width:120px;height:164px}#sg.small .sgCardT.big .sgCglyph{top:40px;font-size:60px}
 #sg.small .sgDrow{padding:5px 0;font-size:12px}#sg.small .sgTabs button{width:52px;height:30px;font-size:13px}
+html:lang(en) .sgTabs button{width:76px;font:800 11px system-ui,sans-serif}#sg.small .sgTabs{gap:4px}#sg.small .sgTabs button{height:27px}html:lang(en) #sg.small .sgTabs button{width:66px;font-size:10.5px}
 #sgTop #sgGenBtn{min-width:34px;padding:0 10px;font-family:'STKaiti','KaiTi','Kaiti SC',serif;font-weight:900;color:#f2c14e;border-color:#f2c14e}
 #sg.small #sgTop #sgGenBtn,#sg.small #sgTop #sgLogBtn,#sg.small #sgTop #sgMenuBtn{width:30px;min-width:30px;padding:0;border-radius:50%;font-family:'STKaiti','KaiTi','Kaiti SC',serif;font-weight:900;font-size:14px}
 #sg.small #sgTop #sgGenBtn.pill,#sg.small #sgTop #sgLogBtn.pill{width:auto;min-width:0;padding:0 7px;border-radius:15px;font:700 11px system-ui,sans-serif}
@@ -392,8 +393,8 @@ html:lang(en) .sgCname{font:800 10px system-ui,sans-serif;right:26px;bottom:5px}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=8bfbe3b4ab","./js/bigmap.js":"./js/bigmap.js?v=8bfbe3b4ab","./js/config.js":"./js/config.js?v=8bfbe3b4ab","./js/fire.js":"./js/fire.js?v=8bfbe3b4ab","./js/game.js":"./js/game.js?v=8bfbe3b4ab","./js/geo.js":"./js/geo.js?v=8bfbe3b4ab","./js/glb.js":"./js/glb.js?v=8bfbe3b4ab","./js/hud.js":"./js/hud.js?v=8bfbe3b4ab","./js/i18n.js":"./js/i18n.js?v=8bfbe3b4ab","./js/input.js":"./js/input.js?v=8bfbe3b4ab","./js/main.js":"./js/main.js?v=8bfbe3b4ab","./js/math.js":"./js/math.js?v=8bfbe3b4ab","./js/missions.js":"./js/missions.js?v=8bfbe3b4ab","./js/models.js":"./js/models.js?v=8bfbe3b4ab","./js/nav.js":"./js/nav.js?v=8bfbe3b4ab","./js/orient.js":"./js/orient.js?v=8bfbe3b4ab","./js/poi.js":"./js/poi.js?v=8bfbe3b4ab","./js/pranks.js":"./js/pranks.js?v=8bfbe3b4ab","./js/props.js":"./js/props.js?v=8bfbe3b4ab","./js/renderer.js":"./js/renderer.js?v=8bfbe3b4ab","./js/sg_data.js":"./js/sg_data.js?v=8bfbe3b4ab","./js/sg_elev.js":"./js/sg_elev.js?v=8bfbe3b4ab","./js/sg_engine.js":"./js/sg_engine.js?v=8bfbe3b4ab","./js/sg_sites.js":"./js/sg_sites.js?v=8bfbe3b4ab","./js/sg_ui.js":"./js/sg_ui.js?v=8bfbe3b4ab","./js/signals.js":"./js/signals.js?v=8bfbe3b4ab","./js/world.js":"./js/world.js?v=8bfbe3b4ab"}}</script>
-<script type="module" src="js/main.js?v=8bfbe3b4ab"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5ae1108462","./js/bigmap.js":"./js/bigmap.js?v=5ae1108462","./js/config.js":"./js/config.js?v=5ae1108462","./js/fire.js":"./js/fire.js?v=5ae1108462","./js/game.js":"./js/game.js?v=5ae1108462","./js/geo.js":"./js/geo.js?v=5ae1108462","./js/glb.js":"./js/glb.js?v=5ae1108462","./js/hud.js":"./js/hud.js?v=5ae1108462","./js/i18n.js":"./js/i18n.js?v=5ae1108462","./js/input.js":"./js/input.js?v=5ae1108462","./js/main.js":"./js/main.js?v=5ae1108462","./js/math.js":"./js/math.js?v=5ae1108462","./js/missions.js":"./js/missions.js?v=5ae1108462","./js/models.js":"./js/models.js?v=5ae1108462","./js/nav.js":"./js/nav.js?v=5ae1108462","./js/orient.js":"./js/orient.js?v=5ae1108462","./js/poi.js":"./js/poi.js?v=5ae1108462","./js/pranks.js":"./js/pranks.js?v=5ae1108462","./js/props.js":"./js/props.js?v=5ae1108462","./js/renderer.js":"./js/renderer.js?v=5ae1108462","./js/sg_data.js":"./js/sg_data.js?v=5ae1108462","./js/sg_elev.js":"./js/sg_elev.js?v=5ae1108462","./js/sg_engine.js":"./js/sg_engine.js?v=5ae1108462","./js/sg_sites.js":"./js/sg_sites.js?v=5ae1108462","./js/sg_ui.js":"./js/sg_ui.js?v=5ae1108462","./js/signals.js":"./js/signals.js?v=5ae1108462","./js/world.js":"./js/world.js?v=5ae1108462"}}</script>
+<script type="module" src="js/main.js?v=5ae1108462"></script>
 <!-- stamp:end -->
 </body>
 </html>
