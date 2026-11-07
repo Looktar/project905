@@ -4,9 +4,9 @@ import {
   newGame, runTurn, beginTurn, nextBattle, resolveBattle, endTurn, duelRound, autoDuel, autoPlayer, newDuel, feintChance,
   supplied, ownedBy, citiesOf, gensIn, guardsIn, factionGens, activeBonds, rivalry, capOf, PLAYER, validOrder, hiddenIn,
   terrain, wallMul, autoAssign, aiOrders, orderCost, isWinter, plotChance, EVENT_IDS, moveTargets, genMap, loadMap, travelMonths,
-  statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets, routeOf, marchTargets,
+  statMul, draftAmt, devAmt, searchChance, costOf, commandOf, interceptTargets, routeOf, marchTargets, tierOf, drawRoster,
 } from '../../js/sg_engine.js';
-import { GENERALS, GEN_IDS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
+import { GENERALS, GEN_IDS, SANGUO_IDS, ERAS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
 import { SITES, PARKS } from '../../js/sg_sites.js';
 import { readFileSync } from 'node:fs';
@@ -382,7 +382,7 @@ describe('new game', () => {
     expect(citiesOf(s, -1).length).toBe(8);
     expect(PASS_IDS.every((c) => s.cities[c].owner === -1)).toBe(true);
     const hid = Object.values(s.gens).filter((g) => g.hidden).length;
-    expect(hid).toBe(GEN_IDS.length - 8 - 1); // one guards Toogood 虎牢关
+    expect(hid).toBe(SANGUO_IDS.length - 8 - 1); // one guards Toogood 虎牢关 (the classic game: all 48)
     expect(CITY_IDS.every((c) => hiddenIn(s, c).length >= 2)).toBe(true);
     // the same seed deals the same game; another seed another one
     expect(JSON.stringify(newGame(11))).toBe(JSON.stringify(s));
@@ -616,5 +616,51 @@ describe('orders reach beyond the next city (v0.9.8)', () => {
     army.left = 1; s.cities[b].owner = 2;
     for (let m = nextBattle(s); m; m = nextBattle(s)) resolveBattle(s, m.m, null, m.duel);
     expect(s.events.some((e) => e.k === 'blocked' && e.c === b && e.to === c)).toBe(true);
+  });
+});
+
+describe('万锦群英传: great generals of every era, 32 a game (v1.0)', () => {
+  it('the pool: every era up to the mid-Qing, sound data, one portrait character each', () => {
+    expect(GEN_IDS.length).toBeGreaterThanOrEqual(110);
+    expect(SANGUO_IDS.length).toBe(48);
+    for (const e of Object.keys(ERAS)) expect(GEN_IDS.filter((id) => GENERALS[id].era === e).length).toBeGreaterThanOrEqual(5);
+    const glyphs = new Set(GEN_IDS.map((id) => GENERALS[id].glyph));
+    expect(glyphs.size).toBe(GEN_IDS.length);
+    for (const id of GEN_IDS) { const g = GENERALS[id]; expect(g.zh).toContain(g.glyph); expect(g.tag[0].length).toBe(1); expect(g.tag[1]).toBeTruthy(); }
+    for (const b of BONDS) for (const m of b.m) expect(GENERALS[m]).toBeTruthy();
+    for (const r of RIVALS) for (const m of [...r.a, ...r.b]) expect(GENERALS[m]).toBeTruthy();
+  });
+  it('each game draws 32: no repeats, a sensible mix of rarities, a few bonds ready to switch on', () => {
+    const sets = new Set();
+    for (let seed = 1; seed <= 30; seed++) {
+      for (const roster of ['mix', 'sanguo']) {
+        const s = newGame(seed * 131, { map: 'random', roster }), ids = Object.keys(s.gens);
+        expect(ids.length).toBe(CFG.sg.rosterSize);
+        expect(new Set(ids).size).toBe(ids.length);
+        if (roster === 'sanguo') for (const id of ids) expect(GENERALS[id].era).toBe('sg');
+        const n = (t) => ids.filter((id) => tierOf(id) === t).length;
+        expect(n('UR')).toBeLessThanOrEqual(CFG.sg.rosterUR + 1); // a dealt bond may bring one more
+        expect(n('UR')).toBeGreaterThanOrEqual(2);
+        expect(n('SR') + n('R')).toBeGreaterThanOrEqual(16);
+        const ready = BONDS.filter((b) => b.m.filter((m) => ids.includes(m)).length >= b.need).length;
+        expect(ready).toBeGreaterThanOrEqual(2);
+        expect(Object.values(s.gens).filter((g) => g.hidden).length).toBe(CFG.sg.rosterSize - 8 - 1);
+        sets.add(ids.sort().join());
+        if (roster === 'mix') expect(new Set(ids.map((id) => GENERALS[id].era)).size).toBeGreaterThanOrEqual(4);
+      }
+    }
+    expect(sets.size).toBe(60); // every game its own cast
+    // the same seed deals the same cast
+    expect(Object.keys(newGame(77, { roster: 'mix' }).gens).join()).toBe(Object.keys(newGame(77, { roster: 'mix' }).gens).join());
+    expect(drawRoster(newGame(3), 'mix').length).toBe(CFG.sg.rosterSize);
+  });
+  it('an all-eras game plays to the end', () => {
+    let ended = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed * 7, { map: 'random', roster: 'mix' });
+      for (let t = 0; t < 150 && !s.over; t++) { runTurn(s, autoPlayer(s)); check(s); }
+      if (s.over) ended++;
+    }
+    expect(ended).toBeGreaterThanOrEqual(4);
   });
 });

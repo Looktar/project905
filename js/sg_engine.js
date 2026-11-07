@@ -15,10 +15,10 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { GENERALS, GEN_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
+import { GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
 import { SITES, PARKS, PAIRS } from './sg_sites.js';
 
-export const SAVE_V = 4;
+export const SAVE_V = 5;
 const K = () => CFG.sg;
 export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
 export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
@@ -203,6 +203,31 @@ export const defenders = (s, c) => (s.cities[c].owner >= 0 ? gensIn(s, c, s.citi
 
 // ---------------------------------------------------------------- new game
 // opts.map: 'classic' (the fixed map, default: tests) or 'random' (a new board from the seed: the real game)
+// rarity (v0.9.5): by the best two stats
+export function tierOf(id) {
+  const g = GENERALS[id], v = [g.lead, g.war, g.int, g.pol].sort((a, b) => b - a), top = v[0] + v[1];
+  if (v[0] >= 100 || top >= 190) return 'UR';
+  if (top >= 182) return 'SSR';
+  if (top >= 168 || v.reduce((a, b) => a + b, 0) >= 290) return 'SR';
+  return 'R';
+}
+// the officers of one game (v1.0, D-87): rosterSize of them, a few bonds complete enough to switch on,
+// then each rarity in proportion to the pool (at most rosterUR UR), so no game is all gods or all foot soldiers
+export function drawRoster(s, mode) {
+  const k = K(), pool = mode === 'sanguo' ? SANGUO_IDS : GEN_IDS, n = Math.min(k.rosterSize, pool.length), picked = new Set();
+  for (const b of shuffle(s, BONDS.filter((b) => b.m.every((m) => pool.includes(m)))).slice(0, k.rosterBonds)) {
+    for (const m of shuffle(s, [...b.m]).slice(0, b.need)) picked.add(m);
+  }
+  const tiers = ['UR', 'SSR', 'SR', 'R'], by = Object.fromEntries(tiers.map((t) => [t, shuffle(s, pool.filter((id) => tierOf(id) === t))]));
+  const want = Object.fromEntries(tiers.map((t) => [t, Math.round(n * by[t].length / pool.length)]));
+  want.UR = Math.min(want.UR, k.rosterUR);
+  for (const t of tiers) for (const id of by[t]) {
+    if ([...picked].filter((x) => tierOf(x) === t).length >= want[t] || picked.size >= n) break;
+    picked.add(id);
+  }
+  for (const id of shuffle(s, pool.filter((x) => !picked.has(x) && tierOf(x) !== 'UR'))) { if (picked.size >= n) break; picked.add(id); }
+  return [...picked].slice(0, n);
+}
 export function newGame(seed = Date.now(), opts = {}) {
   const k = K(), names = opts.names || {};
   const map = opts.map === 'random' ? genMap(seed) : CLASSIC;
@@ -224,7 +249,10 @@ export function newGame(seed = Date.now(), opts = {}) {
     s.cities[c] = { id: c, owner: -1, pass: true, dev: 0, def: big ? k.passBigDef : k.passDef,
       troops: big ? k.passBigTroops : Math.round(k.passTroops[0] + rnd(s) * (k.passTroops[1] - k.passTroops[0])) };
   }
-  const pool = shuffle(s, [...GEN_IDS]);
+  // v1.0 (D-87): a game draws its own officers (roster 'mix' from every era, 'sanguo' from the 三国 48);
+  // without one it is the classic game with all 48 三国 officers (tests, old simulations)
+  s.roster = opts.roster || 'classic';
+  const pool = shuffle(s, opts.roster ? drawRoster(s, opts.roster) : [...SANGUO_IDS]);
   for (let f = 0; f < 4; f++) {
     const drawn = [pool.pop(), pool.pop()], cap = starts[f];
     s.factions.push({ id: f, player: f === PLAYER, lord: f === PLAYER ? null : drawn[0], name: f === PLAYER ? (names.player || null) : null, color: FACTION_COLORS[f], cap, alive: true, gold: k.startGold, food: k.startFood });

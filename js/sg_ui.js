@@ -1,4 +1,4 @@
-// 万锦三国志 (D-73): the strategy screen. The real Markham minimap is the board; 12 cities sit on
+// 万锦群英传 (D-73, renamed in v1.0 D-87; was 万锦三国志): the strategy screen. The real Markham minimap is the board; 12 cities sit on
 // it, linked by the real roads (supply lines). Tap a city, give it an order, end the month; duels
 // with your generals are played by you (猛攻 / 防守 / 必杀), new generals are revealed like blind boxes.
 // Rules live in sg_engine.js; this file is DOM + canvas only. The game state is saved in localStorage.
@@ -7,12 +7,12 @@ import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import * as sfx from './audio.js';
-import { GENERALS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
+import { GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
 
 extend({
-  sgStart: '⚔ 万锦三国志', sgTitle: '万锦三国志', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
-  sgLog: '战报', sgMenu: '菜单', sgMusicOn: '🎵 音乐：开', sgMusicOff: '🎵 音乐：关', sgBack: '回到万锦街头', sgNew: '重新开局', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgHide: '收起面板，看全图', sgContinue: '继续',
+  sgStart: '⚔ 万锦群英传', sgTitle: '万锦群英传', sgDateMix: '群英{y}年 {m}月', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
+  sgLog: '战报', sgMenu: '菜单', sgMusicOn: '🎵 音乐：开', sgMusicOff: '🎵 音乐：关', sgBack: '回到万锦街头', sgNew: '重新开局', sgModeQ: '新的一局：选武将', sgModeMix: '历代混战', sgModeMixS: '从先秦到明清的 118 位名将里抽 32 位', sgModeSg: '只三国', sgModeSgS: '从 48 位三国武将里抽 32 位', sgNewQ: '重新开局会换一批盲盒，当前进度会丢失。确定吗？', sgHelp: '玩法说明', sgHide: '收起面板，看全图', sgContinue: '继续',
   sgYou: '你', sgUnclaimed: '空城', sgArmy: '{n}军',
   sgCmdDev: '内政', sgCmdDevS: '开发 +金粮', sgCmdDraft: '征兵', sgCmdDraftS: '花金换兵', sgCmdSearch: '搜索', sgCmdSearchS: '找在野武将', sgCmdMove: '调动', sgCmdMoveS: '兵将去邻城',
   sgCmdMarch: '出征', sgCmdMarchS: '攻打邻城', sgCmdRest: '待命', sgCmdFort: '筑城', sgCmdFortS: '城防 +', sgCmdPlot: '计略', sgRumor: '流言', sgRumorS: '敌兵逃散', sgFire: '火计', sgFireS: '烧城防', sgChance: '成功 {n}%', sgPickKind: '选计略，再选目标', sgRumoured: '传闻在这里：{g}', sgWinter: '冬天下雪：进攻 −10%', sgHarvestNote: '九月秋收：粮翻几倍', sgOrder: '本月命令', sgPickTarget: '点地图上发光的城池选目标', sgCancel: '取消',
@@ -43,8 +43,8 @@ extend({
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
   sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑靠读招（见下）。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：对手每回合先亮架势，你读招应对（猛攻克必杀、必杀破防守、防守挡猛攻并反击）。你的智力不低于对手，架势一定是真的；对手智力更高，有时会佯攻骗你。武力决定伤害，武力相差 25 以上一击就能打倒对手；统率决定体力和斗志，必杀要花 50 斗志。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
-  sgStart: '⚔ Three Kingdoms of Markham', sgTitle: 'Three Kingdoms of Markham', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
-  sgLog: 'Log', sgMenu: 'Menu', sgMusicOn: '🎵 Music: on', sgMusicOff: '🎵 Music: off', sgBack: 'Back to the streets', sgNew: 'New game', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
+  sgStart: '⚔ Heroes of Markham', sgTitle: 'Heroes of Markham', sgDateMix: 'Year {Y}, month {m}', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
+  sgLog: 'Log', sgMenu: 'Menu', sgMusicOn: '🎵 Music: on', sgMusicOff: '🎵 Music: off', sgBack: 'Back to the streets', sgNew: 'New game', sgModeQ: 'A new game: whose officers?', sgModeMix: 'All eras', sgModeMixS: '32 drawn from 118 great generals, from the Warring States to the Qing', sgModeSg: 'Three Kingdoms only', sgModeSgS: '32 drawn from the 48 of the Three Kingdoms', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
   sgYou: 'You', sgUnclaimed: 'Unclaimed', sgArmy: "{n}'s army",
   sgCmdDev: 'Build', sgCmdDevS: '+gold & food', sgCmdDraft: 'Draft', sgCmdDraftS: 'gold → troops', sgCmdSearch: 'Seek', sgCmdSearchS: 'find free officers', sgCmdMove: 'Move', sgCmdMoveS: 'to a city of yours',
   sgCmdMarch: 'Attack', sgCmdMarchS: 'a neighbour', sgCmdRest: 'Idle', sgCmdFort: 'Walls', sgCmdFortS: 'walls +', sgCmdPlot: 'Plot', sgRumor: 'Rumour', sgRumorS: 'troops desert', sgFire: 'Fire', sgFireS: 'burn the walls', sgChance: '{n}% chance', sgPickKind: 'Pick a plot, then a target', sgRumoured: 'Rumoured to be here: {g}', sgWinter: 'Winter snow: attacking −10%', sgHarvestNote: 'September harvest: food several times over', sgOrder: 'Order this month', sgPickTarget: 'Tap a glowing city on the map', sgCancel: 'Cancel',
@@ -83,7 +83,7 @@ const F = (k, p = {}) => t(k).replace(/\{(\w+)\}/g, (_, x) => (p[x] ?? ''));
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const gName = (id) => (zh() ? GENERALS[id].zh : GENERALS[id].en);
 const cName = (id) => (zh() ? CITIES[id].zh : CITIES[id].en);
-const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a' };
+const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a', xq: '#8a6d3b', qh: '#a8552a', st: '#b8860b', sy: '#2e7d7a', mq: '#b03a5b' };
 const kNum = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
 const MOVES = { atk: 'sgAtk', def: 'sgDefM', skill: 'sgSkill' };
 // what the opponent's stance looks like (v0.9.9): [zh lines, en lines] per move
@@ -99,21 +99,15 @@ export function weatherOf(s) {
   return { snow: ['雪', '❄'], harvest: ['秋收', '🌾'], sun: ['晴', '☀'], rain: ['雨', '☂'], cloud: ['阴', '☁'], hot: ['炎热', '☀'], wind: ['秋风', '🍂'] }[w];
 }
 const WEATHER_EN = { 雪: 'snow', 秋收: 'harvest', 晴: 'fair', 雨: 'rain', 阴: 'cloudy', 炎热: 'hot', 秋风: 'windy' };
-const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F('sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
+const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F(s.roster === 'mix' ? 'sgDateMix' : 'sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
 const CMD_KEY = { dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
 
 // v0.9.5 (D-82): rarity from the two best stats (UR: a 100 or two great ones), letter grades per stat
-export function tierOf(id) {
-  const g = GENERALS[id], s = [g.lead, g.war, g.int, g.pol].sort((a, b) => b - a), top = s[0] + s[1];
-  if (s[0] >= 100 || top >= 190) return 'UR';
-  if (top >= 182) return 'SSR';
-  if (top >= 168 || s.reduce((a, b) => a + b, 0) >= 290) return 'SR';
-  return 'R';
-}
+export const tierOf = (id) => E.tierOf(id); // rarity lives in the engine now (it shapes each game's roster)
 const grade = (v) => (v >= 90 ? 'S' : v >= 80 ? 'A' : v >= 65 ? 'B' : v >= 45 ? 'C' : 'D');
 function portrait(id, size = 46) {
   const g = GENERALS[id], tr = tierOf(id);
-  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px">${esc(g.zh.slice(-1))}${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}</span>`;
+  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px">${esc(g.glyph)}${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}</span>`;
 }
 function statBars(id) {
   const g = GENERALS[id], row = (l, v, c) => `<div class="sgSt"><span>${l}</span><i><b style="width:${v}%;background:${c}"></b></i><em>${v}</em><u class="g${grade(v)}">${grade(v)}</u></div>`;
@@ -123,14 +117,13 @@ function statBars(id) {
 function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span class="sgTr">${esc(zh() ? tr[0] : tr[1])}</span><small>${esc(zh() ? tr[2] : tr[3])}</small>`; }
 // a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
 // rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
-const KTAG = { shu: ['蜀', 'Shu'], wei: ['魏', 'Wei'], wu: ['吴', 'Wu'], qun: ['群', 'Qun'] };
 const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
 function tallCard(id, opts = {}) {
   const g = GENERALS[id], tr = tierOf(id), top = [['统', 'L', g.lead], ['武', 'W', g.war], ['智', 'I', g.int], ['政', 'P', g.pol]].sort((a, b) => b[2] - a[2])[0];
   const bar = opts.troops !== undefined ? `<i class="sgCbar"><b style="width:${Math.max(0, Math.min(100, opts.pct ?? 100))}%"></b></i><em class="sgCtroops">${kNum(opts.troops)}</em>` : '';
   return `<div class="sgCardT t${tr} k${g.k}${opts.big ? ' big' : ''}${opts.cls ? ' ' + opts.cls : ''}" ${opts.data || ''}>
-    <i class="sgCtag${zh() ? '' : ' v'}">${KTAG[g.k][zh() ? 0 : 1]}</i><i class="sgCstar">${'★'.repeat(STARS[tr])}</i>
-    <b class="sgCglyph">${esc(g.zh.slice(-1))}</b><i class="sgCtier">${tr}</i>
+    <i class="sgCtag${zh() ? '' : ' v'}">${g.tag[zh() ? 0 : 1]}</i><i class="sgCstar">${'★'.repeat(STARS[tr])}</i>
+    <b class="sgCglyph">${esc(g.glyph)}</b><i class="sgCtier">${tr}</i>
     <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${bar}</div>`;
 }
 function genCard(id, opts = {}) {
@@ -186,7 +179,7 @@ export class Sanguo {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
     const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
-    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random' }); // a new board every game (D-77)
+    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random', roster: this.nextRoster || 'mix' }); // a new board every game (D-77), its own officers (D-87)
     E.loadMap(s);
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
@@ -358,7 +351,7 @@ export class Sanguo {
       const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
-      else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].zh.slice(-1) : '', ts, C.dev);
+      else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].glyph : '', ts, C.dev);
     }
     // labels: the most important first (selected, yours, cities, then passes), each in the first free spot
     // around its castle (below, above, right, left); when nothing is free a city shows just its troops
@@ -414,7 +407,7 @@ export class Sanguo {
         const gs = E.gensIn(st, id, E.PLAYER);
         if (gs.length) { const n = gs.filter((g) => ordered.has(g)).length; pill(c, x + 28 * ts, y - 28 * ts, n === gs.length ? '#f2c14e' : '#fff', `${n}/${gs.length}`); }
       }
-      if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].zh.slice(-1));
+      if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].glyph);
     }
     // armies on the road (v0.9.3): a banner part of the way along the road, with troops and arrival
     for (const a of st.armies || []) {
@@ -433,7 +426,7 @@ export class Sanguo {
       c.fillStyle = col; c.beginPath(); c.moveTo(0, -22); c.lineTo(Math.cos(ang) >= 0 ? 20 : -20, -17); c.lineTo(0, -10); c.closePath(); c.fill();
       c.fillStyle = col; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(0, 2, 10, 0, 7); c.fill(); c.stroke();
       c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(lead ? GENERALS[lead].zh.slice(-1) : '兵', 0, 2.5);
+      c.fillText(lead ? GENERALS[lead].glyph : '兵', 0, 2.5);
       c.restore();
       pill(c, x, y + 24, a.f === E.PLAYER ? '#cfe3ff' : '#ffd6d0', `${kNum(a.troops)} · ${this.eta(a)}`);
     }
@@ -758,8 +751,12 @@ export class Sanguo {
           </div></div></div>`;
         return;
       }
-      const list = (tab === 'foe' ? foes() : mine()).filter((id) => tab === 'all' || tab === 'foe' || GENERALS[id].k === tab);
-      const tabs = [['all', zh() ? '全部' : 'All'], ['wei', zh() ? '魏' : 'Wei'], ['shu', zh() ? '蜀' : 'Shu'], ['wu', zh() ? '吴' : 'Wu'], ['qun', zh() ? '群' : 'Qun'], ['foe', zh() ? '敌将' : 'Enemy']];
+      // a Three Kingdoms game sorts by kingdom; an all-eras game by era (only the eras this game has)
+      const sg = st.roster !== 'mix', key = (id) => (sg ? GENERALS[id].k : GENERALS[id].era);
+      const list = (tab === 'foe' ? foes() : mine()).filter((id) => tab === 'all' || tab === 'foe' || key(id) === tab);
+      const groups = sg ? [['wei', '魏', 'Wei'], ['shu', '蜀', 'Shu'], ['wu', '吴', 'Wu'], ['qun', '群', 'Qun']]
+        : Object.entries(ERAS).filter(([e]) => Object.keys(st.gens).some((id) => GENERALS[id].era === e)).map(([e, v]) => [e, v[2], v[3]]);
+      const tabs = [['all', zh() ? '全部' : 'All'], ...groups.map(([k, a, b]) => [k, zh() ? a : b]), ['foe', zh() ? '敌将' : 'Enemy']];
       L.innerHTML = `<div class="sgCard sgPage"><div class="sgPhead"><b>${t('sgOfficersBtn')} · ${mine().length}</b><button class="sgX" data-ok="1">✕</button></div>
         <div class="sgPbody"><div class="sgTabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         <div class="sgGrid2">${list.map((id) => tallCard(id, { data: `data-gid="${id}"` })).join('') || `<p class="sgHint">${t('sgNone')}</p>`}</div></div></div>`;
@@ -926,8 +923,12 @@ export class Sanguo {
     await this.layer(`<h2 class="sgCenter sgBigName">${t(win ? 'sgWin' : 'sgLose')}</h2><p class="sgCenter">${esc(F(win ? 'sgWinS' : 'sgLoseS', { n: st.turn }))}</p><button class="sgBig" data-ok="1">${t('sgAgain')}</button>`);
     this.newGame(false);
   }
-  newGame(confirmFirst = true) {
+  async newGame(confirmFirst = true) {
     if (confirmFirst && !window.confirm(t('sgNewQ'))) return;
+    // v1.0 (D-87): all eras (the default) or the Three Kingdoms only
+    const r = await this.layer(`<h2>${t('sgModeQ')}</h2><button class="sgBig" data-ok="mix">${t('sgModeMix')}<small>${t('sgModeMixS')}</small></button>
+      <button class="sgBig alt" data-ok="sanguo">${t('sgModeSg')}<small>${t('sgModeSgS')}</small></button>`);
+    this.nextRoster = r === 'sanguo' ? 'sanguo' : 'mix';
     try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ }
     this.open(this.w, this.W, this.H);
   }

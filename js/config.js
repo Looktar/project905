@@ -124,6 +124,7 @@ export const CFG = {
     stationAtk: 0.1, depotFood: 0.3,
     // v0.9 (D-77): random boards
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
+    rosterSize: 32, rosterBonds: 3, rosterUR: 4, // v1.0 (D-87): officers per game, bonds dealt complete, UR at most
     // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
     marchSpeed: 650, relaySpeed: 1.6, maxMarch: 4, // months: the farthest an order may send an army (v0.9.8)
     // duel damage follows (武力 ratio) ^ duelExp
