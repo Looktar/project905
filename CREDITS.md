@@ -31,3 +31,8 @@ Polyfork 的免费模型**运行时直接从 polyfork.dev 的 CDN 加载**，模
 ## 开发工具（不进游戏）
 - `.claude/skills/` 里的 game-feel、performance-optimization、create-game-assets 三个技能来自 [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills)，Apache-2.0 许可。
 - 美术规范和试玩反馈表参考了 [Claude-Code-Game-Studios](https://github.com/Donchitos/Claude-Code-Game-Studios)（MIT）的流程。
+
+## v2 重制版
+- [three.js](https://threejs.org/) r180，MIT 许可，文件在 `v2/vendor/`（许可全文 `v2/vendor/LICENSE-three`）。
+- v2 里的人物、车、建筑、道具全部是代码生成的，没有外来模型。
+

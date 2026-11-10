@@ -10,6 +10,7 @@ export default [
       'node_modules/**', 'data/**', 'maps/**', 'docs/**',
       'test-results/**', 'playwright-report/**',
       '.claude/**', // agent worktrees live inside the main checkout
+      'v2/vendor/**', // vendored three.js (v2 rewrite)
     ],
   },
   js.configs.recommended,

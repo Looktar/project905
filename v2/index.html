@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a9c4e8">
+<title>Project 905 · 万锦玩具城（重制版）</title>
+<style>
+  :root { --ink: #2d3a55; --red: #ff6b4a; --blue: #3fa7ff; --green: #56c26b; --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); --pt: 0px; --pr: 0px; --pb: 0px; --pl: 0px; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; position: fixed; inset: 0; background: #a9c4e8; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; color: var(--ink); }
+  #root { position: absolute; left: 0; top: 0; width: 100vw; height: 100dvh; overflow: hidden; transform-origin: 0 0; }
+  #root.rot { transform: rotate(90deg) translateY(-100%); }
+  canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .pill { background: rgba(255,255,255,.94); border-radius: 999px; box-shadow: 0 4px 14px rgba(45,58,85,.18); }
+  #mini { position: absolute; left: calc(12px + var(--pl)); top: calc(12px + var(--pt)); width: 104px; height: 104px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 4px 14px rgba(45,58,85,.25); }
+  #road { position: absolute; left: 50%; top: calc(12px + var(--pt)); transform: translateX(-50%); padding: 7px 20px; white-space: nowrap; font-size: 15px; max-width: 56%; overflow: hidden; text-overflow: ellipsis; }
+  #road b { font-size: 19px; font-weight: 800; margin-right: 10px; } #road span { opacity: .6; font-size: 13px; }
+  #top { position: absolute; right: calc(12px + var(--pr)); top: calc(12px + var(--pt)); display: flex; gap: 8px; align-items: center; }
+  #top button { width: 42px; height: 42px; border: 0; font-size: 19px; color: var(--ink); cursor: pointer; }
+  #hp { display: none; align-items: center; gap: 8px; padding: 8px 14px; height: 42px; }
+  #hp.on { display: flex; } #hp::before { content: attr(data-icon); color: #ff4d6d; font-size: 17px; }
+  #hpbar { width: 96px; height: 10px; border-radius: 6px; background: #e3e7ef; overflow: hidden; } #hpfill { height: 100%; background: #ff5d7a; border-radius: 6px; }
+  #banner { position: absolute; left: 50%; top: calc(62px + var(--pt)); transform: translateX(-50%) scale(.6); opacity: 0; transition: .18s; background: #ff3b3b; color: #fff; font-weight: 800; padding: 6px 18px 9px; border-radius: 14px; font-size: 16px; overflow: hidden; white-space: nowrap; }
+  #banner.on { opacity: 1; transform: translateX(-50%) scale(1); } #banner.good { background: var(--green); }
+  #bannerfill { position: absolute; left: 0; bottom: 0; height: 4px; background: #fff; opacity: .85; }
+  #bubbles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .bubble { position: absolute; left: 0; top: 0; background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 3px 10px; font-weight: 800; font-size: 15px; white-space: nowrap; will-change: transform; }
+  .bubble.pow { background: none; border: 0; color: #ffb020; font-size: 30px; font-weight: 900; -webkit-text-stroke: 2px #c2410c; text-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  #stickzone { position: absolute; left: 0; top: 20%; bottom: 0; width: 46%; }
+  #stick { position: absolute; width: 128px; height: 128px; margin: -64px 0 0 -64px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); background: rgba(255,255,255,.22); opacity: 0; transition: opacity .12s; pointer-events: none; left: 110px; top: 70%; }
+  #stick.on, .touch #stick { opacity: 1; } #knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; border-radius: 50%; background: #fff; transform: translate(-50%,-50%); box-shadow: 0 3px 10px rgba(45,58,85,.3); }
+  #btns { position: absolute; right: calc(14px + var(--pr)); bottom: calc(14px + var(--pb)); width: 190px; height: 170px; display: none; }
+  .touch #btns { display: block; }
+  #btns button { position: absolute; border-radius: 50%; border: 5px solid #fff; color: #fff; font-weight: 900; font-size: 19px; box-shadow: 0 5px 14px rgba(45,58,85,.3); font-family: inherit; padding: 0; }
+  #btns button.down { transform: scale(.92); filter: brightness(.9); } #btns button.dim { opacity: .45; }
+  [data-btn=a] { right: 0; bottom: 0; width: 96px; height: 96px; background: var(--red); font-size: 24px !important; }
+  [data-btn=b] { right: 104px; bottom: 4px; width: 72px; height: 72px; background: var(--blue); }
+  [data-btn=c] { right: 18px; bottom: 104px; width: 66px; height: 66px; background: var(--green); }
+  #busted { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(30,58,138,.55); color: #fff; text-align: center; }
+  #busted.on { display: flex; } #busted b { font-size: 56px; font-weight: 900; text-shadow: 0 5px 0 rgba(0,0,0,.25); animation: pop .35s; } #busted span { font-size: 17px; margin-top: 8px; }
+  @keyframes pop { from { transform: scale(2.4) rotate(-8deg); opacity: 0; } }
+  #dbg { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); font: 12px ui-monospace, monospace; color: #fff; text-shadow: 0 1px 2px #000; white-space: nowrap; pointer-events: none; }
+  .screen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(169,196,232,.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .card { background: #fff; border-radius: 26px; padding: 22px 30px; text-align: center; box-shadow: 0 16px 40px rgba(45,58,85,.3); max-width: min(520px, 88%); max-height: 92%; overflow: auto; }
+  .card h1 { margin: 0; font-size: 34px; font-weight: 900; letter-spacing: 1px; } .card h2 { margin: 2px 0 12px; font-size: 14px; font-weight: 600; opacity: .6; }
+  .card p { white-space: pre-line; font-size: 13px; line-height: 1.6; opacity: .8; margin: 12px 0; }
+  .big { border: 0; background: var(--red); color: #fff; font-weight: 900; font-size: 22px; padding: 12px 40px; border-radius: 999px; box-shadow: 0 6px 0 #d94f31; cursor: pointer; font-family: inherit; }
+  .big:active { transform: translateY(3px); box-shadow: 0 3px 0 #d94f31; } .big:disabled { background: #b8c0cf; box-shadow: 0 6px 0 #9aa3b2; }
+  .link { background: none; border: 0; color: var(--blue); font-weight: 700; font-size: 14px; margin: 10px 8px 0; cursor: pointer; text-decoration: none; display: inline-block; font-family: inherit; }
+  .card small { display: block; margin-top: 10px; font-size: 11px; opacity: .55; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: 8px 0; font-weight: 700; } .row button { border: 0; background: #e9edf5; border-radius: 999px; padding: 7px 18px; font-weight: 800; color: var(--ink); min-width: 74px; font-family: inherit; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<div id="root">
+  <canvas id="gl"></canvas>
+  <div id="bubbles"></div>
+  <div id="stickzone"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <canvas id="mini" width="208" height="208"></canvas>
+  <div id="road" class="pill"><b>—</b><span data-t="city">万锦 Markham</span></div>
+  <div id="banner"><span id="bannertxt"></span><div id="bannerfill"></div></div>
+  <div id="top">
+    <div id="hp" class="pill" data-icon="♥"><div id="hpbar"><div id="hpfill"></div></div></div>
+    <button id="mute" class="pill">🔊</button>
+    <button id="gear" class="pill">⚙</button>
+  </div>
+  <div id="btns"><button data-btn="c"></button><button data-btn="b"></button><button data-btn="a"></button></div>
+  <div id="busted"><b></b><span></span></div>
+  <div id="dbg"></div>
+  <div id="title" class="screen">
+    <div class="card">
+      <h1 data-t="title">万锦玩具城</h1>
+      <h2 data-t="sub">Project 905 · 重制版</h2>
+      <button id="start" class="big" disabled data-t="loading">正在搭建万锦…</button>
+      <p data-t="help"></p>
+      <button id="lang" class="link" data-t="lang">English</button>
+      <a class="link" href="../" data-t="old">回到旧版</a>
+      <small>Map data © OpenStreetMap contributors · three.js (MIT)</small>
+    </div>
+  </div>
+  <div id="settings" class="screen hide">
+    <div class="card scroll">
+      <h1 data-t="settings" style="font-size:24px">设置</h1>
+      <div class="row"><span data-t="sound">声音</span><button id="s-sound"></button></div>
+      <div class="row"><span data-t="shadows">阴影</span><button id="s-shadow"></button></div>
+      <div class="row"><span data-t="sharp">高清</span><button id="s-sharp"></button></div>
+      <div class="row"><span>Language</span><button id="s-lang"></button></div>
+      <button id="s-close" class="big" style="font-size:17px;padding:9px 30px;margin-top:10px" data-t="close">关闭</button>
+      <small>Map data © OpenStreetMap contributors<br>Project 905 v2 · three.js (MIT)</small>
+    </div>
+  </div>
+</div>
+<script type="module" src="js/main.js?v=2.0.0"></script>
+</body>
+</html>
