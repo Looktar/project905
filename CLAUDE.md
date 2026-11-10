@@ -11,12 +11,6 @@
 - **D-08 已定**：不迁移到规格原定的 Three.js + Vite + TypeScript + Rapier2D；npm 只用于开发工具（ESLint、Vitest、Playwright）。**不要在没和总决策确认前做大重构。**
 - 进度和已知问题见 `docs/PROGRESS.md`；以后的想法在 `docs/BACKLOG.md`。
 
-## v2 重制版（2026-11-10 起，D-88）
-- `v2/` 是从零重写的玩具城核心（three.js，放在 `v2/vendor/`，零构建），线上在 `/project905/v2/`。说明见 `v2/README.md`。
-- 两版并存：根目录的旧版（含万锦群英传）不动；v2 不引用根目录 `js/`，只共用 `maps/markham.json`。**没和总决策确认前不要用 v2 替换旧版首页。**
-- v2 的逻辑（`v2/js/world.js`、`game.js`）不许碰 DOM 和 three.js，要能在 Node 里跑；数值放 `v2/js/config.js`。
-- 测试：`tests/unit/v2.test.js`、`npm run smoke:v2`（`npm run smoke` 会两版都跑）。改 v2 不需要 `npm run stamp`。
-
 ## 目录
 ```
 index.html            页面 + HUD + 样式
