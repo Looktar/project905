@@ -146,7 +146,7 @@ body.touch #bD.hide{display:none}
 .sgCmd{min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#3a2c21;color:#f5ebdd;border:1px solid #8a6a3a;border-radius:10px;font-family:inherit;cursor:pointer;padding:3px}
 .sgCmd b{font-size:14px}.sgCmd small{font-size:10px;color:#d9c8ae}
 .sgCmd.on{background:#f2c14e;color:#2b211a;border-color:#f2c14e}.sgCmd.on small{color:#5a4632}
-.sgCmd:disabled{opacity:.35}
+.sgCmd:disabled{opacity:1;background:#2b221b;color:#94877a;border-color:#4d3f31;cursor:default}.sgCmd:disabled small{color:#94877a!important}
 .sgTo{margin:8px 0 4px;font-weight:900;color:#f2c14e}
 .sgSeg{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:12px;color:#d9c8ae}
 .sgSeg button,.sgChips button{background:#3a2c21;color:#f5ebdd;border:1px solid #5c4630;border-radius:999px;min-height:32px;padding:0 10px;font:800 12px inherit;font-family:inherit;cursor:pointer}
@@ -224,7 +224,7 @@ body.touch #bD.hide{display:none}
 .sgOh b{font-size:14px;color:#fff}.sgOh small{font-size:10px;color:#d9c8ae}
 .sgOh em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;color:#f2c14e;text-align:right;max-width:46%}
 .sgO .sgCmds{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.sgO .sgCmd{min-height:36px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden;line-height:1.1}.sgO .sgCmd small{display:block;font-size:9.5px;font-weight:700;color:#d9c8ae;margin-top:1px}.sgO .sgCmd.on small{color:#5a4632}
+.sgO .sgCmd{min-height:36px;font-size:12px;font-weight:800;padding:2px;white-space:nowrap;overflow:hidden;line-height:1.1}.sgO .sgCmd small{display:block;font-size:10.5px;font-weight:700;color:#f6e7c6;margin-top:2px;letter-spacing:-.2px}.sgO .sgCmd.on small{color:#5a4632}
 .sgO .sgSeg,.sgO .sgChips{margin-top:6px}.sgO .sgPick{margin:6px 0 4px}
 .sgChips small{font-size:10px;color:#ffb3a8;font-weight:700}
 /* v0.9.7 (D-84): tall officer cards, the 将 page, the battle screen (ideas from the App Store 三国志 game, own code art) */
@@ -297,7 +297,7 @@ html:lang(en) .sgTabs button{width:76px;font:800 11px system-ui,sans-serif}#sg.s
 #sg.small #sgPanel h3{font-size:15px}#sg.small #sgPanel h4{font-size:14px;margin:8px 0 4px}#sg.small .sgSub{font-size:11px;margin-bottom:5px}
 #sg.small .sgGrid{gap:4px}#sg.small .sgGrid div{padding:3px 6px}#sg.small .sgGrid small{font-size:10px}#sg.small .sgGrid b{font-size:13px}
 #sg.small .sgHint{font-size:11px;margin:3px 0}#sg.small .sgX{width:28px;height:28px;font-size:12px}
-#sg.small .sgO{padding:5px;margin-bottom:5px}#sg.small .sgOh{margin-bottom:4px}#sg.small .sgOh b{font-size:13px}#sg.small .sgO .sgCmd{min-height:28px;font-size:11px}
+#sg.small .sgO{padding:5px;margin-bottom:5px}#sg.small .sgOh{margin-bottom:4px}#sg.small .sgOh b{font-size:13px}#sg.small .sgO .sgCmds{grid-template-columns:repeat(3,minmax(0,1fr))}#sg.small .sgO .sgCmd{min-height:38px;font-size:12px}
 #sg.small .sgG{padding:6px;gap:6px}#sg.small .sgGi>b{font-size:13px}#sg.small .sgSt{font-size:9px}
 #sg.small .sgRoadRow{font-size:12px;padding:2px 0}
 #sg.small #sgTitle{display:none}#sg.small #sgTop #sgEnd{font-size:13px;padding:0 10px}#sg.small #sgRes span i{width:16px;height:16px}
@@ -355,6 +355,9 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 .sgBside.beaten .sgCardT{filter:grayscale(.85) brightness(.75);transform:rotate(-6deg) translateY(6px);transition:all .4s}.sgBside.victor .sgCardT{box-shadow:0 0 0 2px #f2c14e,0 0 16px rgba(242,193,78,.85);transition:all .4s}
 .sgBres.stamp{display:block;width:max-content;margin:8px auto;padding:3px 18px;border-radius:8px;border:3px solid currentColor;font:900 24px 'STKaiti','KaiTi','Kaiti SC',serif;transform:rotate(-4deg);animation:sgStamp .35s cubic-bezier(.3,1.8,.5,1)}
 .sgBres.stamp:empty{display:none}.sgBres.stamp.won{color:#f2c14e}.sgBres.stamp.lost{color:#ff8a80}
+/* v1.2: marching together, officer biographies, difficulty */
+.sgWith button.on{background:#f2c14e;color:#2b211a;border-color:#f2c14e}.sgWith button.on small{color:#5a4632}
+.sgBio{margin:6px 0 0;font-size:13px;line-height:1.55;color:#4a3826;text-align:left}.sgReveal .sgBio{color:#e9dcc6;font-size:12.5px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -447,8 +450,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=a55f389bf5","./js/bigmap.js":"./js/bigmap.js?v=a55f389bf5","./js/config.js":"./js/config.js?v=a55f389bf5","./js/fire.js":"./js/fire.js?v=a55f389bf5","./js/game.js":"./js/game.js?v=a55f389bf5","./js/geo.js":"./js/geo.js?v=a55f389bf5","./js/glb.js":"./js/glb.js?v=a55f389bf5","./js/hud.js":"./js/hud.js?v=a55f389bf5","./js/i18n.js":"./js/i18n.js?v=a55f389bf5","./js/input.js":"./js/input.js?v=a55f389bf5","./js/main.js":"./js/main.js?v=a55f389bf5","./js/math.js":"./js/math.js?v=a55f389bf5","./js/missions.js":"./js/missions.js?v=a55f389bf5","./js/models.js":"./js/models.js?v=a55f389bf5","./js/nav.js":"./js/nav.js?v=a55f389bf5","./js/orient.js":"./js/orient.js?v=a55f389bf5","./js/poi.js":"./js/poi.js?v=a55f389bf5","./js/pranks.js":"./js/pranks.js?v=a55f389bf5","./js/props.js":"./js/props.js?v=a55f389bf5","./js/renderer.js":"./js/renderer.js?v=a55f389bf5","./js/sg_art.js":"./js/sg_art.js?v=a55f389bf5","./js/sg_data.js":"./js/sg_data.js?v=a55f389bf5","./js/sg_elev.js":"./js/sg_elev.js?v=a55f389bf5","./js/sg_engine.js":"./js/sg_engine.js?v=a55f389bf5","./js/sg_sites.js":"./js/sg_sites.js?v=a55f389bf5","./js/sg_ui.js":"./js/sg_ui.js?v=a55f389bf5","./js/signals.js":"./js/signals.js?v=a55f389bf5","./js/world.js":"./js/world.js?v=a55f389bf5"}}</script>
-<script type="module" src="js/main.js?v=a55f389bf5"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=02c4eb84ee","./js/bigmap.js":"./js/bigmap.js?v=02c4eb84ee","./js/config.js":"./js/config.js?v=02c4eb84ee","./js/fire.js":"./js/fire.js?v=02c4eb84ee","./js/game.js":"./js/game.js?v=02c4eb84ee","./js/geo.js":"./js/geo.js?v=02c4eb84ee","./js/glb.js":"./js/glb.js?v=02c4eb84ee","./js/hud.js":"./js/hud.js?v=02c4eb84ee","./js/i18n.js":"./js/i18n.js?v=02c4eb84ee","./js/input.js":"./js/input.js?v=02c4eb84ee","./js/main.js":"./js/main.js?v=02c4eb84ee","./js/math.js":"./js/math.js?v=02c4eb84ee","./js/missions.js":"./js/missions.js?v=02c4eb84ee","./js/models.js":"./js/models.js?v=02c4eb84ee","./js/nav.js":"./js/nav.js?v=02c4eb84ee","./js/orient.js":"./js/orient.js?v=02c4eb84ee","./js/poi.js":"./js/poi.js?v=02c4eb84ee","./js/pranks.js":"./js/pranks.js?v=02c4eb84ee","./js/props.js":"./js/props.js?v=02c4eb84ee","./js/renderer.js":"./js/renderer.js?v=02c4eb84ee","./js/sg_art.js":"./js/sg_art.js?v=02c4eb84ee","./js/sg_bios.js":"./js/sg_bios.js?v=02c4eb84ee","./js/sg_data.js":"./js/sg_data.js?v=02c4eb84ee","./js/sg_elev.js":"./js/sg_elev.js?v=02c4eb84ee","./js/sg_engine.js":"./js/sg_engine.js?v=02c4eb84ee","./js/sg_sites.js":"./js/sg_sites.js?v=02c4eb84ee","./js/sg_ui.js":"./js/sg_ui.js?v=02c4eb84ee","./js/signals.js":"./js/signals.js?v=02c4eb84ee","./js/world.js":"./js/world.js?v=02c4eb84ee"}}</script>
+<script type="module" src="js/main.js?v=02c4eb84ee"></script>
 <!-- stamp:end -->
 </body>
 </html>

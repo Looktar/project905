@@ -9,6 +9,19 @@ export function unlock() {
     master = ctx.createGain(); master.gain.value = muted ? 0 : 0.6; master.connect(ctx.destination);
   } catch (e) { ctx = null; }
 }
+// v1.2: phones suspend the audio context ("interrupted" on iOS) when the page goes to the background, and nothing
+// brought it back, so the music stayed silent after switching apps. Resume when the page shows again, and on the
+// next touch as well (iOS only lets a context resume inside a user gesture).
+export function wake() {
+  if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
+  try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* ignore */ }
+}
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function' && typeof addEventListener === 'function') {
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { wake(); bgmNext = 0; } });
+  addEventListener('pageshow', wake); addEventListener('focus', wake);
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) addEventListener(ev, wake, { capture: true, passive: true });
+}
+export const audioState = () => (ctx ? ctx.state : 'none');
 export function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : 0.6; }
 export function isMuted() { return muted; }
 

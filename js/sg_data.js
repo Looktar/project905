@@ -234,6 +234,12 @@ export const GENERALS = Object.fromEntries([
   ...G.map(([id, zh, en, lead, war, int, pol, trait, k]) => [id, { id, zh, en, lead, war, int, pol, trait, k, era: 'sg', tag: SG_TAG[k] }]),
   ...G2.map(([id, zh, en, lead, war, int, pol, trait, era, tz, te]) => [id, { id, zh, en, lead, war, int, pol, trait, k: era, era, tag: [tz, te] }]),
 ]);
+// v1.2 (D-102, the 总决策's ask): a wider gap between 文官 and 武将. The tables above keep our estimates;
+// the game stretches every stat below WEAK_AT downward by WEAK_MUL (张飞 智 30 -> 10, 诸葛亮 武 38 -> 22),
+// and leaves the strong stats alone, so nobody's best changes and tiers stay as they were.
+export const WEAK_AT = 70, WEAK_MUL = 1.5, STAT_MIN = 5;
+export const spreadStat = (v) => (v >= WEAK_AT ? v : Math.max(STAT_MIN, Math.round(WEAK_AT - (WEAK_AT - v) * WEAK_MUL)));
+for (const g of Object.values(GENERALS)) { g.base = { lead: g.lead, war: g.war, int: g.int, pol: g.pol }; for (const k of ['lead', 'war', 'int', 'pol']) g[k] = spreadStat(g[k]); }
 export const SANGUO_IDS = G.map((g) => g[0]);
 export const GEN_IDS = Object.keys(GENERALS);
 // the one character on a portrait: the last of the name, or the first when another officer already has it

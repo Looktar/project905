@@ -30,6 +30,7 @@ js/sg_data.js         v0.7 万锦三国志（v1.0 改名万锦群英传）数据
 js/sg_engine.js       v0.7 万锦三国志规则：回合、每位武将一个命令（v0.8）、公园隘口、地形、季节、计略、随机事件（v0.8.1）、驿站和补给站（v0.8.2）、粮道、战斗、单挑、俘虏、电脑君主、反联盟、宝物、停战、挖角（v1.1）（纯函数，种子随机）
 js/sg_sites.js        v0.9 随机地图的地点池：27 个真实地点、35 个公园、每两城之间的真实路名 / 渡河 / 驿站 / 公园（tools/build_sg_sites.py 生成，D-77）
 js/sg_elev.js         v0.8 真实海拔网格（tools/fetch_elev.py 生成，Copernicus DEM）：三国地形、关隘、仰攻（D-74）
+js/sg_bios.js         v1.2 118 位武将的文字介绍，中英文（D-105）
 js/sg_art.js          v1.1 策略地图上的城池图标：每座城画成自己的地标（D-99）
 js/sg_ui.js           v0.7 万锦三国志界面：策略地图、城池面板、急报、盲盒翻牌、单挑；存档在 localStorage p905sg
 js/input.js           键盘 + 触屏摇杆/按钮 + 竖屏时整页旋转 90°（强制横屏）
@@ -80,6 +81,7 @@ npm run stamp                        # 改了 js/ 或 maps/ 后更新 index.html
 - 每个区块的实例化网格都放进 `c.inst` 列表（main.js 统一画）；小道具直接烘焙进区块静态网格，不增加 draw call。
 - 每栋 OSM 建筑在区块网格里的顶点范围记在 `world.bRange`，遮挡淡出靠它把这栋楼单独画成半透明。
 - 已知但还没修的 bug 先写成 `it.fails` 测试（D-15）。
+- 群英传的事件对象不要用 `t` 当自己的字段：`ev()` 会把 `t` 写成回合数（v1.1 的挖角事件因此让月末战报崩溃、界面锁死，D-106）。界面里等待卡片 / 动画一律走 `this.ui()`。
 - 打击反馈统一走 `game.feedback(tier, who)`（小/中/大三级，见 `CFG.feel`），不要另外直接改 `game.shake`。
 - 引入任何外来模型前，先按 `docs/ART-BIBLE.md` 第 7 节先做一个样板给总决策确认。
 

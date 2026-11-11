@@ -117,7 +117,7 @@ describe('seasons, stratagems, random events (v0.8.1)', () => {
   oneMonthRoads();
   it('winter makes attacking harder; September brings the harvest', () => {
     const atk = (turn) => {
-      const s = newGame(9), c = s.factions[0].cap, n = ADJ[c].find((a) => s.cities[a.c].owner === -1).c, [a] = factionGens(s, 0);
+      const s = newGame(9), c = s.factions[0].cap, n = ADJ[c].find((a) => s.cities[a.c].owner === -1).c, [a] = factionGens(s, 0).sort((x, y) => GENERALS[y].war - GENERALS[x].war); // the fighter leads (v1.2: weak stats are weaker)
       for (const f of s.factions.slice(1)) f.alive = false;
       Object.assign(s.cities[n], { troops: 1500, def: 50 }); s.turn = turn; CFG.sg.eventChance = 0;
       try { runTurn(s, { [a]: { cmd: 'march', to: n, n: 2000 } }); } finally { CFG.sg.eventChance = 0.55; }
@@ -413,7 +413,8 @@ describe('orders (one per officer, v0.8)', () => {
     expect(s.factions[0].gold).not.toBe(g0);
     // searching long enough finds the blind boxes hidden in the city
     const before = factionGens(s, 0).length;
-    for (let i = 0; i < 12; i++) runTurn(s, { [a]: { cmd: 'search' } });
+    const wise = [a, b].sort((x, y) => GENERALS[y].int - GENERALS[x].int)[0]; // v1.2: a dull officer finds next to nothing
+    for (let i = 0; i < 24; i++) runTurn(s, { [wise]: { cmd: 'search' } });
     expect(factionGens(s, 0).length).toBeGreaterThan(before);
     check(s);
     // two officers in one city both act in the same month
@@ -741,6 +742,7 @@ describe('万锦群英传 v1.1', () => {
       E.beginTurn(t2, { [agent]: { cmd: 'poach', g: officer } });
       const e = t2.events.find((x) => x.k === 'poach' && x.f === 0);
       if (!e) continue; // the computer moved him away first
+      expect(e.who).toBe(officer); expect(e.g).toBe(agent); expect(e.t).toBe(t2.turn); // `t` is the turn stamp on every event
       expect(t2.factions[0].gold).toBeLessThan(gold);
       if (e.ok) { ok++; expect(t2.gens[officer].f).toBe(0); expect(t2.gens[officer].c).toBe(cap); } else { no++; expect(t2.gens[officer].f).toBe(1); expect(t2.gens[officer].loyal).toBe(20 + CFG.sg.poachSpurned); }
     }
@@ -755,5 +757,78 @@ describe('万锦群英传 v1.1', () => {
     }
     expect(items).toBeGreaterThan(5);
     expect(poach).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------- v1.2: 文武差距, difficulty, biographies (D-102..D-105)
+describe('万锦群英传 v1.2', () => {
+  it('weak stats are stretched down, strong ones are untouched', async () => {
+    const { spreadStat, WEAK_AT } = await import('../../js/sg_data.js');
+    expect(spreadStat(100)).toBe(100); expect(spreadStat(WEAK_AT)).toBe(WEAK_AT); expect(spreadStat(30)).toBe(10); expect(spreadStat(0)).toBe(5);
+    for (const g of Object.values(GENERALS)) for (const k of ['lead', 'war', 'int', 'pol']) {
+      expect(g[k]).toBe(spreadStat(g.base[k]));
+      expect(g[k]).toBeGreaterThanOrEqual(5); expect(g[k]).toBeLessThanOrEqual(100);
+    }
+    expect(GENERALS.zhangfei.war).toBe(98); expect(GENERALS.zhangfei.int).toBeLessThan(15);
+    expect(GENERALS.zhugeliang.int).toBe(100); expect(GENERALS.zhugeliang.war).toBeLessThan(30);
+  });
+  it("a 文官 and a 武将 are far apart at each other's work", () => {
+    const s = E.newGame(1); E.loadMap(s);
+    // 内政 by 政治, 搜索 by 智力, costs by 政治
+    expect(E.devAmt(s, 0, 'xunyu')).toBeGreaterThan(E.devAmt(s, 0, 'zhangfei') * 8);
+    expect(E.searchChance(s, 0, 'zhugeliang')).toBeGreaterThan(E.searchChance(s, 0, 'lvbu') * 6);
+    expect(E.costOf('dev', 'lvbu')).toBeGreaterThan(E.costOf('dev', 'xiaohe') * 2);
+    // 征兵 and troops led by 统率, fighting by 武力
+    expect(E.draftAmt('guanyu')).toBeGreaterThan(E.draftAmt('xunyu') * 2.5);
+    expect(E.commandOf('guanyu')).toBeGreaterThan(E.commandOf('xunyu') * 2);
+    expect(E.statMul(['lvbu'])).toBeGreaterThan(E.statMul(['xunyu']) * 10);
+    // every curve rises with its stat
+    const ids = Object.keys(GENERALS), by = (k) => [...ids].sort((a, b) => GENERALS[a][k] - GENERALS[b][k]);
+    const mono = (list, f) => list.every((id, i) => i === 0 || f(id) >= f(list[i - 1]) - 1e-9);
+    expect(mono(by('lead'), (id) => E.commandOf(id))).toBe(true);
+    expect(mono(by('pol'), (id) => -E.costOf('dev', id))).toBe(true);
+  });
+  it('three difficulty levels: grace, aggression, and how well the computer runs its lands', () => {
+    expect(E.DIFFS).toEqual(['normal', 'hard', 'hell']);
+    expect(E.newGame(3).diff).toBe(CFG.sg.diffDefault);
+    expect(E.newGame(3, { diff: 'nonsense' }).diff).toBe(CFG.sg.diffDefault);
+    const n = E.newGame(3, { diff: 'normal' }), h = E.newGame(3, { diff: 'hell' });
+    expect(E.D(n).grace).toBeGreaterThan(E.D(h).grace); expect(E.D(n).attack).toBeGreaterThan(E.D(h).attack);
+    // the player's own start is the same at every level; the computer's is not
+    expect(n.cities[n.factions[0].cap].troops).toBe(h.cities[h.factions[0].cap].troops);
+    expect(h.cities[h.factions[1].cap].troops).toBeGreaterThan(n.cities[n.factions[1].cap].troops);
+    // nobody attacks the player during the grace months, at any level
+    for (const diff of E.DIFFS) {
+      const s = E.newGame(11, { map: 'random', diff }), cap = s.factions[0].cap;
+      for (let m = 0; m < E.D(s).grace - 1; m++) E.runTurn(s, {});
+      expect(s.cities[cap].owner).toBe(0);
+      expect(s.log.some((e) => (e.k === 'take' || e.k === 'repel') && e.c === cap)).toBe(false);
+    }
+    // harder levels beat the same automatic player more often
+    const wins = (diff) => { let w = 0; for (let seed = 1; seed <= 60; seed++) { const s = E.newGame(seed, { map: 'random', roster: 'mix', diff }); for (let m = 0; m < 300 && !s.over; m++) E.runTurn(s, E.autoPlayer(s)); if (s.over === 'win') w++; } return w; };
+    expect(wins('normal')).toBeGreaterThan(wins('hell'));
+  });
+  it('officers sent together leave as one army', () => {
+    const s = E.newGame(5), cap = s.factions[0].cap, [a, b] = E.factionGens(s, 0);
+    for (const f of s.factions.slice(1)) f.alive = false;
+    const to = E.marchTargets(s, 0, cap).find((n) => E.validOrder(s, 0, a, { cmd: 'march', to: n }));
+    E.beginTurn(s, { [a]: { cmd: 'march', to, n: 1000 }, [b]: { cmd: 'march', to, n: 800 } });
+    const ev = s.events.filter((e) => e.k === 'march' && e.f === 0);
+    expect(ev.length).toBe(2);
+    expect(ev[0].n + ev[1].n).toBe(1800);
+    // one army (still on the road) or one battle (it arrived this month), never two
+    const onRoad = s.armies.filter((x) => x.f === 0 && x.to === to);
+    expect(onRoad.length).toBeLessThanOrEqual(1);
+    if (onRoad.length) { expect([...onRoad[0].gens].sort()).toEqual([a, b].sort()); expect(onRoad[0].troops).toBe(1800); }
+    expect(s.gens[a].c).toBe(null); expect(s.gens[b].c).toBe(null);
+  });
+  it('every officer has an introduction in both languages', async () => {
+    const { BIOS } = await import('../../js/sg_bios.js');
+    for (const id of Object.keys(GENERALS)) {
+      expect(BIOS[id], id).toBeTruthy();
+      expect(BIOS[id][0].length, id).toBeGreaterThan(8); expect(BIOS[id][0].length, id).toBeLessThan(70);
+      expect(BIOS[id][1].length, id).toBeGreaterThan(20); expect(/[一-鿿]/.test(BIOS[id][1]), id).toBe(false);
+    }
+    expect(Object.keys(BIOS).length).toBe(Object.keys(GENERALS).length);
   });
 });

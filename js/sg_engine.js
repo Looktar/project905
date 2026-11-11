@@ -37,6 +37,10 @@ function shuffle(s, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math
 // ---------------------------------------------------------------- the board of this game
 // The data tables (CITIES, ADJ, ...) describe one map at a time; every entry point switches them to the
 // map of the state it is given, so several games (tests, a save next to a new game) never mix up.
+// v1.2 (D-103): how hard the computer lords are in this game (CFG.sg.diff): months of grace, the odds they
+// want before attacking, and how much better than you they run their lands
+export const DIFFS = ['normal', 'hard', 'hell'];
+export const D = (s) => K().diff[(s && s.diff) || K().diffDefault] || K().diff[K().diffDefault];
 let CUR = null; // the game being played: treasures change an officer's stats, so gen() has to know whose game it is
 export function loadMap(s) { CUR = s; if (s.map && s.map.key !== currentMapKey()) useMap(s.map); return s; }
 
@@ -244,7 +248,7 @@ export function drawRoster(s, mode) {
 export function newGame(seed = Date.now(), opts = {}) {
   const k = K(), names = opts.names || {};
   const map = opts.map === 'random' ? genMap(seed) : CLASSIC;
-  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {}, map, armies: [], nextArmy: 1 };
+  const s = { v: SAVE_V, seed: seed >>> 0, r: seed >>> 0, turn: 0, factions: [], cities: {}, gens: {}, coalition: null, over: null, log: [], queue: [], phase: 'orders', orders: {}, map, armies: [], nextArmy: 1, diff: DIFFS.includes(opts.diff) ? opts.diff : k.diffDefault };
   loadMap(s);
   rnd(s);
   // starting cities: four, pairwise at least 2 roads apart
@@ -269,7 +273,7 @@ export function newGame(seed = Date.now(), opts = {}) {
   for (let f = 0; f < 4; f++) {
     const drawn = [pool.pop(), pool.pop()], cap = starts[f];
     s.factions.push({ id: f, player: f === PLAYER, lord: f === PLAYER ? null : drawn[0], name: f === PLAYER ? (names.player || null) : null, color: FACTION_COLORS[f], cap, alive: true, gold: k.startGold, food: k.startFood });
-    Object.assign(s.cities[cap], { owner: f, troops: k.startTroops, dev: 50, def: 60 });
+    Object.assign(s.cities[cap], { owner: f, troops: Math.round(k.startTroops * (f !== PLAYER ? D(s).start : 1)), dev: 50, def: 60 });
     for (const id of drawn) s.gens[id] = { id, f, c: cap, hidden: false, loyal: 85 + fx(id, 'loyal') };
   }
   // everyone else hides somewhere in Markham (cities only): the blind boxes found by searching
@@ -345,13 +349,14 @@ export function plotChance(s, id, c) {
   return Math.max(0.1, Math.min(k.plotMax, k.plotBase + (gen(id).int - dInt) * k.plotInt + fx(id, 'plot')));
 }
 // v0.9.5 (D-82): a good administrator (政治) gets things done for less: x1.15 at 政治 20 down to x0.75 at 100
-export const costOf = (cmd, id) => (COST[cmd] ? Math.round(K()[COST[cmd]] * (id && GENERALS[id] ? Math.min(1.2, Math.max(0.7, 1.25 - gen(id).pol / 200)) : 1)) : 0);
+export const costOf = (cmd, id) => (COST[cmd] ? Math.round(K()[COST[cmd]] * (id && GENERALS[id] ? Math.min(K().costMax, Math.max(K().costMin, K().costMax - gen(id).pol * K().costPerPol)) : 1)) : 0);
 export const orderCost = (o, id) => (o && COST[o.cmd] ? costOf(o.cmd, id) : 0);
-// what an officer would achieve (the numbers the order buttons show, and what runOrder does)
-export function devAmt(s, f, id) { const k = K(); return Math.round((k.devBase + gen(id).pol * k.devPerPol) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev'))); }
-export function draftAmt(id) { const k = K(); return Math.round((k.draftBase + gen(id).lead * k.draftPerLead) * (1 + fx(id, 'draft'))); }
-export function searchChance(s, f, id) { const k = K(); return Math.min(0.95, k.searchBase + gen(id).int * k.searchPerInt + fx(id, 'search') + bondFx(s, f, [id], 'search')); }
-export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + Math.max(G.lead, G.pol) * k.fortPerStat + (fx(id, 'def') > 0 ? 4 : 0)); }
+// what an officer would achieve (the numbers the order buttons show, and what runOrder does).
+// v1.2 (D-102): the curves are squares of the stat, so a 文官 and a 武将 are far apart at each other's work
+export function devAmt(s, f, id) { const k = K(); return Math.round((k.devBase + k.devMax * (gen(id).pol / 100) ** k.effExp) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev'))); }
+export function draftAmt(id) { const k = K(); return Math.round((k.draftBase + k.draftMax * (gen(id).lead / 100) ** k.effExp) * (1 + fx(id, 'draft'))); }
+export function searchChance(s, f, id) { const k = K(); return Math.min(0.95, k.searchBase + k.searchMax * (gen(id).int / 100) ** k.searchExp + fx(id, 'search') + bondFx(s, f, [id], 'search')); }
+export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + k.fortMax * (Math.max(G.lead, G.pol) / 100) ** k.effExp + (fx(id, 'def') > 0 ? 4 : 0)); }
 // v0.9.6 (D-83, the 总决策's rule): an army fights in proportion to its 武力 (the best one at its head),
 // so with the same troops the side with the higher 武力 always wins; 统率 decides how many troops an
 // officer can lead (commandOf). A garrison without officers fights at neutralStat.
@@ -396,7 +401,7 @@ function runOrder(s, f, id, o) {
     fa.gold -= costOf('dev', id); city.dev = Math.min(100, city.dev + amt);
     ev(s, { k: 'dev', f, c, g: id, n: amt });
   } else if (o.cmd === 'draft') {
-    const amt = Math.min(capOf(city) - city.troops, draftAmt(id));
+    const amt = Math.min(capOf(city) - city.troops, Math.round(draftAmt(id) * (f !== PLAYER ? D(s).draft : 1)));
     fa.gold -= costOf('draft', id); city.troops += amt;
     ev(s, { k: 'draft', f, c, g: id, n: amt });
   } else if (o.cmd === 'search') {
@@ -438,7 +443,7 @@ function runOrder(s, f, id, o) {
     fa.gold -= costOf('poach', id);
     if (ok) { Object.assign(T, { f, c, hidden: false, guard: false, loyal: 70 }); fixLord(s, from); }
     else T.loyal = Math.min(100, (T.loyal ?? 70) + k.poachSpurned);
-    ev(s, { k: 'poach', f, c, g: id, t: o.g, from, ok });
+    ev(s, { k: 'poach', f, c, g: id, who: o.g, from, ok }); // not `t`: ev() stamps the turn there (that slip froze the month-end report in v1.1)
   } else if (o.cmd === 'move' || o.cmd === 'march') {
     // the officer sets off with his troops; a short road takes one month (he arrives this month)
     const march = o.cmd === 'march';
@@ -479,7 +484,7 @@ export function aiOrders(s, f, opts = {}) {
   const free = (c) => byLead(gensIn(s, c, f).filter((g) => !out[g] && !skip.has(g)));
   const mine = ownedBy(s, f);
   const hostile = (o) => o >= 0 && o !== f && !isAlly(s, f, o);
-  const enemy = (o) => o !== f && !isAlly(s, f, o) && !(o === PLAYER && s.turn < k.truce);
+  const enemy = (o) => o !== f && !isAlly(s, f, o) && !(o === PLAYER && s.turn < D(s).grace);
   const inbound = (c) => s.armies.filter((a) => a.to === c && hostile(a.f)).reduce((x, a) => x + a.troops, 0);
   const threatOf = (c) => Math.max(inbound(c), ...ADJ[c].map(({ c: n }) => (hostile(s.cities[n].owner) ? s.cities[n].troops : 0)));
   const enRoute = new Set(s.armies.filter((a) => a.f === f).map((a) => a.to));
@@ -492,7 +497,7 @@ export function aiOrders(s, f, opts = {}) {
   // attacks: every neighbouring node of ours may join in (armies merge), up to two targets a month
   const used = new Set();
   // a rich lord, or one of the last two, gets bolder (no endless stand-offs between full cities)
-  const thr = k.aiAttack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
+  const thr = D(s).attack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
   for (let n = 0; war && n < 2; n++) {
     let pick1 = null;
     const targets = new Set();
@@ -944,8 +949,8 @@ export function endTurn(s) {
       C.def = Math.min(defMaxOf(C), C.def + (C.pass ? k.passDefRegen : k.defRegen));
       if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
       else if (!C.pass) {
-        fa.gold += Math.round(k.goldBase + C.dev * k.goldPerDev);
-        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)));
+        fa.gold += Math.round((k.goldBase + C.dev * k.goldPerDev) * (fa.id !== PLAYER ? D(s).gold : 1));
+        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)) * (fa.id !== PLAYER ? D(s).food : 1));
         fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
       }
       troops += C.troops;
@@ -961,7 +966,7 @@ export function endTurn(s) {
   }
   // the coalition: when one lord holds half of Markham, the others stop fighting each other
   const alive = s.factions.filter((f) => f.alive);
-  const lead = alive.find((f) => citiesOf(s, f.id).length >= k.coalitionAt);
+  const lead = alive.find((f) => citiesOf(s, f.id).length >= (f.id === PLAYER ? D(s).coalition : k.coalitionAt));
   const L = lead && alive.length >= 3 ? lead.id : null;
   if (L !== s.coalition) { ev(s, { k: L === null ? 'coalitionEnd' : 'coalition', f: L === null ? s.coalition : L }); s.coalition = L; }
   // armies still on the road: one month nearer (the armies of a fallen lord have broken up)

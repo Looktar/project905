@@ -10,6 +10,7 @@ import * as sfx from './audio.js';
 import { ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
 import { drawCity, cityKind } from './sg_art.js';
+import { BIOS } from './sg_bios.js';
 
 extend({
   sgStart: '⚔ 万锦群英传', sgTitle: '万锦群英传', sgDateMix: '群英{y}年 {m}月', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
@@ -77,6 +78,16 @@ extend({
   sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are about reading your opponent (below).\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: each round your opponent takes a stance first and you answer it (Strike beats Special, Special breaks Guard, Guard stops Strike and counters). If your INT is no lower than his, the stance is real; a cleverer opponent sometimes feints. WAR sets the damage, and a gap of 25 or more ends it in one blow; LEAD gives stamina and spirit, and a Special costs 50 spirit. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
+// v1.2 (D-102..D-105): difficulty, marching together, a safety net
+extend({
+  sgDiffQ: '电脑君主有多强？', sgDiff_normal: '普通', sgDiff_hard: '困难', sgDiff_hell: '地狱',
+  sgDiffS_normal: '和以前一样：开局 6 个月不打你', sgDiffS_hard: '更早动手、兵更多、发展更快，你占到 5 城就会被围攻', sgDiffS_hell: '开局兵力是你的 1.5 倍，3 个月后就来，占 4 城就被围攻',
+  sgHelpV12: '文官和武将（v1.2）：能力低的一项现在更低，办事效果按能力的平方算。政治高的内政快、花钱少；统率高的征兵多、带兵多；智力高的搜索准；武力决定打仗。让合适的人做合适的事。\n\n出征和调动可以勾选同城的其他武将一起去，合成一军。难度在“重新开局”时选。', sgWith: '同行武将（可多选，一起出发、合成一军）', sgWithMove: '一起调动（可多选）', sgWithLeft: '{g} 兵不够，留下了', sgOops: '刚才出了点小问题，这个月的动画已跳过', sgDiffNow: '难度：{d}',
+}, {
+  sgDiffQ: 'How strong are the computer lords?', sgDiff_normal: 'Normal', sgDiff_hard: 'Hard', sgDiff_hell: 'Hell',
+  sgDiffS_normal: 'As before: nobody attacks you for 6 months', sgDiffS_hard: 'They move sooner, with more troops and faster growth, and unite against you at 5 cities', sgDiffS_hell: '1.5x your starting troops, on you after 3 months, united against you at 4 cities',
+  sgHelpV12: 'Ministers and warriors (v1.2): weak stats are now weaker, and what an officer achieves grows with the square of his stat. Politics builds faster and cheaper; leadership drafts and leads more; intellect searches better; war wins battles. Give each job to the right person.\n\nWhen attacking or moving you can tick other officers of the same city to go along as one army. Difficulty is chosen when you start a new game.', sgWith: 'Marching with (pick any; they leave together as one army)', sgWithMove: 'Moving with (pick any)', sgWithLeft: '{g} has too few troops and stays', sgOops: 'Something went wrong; the rest of this month was played without the show', sgDiffNow: 'Difficulty: {d}',
+});
 // v1.1 (D-97, D-98): treasures, envoys, poaching, the first-game guide
 extend({
   sgPoach: '挖角', sgPoachS: '策反邻城敌将', sgEnvoy: '停战', sgEnvoyS: '派使者，停战 {n} 个月', sgPickGen: '选要挖的敌将（只能挖邻城的，君主挖不动）', sgPickLord: '选要停战的君主', sgNoTarget: '现在没有可选的对象',
@@ -107,8 +118,9 @@ const $ = (id) => document.getElementById(id);
 const zh = () => getLang() === 'zh';
 const F = (k, p = {}) => t(k).replace(/\{(\w+)\}/g, (_, x) => (p[x] ?? ''));
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const gName = (id) => (zh() ? GENERALS[id].zh : GENERALS[id].en);
-const cName = (id) => (zh() ? CITIES[id].zh : CITIES[id].en);
+// a name that is not there must never take the screen down with it (v1.2)
+const gName = (id) => (GENERALS[id] ? (zh() ? GENERALS[id].zh : GENERALS[id].en) : '?');
+const cName = (id) => (CITIES[id] ? (zh() ? CITIES[id].zh : CITIES[id].en) : '?');
 const KCOL = { shu: '#2f8f4e', wei: '#2f5fae', wu: '#c0392b', qun: '#6b4f8a', xq: '#8a6d3b', qh: '#a8552a', st: '#b8860b', sy: '#2e7d7a', mq: '#b03a5b' };
 const kNum = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
 const MOVES = { atk: 'sgAtk', def: 'sgDefM', skill: 'sgSkill' };
@@ -144,6 +156,7 @@ function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span cla
 // a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
 // rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
 const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
+const bio = (id) => (BIOS[id] ? `<p class="sgBio">${esc(BIOS[id][zh() ? 0 : 1])}</p>` : '');
 const iName = (i) => (zh() ? ITEMS[i].zh : ITEMS[i].en);
 const FXK = { lead: 'itLead', war: 'itWar', int: 'itInt', pol: 'itPol', hp: 'itHp', sp: 'itSp' };
 export const itemFxText = (i) => Object.entries(ITEMS[i].fx).map(([k, v]) => `${t(FXK[k])} +${v}`).join(' · ');
@@ -213,7 +226,7 @@ export class Sanguo {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
     const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
-    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random', roster: this.nextRoster || 'mix' }); // a new board every game (D-77), its own officers (D-87)
+    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random', roster: this.nextRoster || 'mix', diff: this.nextDiff || this.lastDiff() }); // a new board every game (D-77), its own officers (D-87)
     E.loadMap(s);
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
@@ -265,8 +278,8 @@ export class Sanguo {
       if (p >= 1) { this.tween = null; this.clamp(); }
     }
     this.shake *= 0.88;
-    this.draw();
-    requestAnimationFrame(() => this.loop());
+    try { this.draw(); } catch (err) { if (!this.drawErr) { this.drawErr = true; console.error('sg draw:', err); } }
+    requestAnimationFrame(() => this.loop()); // one bad frame must not stop the map (and every wait that counts on it)
   }
   zoomAt(f, x = this.ox, y = this.oy) {
     const s = Math.min(this.sMax, Math.max(this.sMin, this.k * f));
@@ -621,6 +634,9 @@ export class Sanguo {
         else if (m.kind === 'envoy') h += `<p class="sgPick">${t('sgPickLord')}</p><div class="sgChips">${st.factions.filter((x) => x.id !== E.PLAYER && x.alive && !E.truceLeft(st, E.PLAYER, x.id)).map((x) => `<button data-g="${id}" data-ef="${x.id}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'envoy', f: x.id }) ? '' : 'disabled'}><span class="sgDot" style="background:${x.color}"></span>${esc(this.fName(x.id))} <small>${F('sgChance', { n: Math.round(E.envoyChance(st, E.PLAYER, id, x.id) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
         else if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m) {
+        // v1.2 (D-104): take other officers of this city along; they get the same order and leave as one army
+        const mates = gs.filter((x) => x !== id);
+        if (mates.length && (m.cmd === 'march' || m.cmd === 'move')) h += `<p class="sgPick">${t(m.cmd === 'march' ? 'sgWith' : 'sgWithMove')}</p><div class="sgChips sgWith">${mates.map((x) => `<button data-g="${id}" data-with="${x}" class="${(m.with || []).includes(x) ? 'on' : ''}">${(m.with || []).includes(x) ? '✓ ' : ''}${esc(gName(x))} <small>${zh() ? '统' : 'L'}${E.gen(x).lead} ${zh() ? '武' : 'W'}${E.gen(x).war}</small></button>`).join('')}</div>`;
         h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(this.lastHop(c, n), n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
         const av = Math.min(E.commandOf(id), this.avail(c, id)), opts = o.cmd === 'move' ? [0, 0.5, 1] : [0.5, 0.8, 1]; // 统率 caps the troops
@@ -648,6 +664,7 @@ export class Sanguo {
     const id = b.dataset.g;
     if (!c || !id || !st.gens[id]) return;
     if (b.dataset.kind && this.mode && this.mode.id === id) { this.mode.kind = b.dataset.kind; this.mode.targets = E.PLOTS.includes(b.dataset.kind) ? this.mode.cities : []; this.render(); return; }
+    if (b.dataset.with && this.mode && this.mode.id === id) { const w = this.mode.with || (this.mode.with = []), x = b.dataset.with, k = w.indexOf(x); if (k >= 0) w.splice(k, 1); else w.push(x); this.render(); return; }
     if (b.dataset.pg) { st.orders[id] = { cmd: 'poach', g: b.dataset.pg }; this.mode = null; this.render(); return; }
     if (b.dataset.ef) { st.orders[id] = { cmd: 'envoy', f: +b.dataset.ef }; this.mode = null; this.render(); return; }
     if (b.dataset.army) { const av = Math.min(E.commandOf(id), this.avail(c, id)); st.orders[id] = { cmd: 'intercept', army: +b.dataset.army, n: Math.floor(av * 0.8) }; this.mode = null; this.render(); return; }
@@ -664,8 +681,8 @@ export class Sanguo {
       } else if (cmd === 'march' || cmd === 'move') {
         const targets = (cmd === 'march' ? E.marchTargets(st, E.PLAYER, c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n })) : E.moveTargets(st, E.PLAYER, c)).sort((a, b) => E.travelMonths(E.routeOf(st, E.PLAYER, c, a)) - E.travelMonths(E.routeOf(st, E.PLAYER, c, b)));
         delete st.orders[id];
-        this.mode = { id, c, cmd, targets };
-        if (targets.length === 1) { this.setTarget(targets[0]); return; }
+        this.mode = { id, c, cmd, targets, with: [] };
+        if (targets.length === 1 && E.gensIn(st, c, E.PLAYER).length < 2) { this.setTarget(targets[0]); return; } // alone with one place to go: no need to ask
       } else st.orders[id] = { cmd };
       this.render(); return;
     }
@@ -675,6 +692,17 @@ export class Sanguo {
   setTarget(to) {
     const st = this.s, m = this.mode, av = this.avail(m.c, m.id);
     st.orders[m.id] = m.cmd === 'plot' ? { cmd: 'plot', kind: m.kind || 'rumor', to } : { cmd: m.cmd, to, n: m.cmd === 'march' ? Math.floor(Math.min(E.commandOf(m.id), av) * 0.8) : 0 };
+    // the officers picked to come along get the same order, each with his share of what is left (v1.2, D-104)
+    if (m.cmd === 'march' || m.cmd === 'move') {
+      const left = [];
+      for (const w of m.with || []) {
+        if (!st.gens[w] || st.gens[w].c !== m.c) continue;
+        const o = { cmd: m.cmd, to, n: m.cmd === 'march' ? Math.floor(Math.min(E.commandOf(w), this.avail(m.c, w)) * 0.8) : 0 };
+        if ((m.cmd === 'march' && o.n < CFG.sg.minMarch) || !E.validOrder(st, E.PLAYER, w, o)) { left.push(gName(w)); continue; }
+        st.orders[w] = o;
+      }
+      if (left.length) this.toast(F('sgWithLeft', { g: left.join(zh() ? '、' : ', ') }));
+    }
     this.sel = m.c; this.mode = null; this.render();
   }
   autoAssign() {
@@ -692,39 +720,78 @@ export class Sanguo {
   }
 
   // ---------------------------------------------------------------- the month
+  // v1.2: nothing a card or an animation does may leave the game locked. Every wait on the screen goes through
+  // ui(): an error in it is logged and skipped, and a wait whose card has vanished is given up after a few seconds.
+  async ui(fn, fallback = null) {
+    let timer = 0;
+    try {
+      return await Promise.race([
+        Promise.resolve().then(fn),
+        new Promise((res) => {
+          let idle = 0;
+          timer = setInterval(() => {
+            const shown = $('sgLayer').classList.contains('show');
+            idle = shown || this.tween ? 0 : idle + 1;
+            if (idle >= 16) res(fallback); // 8 s with no card and no camera move: whatever we waited for is gone
+          }, 500);
+        }),
+      ]);
+    } catch (err) {
+      console.error('sg ui:', err);
+      const L = $('sgLayer'); L.className = ''; L.innerHTML = '';
+      return fallback;
+    } finally { clearInterval(timer); }
+  }
   async endMonth() {
     if (this.busy) return;
     const st = this.s;
     this.busy = true; this.mode = null;
     this.skipFx = false;
-    sfx.drum(2); sfx.setBgmMood('battle'); // the music quickens while the month's battles play
-    E.beginTurn(st, st.orders);
-    for (let b = E.nextBattle(st); b; b = E.nextBattle(st)) {
-      const to = b.m.to, mine = b.m.field ? b.m.f === E.PLAYER || b.m.fb === E.PLAYER : b.m.f === E.PLAYER || st.cities[to].owner === E.PLAYER, fd = b.m.field ? b.m.fb : st.cities[to].owner;
-      if (mine) await this.battleIntro(b);
-      let win = null;
-      if (b.duel) win = b.duel.fa === E.PLAYER || b.duel.fd === E.PLAYER ? await this.duelUI(b.duel) : E.autoDuel(st, b.duel);
-      E.resolveBattle(st, b.m, win, b.duel);
-      const res = [...st.events].reverse().find((e) => (b.m.field ? e.k === 'field' : e.k === 'take' || e.k === 'repel') && e.c === to);
-      if (mine && b.m.rounds) await this.battleScreen(b, res, fd);
-      if (mine) await this.battleResult(b, res, fd);
-      else this.fx.push({ type: 'puff', c: to, at: b.m.at, t0: performance.now(), dur: 900, ca: this.fColor(b.m.f) });
+    let ended = false, evs = [];
+    try {
+      try { sfx.drum(2); sfx.setBgmMood('battle'); } catch (e) { /* sound must never stop the month */ }
+      E.beginTurn(st, st.orders);
+      for (let b = E.nextBattle(st); b; b = E.nextBattle(st)) {
+        const to = b.m.to, mine = b.m.field ? b.m.f === E.PLAYER || b.m.fb === E.PLAYER : b.m.f === E.PLAYER || st.cities[to].owner === E.PLAYER, fd = b.m.field ? b.m.fb : st.cities[to].owner;
+        if (mine) await this.ui(() => this.battleIntro(b));
+        let win = null;
+        if (b.duel) {
+          const yours = b.duel.fa === E.PLAYER || b.duel.fd === E.PLAYER;
+          if (yours) win = await this.ui(() => this.duelUI(b.duel), undefined);
+          if (!yours || win === undefined || !b.duel.done) win = E.autoDuel(st, b.duel);
+        }
+        E.resolveBattle(st, b.m, win, b.duel);
+        const res = [...st.events].reverse().find((e) => (b.m.field ? e.k === 'field' : e.k === 'take' || e.k === 'repel') && e.c === to);
+        if (mine && b.m.rounds && res) await this.ui(() => this.battleScreen(b, res, fd));
+        if (mine && res) await this.ui(() => this.battleResult(b, res, fd));
+        else if (!mine) this.fx.push({ type: 'puff', c: to, at: b.m.at, t0: performance.now(), dur: 900, ca: this.fColor(b.m.f) });
+      }
+      evs = E.endTurn(st); ended = true;
+      st.orders = {};
+      for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.ui(() => this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) })));
+      for (const e of evs) if (e.k === 'item' && e.f === E.PLAYER) await this.ui(() => this.itemReveal(e));
+      this.render();
+      await this.ui(() => this.report(evs));
+      try { sfx.setBgmMood('calm'); } catch (e) { /* ignore */ }
+      if (st.over) await this.ui(() => this.gameOver());
+    } catch (err) {
+      // the rules themselves failed part-way: finish the month without the show so the game can go on
+      console.error('sg month:', err);
+      try {
+        if (!ended) { for (let b = E.nextBattle(st), n = 0; b && n < 200; b = E.nextBattle(st), n++) E.resolveBattle(st, b.m, b.duel ? E.autoDuel(st, b.duel) : null, b.duel); E.endTurn(st); st.orders = {}; }
+      } catch (e2) { console.error('sg month recovery:', e2); }
+      const L = $('sgLayer'); L.className = ''; L.innerHTML = '';
+      this.toast(t('sgOops'));
+    } finally {
+      this.busy = false; this.tween = null;
+      try { this.render(); } catch (e) { console.error(e); }
     }
-    const evs = E.endTurn(st);
-    st.orders = {};
-    for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) }));
-    for (const e of evs) if (e.k === 'item' && e.f === E.PLAYER) await this.itemReveal(e);
-    this.render();
-    await this.report(evs);
-    sfx.setBgmMood('calm');
-    if (st.over) await this.gameOver();
-    this.busy = false; this.render();
   }
 
   // battle playback (v0.9.4): the camera flies to a battle you are in, swords clash, then the result.
   // A tap on the map skips ahead.
   wait(ms) {
-    return new Promise((res) => { const t0 = performance.now(); const tick = () => (this.skipFx || performance.now() - t0 >= ms ? res() : requestAnimationFrame(tick)); tick(); });
+    return new Promise((res) => { const t0 = performance.now(); let done = false; const fin = () => { if (!done) { done = true; res(); } }; const tick = () => { if (done) return; if (this.skipFx || performance.now() - t0 >= ms) fin(); else requestAnimationFrame(tick); }; tick(); setTimeout(fin, ms + 400); });
   }
   async battleIntro(b) {
     const m = b.m, C = m.at || CITIES[m.to], k1 = Math.max(this.k, this.s0 * 1.25);
@@ -806,10 +873,11 @@ export class Sanguo {
         const stat = (l, v) => `${v} <u class="g${grade(v)}">${grade(v)}</u>`;
         L.innerHTML = `<div class="sgCard sgPage"><div class="sgPhead"><button class="sgBack" data-back="1">‹</button><b>${esc(gName(detail))}</b><button class="sgX" data-ok="1">✕</button></div>
           <div class="sgDetail">${tallCard(detail, { big: true })}<div class="sgDlist">
-          ${row(zh() ? '统率' : 'Leadership', stat('', g.lead) + ` · ${zh() ? '带兵' : 'leads'} ≤${kNum(E.commandOf(detail))}`)}
+          ${bio(detail)}
+          ${row(zh() ? '统率' : 'Leadership', stat('', g.lead) + ` · ${zh() ? '带兵' : 'leads'} ≤${kNum(E.commandOf(detail))} · ${zh() ? '征兵' : 'drafts'} +${kNum(E.draftAmt(detail))}`)}
           ${row(zh() ? '武力' : 'War', stat('', g.war) + ` · ${zh() ? '战斗力' : 'fighting'} ×${(g.war / 100).toFixed(2)}`)}
           ${row(zh() ? '智力' : 'Intellect', stat('', g.int) + ` · ${zh() ? '搜索' : 'search'} ${Math.round(E.searchChance(st, P, detail) * 100)}%`)}
-          ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)}`)}
+          ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)} · ${zh() ? '花费' : 'costs'} ×${(E.costOf('dev', detail) / CFG.sg.devCost).toFixed(2)}`)}
           ${row(zh() ? '特技' : 'Trait', `${esc(zh() ? tr[0] : tr[1])} · ${esc(zh() ? tr[2] : tr[3])}`)}
           ${bonds.length ? row(t('sgBonds'), bonds.map((x) => esc(zh() ? x.zh : x.en)).join('、')) : ''}
           ${G.f >= 0 ? row(t('sgLoyal'), `${G.loyal ?? 70} <small>${t('sgLoyalS')}</small>`) : ''}
@@ -855,6 +923,8 @@ export class Sanguo {
     if (!b.shown) sfx.fanfare(youWon);
     await this.wait(b.shown ? 350 : 1100);
   }
+  // one line of the report; a line that cannot be written is left out instead of breaking the report
+  evLine(e) { try { return this.evText(e); } catch (err) { console.error('sg event:', e && e.k, err); return null; } }
   evText(e) {
     const st = this.s, P = E.PLAYER, f = this.fName(e.f ?? -1);
     switch (e.k) {
@@ -864,7 +934,7 @@ export class Sanguo {
       case 'skip': return e.f === P ? F('evSkip', { g: gName(e.g) }) : null;
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });
       case 'item': return e.f === P ? F('evItem', { c: cName(e.c), g: gName(e.g), i: iName(e.item) }) : F('evItemAI', { f, c: cName(e.c), i: iName(e.item) });
-      case 'poach': return e.ok ? (e.from === P ? F('evPoachedYou', { t: gName(e.t), f }) : F('evPoachOk', { g: gName(e.g), t: gName(e.t), from: this.fName(e.from), f })) : e.f === P || e.from === P ? F('evPoachNo', { g: gName(e.g), t: gName(e.t) }) : null;
+      case 'poach': return e.ok ? (e.from === P ? F('evPoachedYou', { t: gName(e.who), f }) : F('evPoachOk', { g: gName(e.g), t: gName(e.who), from: this.fName(e.from), f })) : e.f === P || e.from === P ? F('evPoachNo', { g: gName(e.g), t: gName(e.who) }) : null;
       case 'truce': return e.ok ? F('evTruceOk', { g: gName(e.g), f, to: this.fName(e.to), n: e.n }) : e.f === P ? F('evTruceNo', { g: gName(e.g), to: this.fName(e.to) }) : null;
       case 'truceEnd': return e.f === P || e.to === P ? F('evTruceEnd', { f, to: this.fName(e.to) }) : null;
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
@@ -896,14 +966,16 @@ export class Sanguo {
   }
   layer(html, cls = '') {
     const L = $('sgLayer');
+    if (this.layerDrop) this.layerDrop(); // a card still waiting gives way (v1.2: it used to wait for ever)
     L.className = 'show ' + cls; L.innerHTML = `<div class="sgCard">${html}</div>`;
     return new Promise((res) => {
-      const h = (e) => { const b = e.target.closest('[data-ok]'); if (!b) return; L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; res(b.dataset.ok); };
+      const h = (e) => { const b = e.target.closest('[data-ok]'); if (!b) return; L.removeEventListener('click', h); this.layerDrop = null; L.className = ''; L.innerHTML = ''; res(b.dataset.ok); };
+      this.layerDrop = () => { L.removeEventListener('click', h); this.layerDrop = null; res(null); };
       L.addEventListener('click', h);
     });
   }
   async report(evs) {
-    const lines = evs.map((e) => [e, this.evText(e)]).filter(([, x]) => x);
+    const lines = evs.map((e) => [e, this.evLine(e)]).filter(([, x]) => x);
     const imp = (e) => ['take', 'fall', 'coalition', 'coalitionEnd', 'duel', 'cut', 'hunger', 'found', 'recruit', 'event', 'harvest', 'plot', 'item', 'poach', 'truce', 'truceEnd'].includes(e.k);
     await this.layer(`<h2>${t('sgReport')} · ${dateText({ turn: this.s.turn - 1 })}</h2>
       <ul class="sgEv">${lines.length ? lines.map(([e, x]) => `<li class="${imp(e) ? 'imp' : ''}${e.f === E.PLAYER ? ' me' : ''}">${esc(x)}</li>`).join('') : `<li>${t('sgQuiet')}</li>`}</ul>
@@ -911,14 +983,14 @@ export class Sanguo {
   }
   showLog() {
     if (this.busy) return;
-    const lines = [...this.s.log].reverse().map((e) => [e, this.evText(e)]).filter(([, x]) => x);
+    const lines = [...this.s.log].reverse().map((e) => [e, this.evLine(e)]).filter(([, x]) => x);
     this.layer(`<h2>${t('sgLog')}<button class="sgX" data-ok="1">✕</button></h2><ul class="sgEv">${lines.map(([e, x]) => { const d = E.dateOf({ turn: e.t }); return `<li><small>${d.year}.${d.month}</small> ${esc(x)}</li>`; }).join('') || `<li>${t('sgQuiet')}</li>`}</ul>`);
   }
   reveal(g, title, line) {
     const tr = tierOf(g);
     sfx.sparkle(); if (tr === 'UR' || tr === 'SSR') setTimeout(() => sfx.fanfare(true), 350);
     const bonds = BONDS.filter((b) => b.m.includes(g)).map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)}：${b.m.map((x) => esc(gName(x))).join(' · ')}</div>`).join('');
-    return this.layer(`<h2 class="sgCenter">${esc(title)}</h2><div class="sgReveal">${portrait(g, 96)}<div><div class="sgBigName">${esc(gName(g))}</div>${statBars(g)}<div class="sgTrw">${traitTag(g)}</div>${bonds}</div></div>
+    return this.layer(`<h2 class="sgCenter">${esc(title)}</h2><div class="sgReveal">${portrait(g, 96)}<div><div class="sgBigName">${esc(gName(g))}</div>${statBars(g)}<div class="sgTrw">${traitTag(g)}</div>${bonds}${bio(g)}</div></div>
       <p class="sgCenter">${esc(line)}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip r' + tr);
   }
   // a treasure blind box (v1.1): the card flips over like an officer's
@@ -1036,22 +1108,28 @@ export class Sanguo {
     await this.layer(`<h2 class="sgCenter sgBigName">${t(win ? 'sgWin' : 'sgLose')}</h2><p class="sgCenter">${esc(F(win ? 'sgWinS' : 'sgLoseS', { n: st.turn }))}</p><button class="sgBig" data-ok="1">${t('sgAgain')}</button>`);
     this.newGame(false);
   }
+  lastDiff() { let d = null; try { d = localStorage.getItem('p905sgdiff'); } catch (e) { /* ignore */ } return E.DIFFS.includes(d) ? d : CFG.sg.diffDefault; }
   async newGame(confirmFirst = true) {
     if (confirmFirst && !window.confirm(t('sgNewQ'))) return;
     // v1.0 (D-87): all eras (the default) or the Three Kingdoms only
     const r = await this.layer(`<h2>${t('sgModeQ')}</h2><button class="sgBig" data-ok="mix">${t('sgModeMix')}<small>${t('sgModeMixS')}</small></button>
       <button class="sgBig alt" data-ok="sanguo">${t('sgModeSg')}<small>${t('sgModeSgS')}</small></button>`);
     this.nextRoster = r === 'sanguo' ? 'sanguo' : 'mix';
+    // v1.2 (D-103): how hard the computer lords are
+    const cur = this.lastDiff();
+    const d = await this.layer(`<h2>${t('sgDiffQ')}</h2>${E.DIFFS.map((x) => `<button class="sgBig${x === cur ? '' : ' alt'}" data-ok="${x}">${t('sgDiff_' + x)}<small>${t('sgDiffS_' + x)}</small></button>`).join('')}`);
+    this.nextDiff = E.DIFFS.includes(d) ? d : cur;
+    try { localStorage.setItem('p905sgdiff', this.nextDiff); } catch (e) { /* ignore */ }
     try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ }
     this.open(this.w, this.W, this.H);
   }
   async menu() {
     if (this.busy) return;
     const r = await this.layer(`<h2>${t('sgMenu')}<button class="sgX" data-ok="x">✕</button></h2>
-      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}</button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
+      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}<small>${esc(F('sgDiffNow', { d: t('sgDiff_' + (this.s.diff || CFG.sg.diffDefault)) }))}</small></button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
     if (r === 'back') { this.save(); sfx.bgm(false); this.onClose(); }
     else if (r === 'music') { this.music = !this.music; sfx.bgm(this.music); this.menu(); }
-    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore'))}</p>`);
+    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore') + '\n\n' + t('sgHelpV12'))}</p>`);
     else if (r === 'tut') this.tutorial(true);
     else if (r === 'new') this.newGame(true);
   }
