@@ -106,15 +106,27 @@ export const CFG = {
   // 万锦三国志 strategy mode (D-73): one turn = one month; troops, gold, food are plain counts
   sg: {
     startYear: 196, startGold: 600, startFood: 2500, startTroops: 3000, neutralTroops: [700, 1500], neutralRegen: 30, neutralMax: 1500,
-    maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, truce: 6, devCost: 50, draftCost: 100, draftBase: 150, draftPerLead: 10, devBase: 1, devPerPol: 1 / 7,
+    maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, devCost: 50, draftCost: 100,
+    // v1.2 (D-102): what an officer achieves grows with the square of his stat: 内政 +2 at 政 25, +7 at 60, +18 at 100;
+    // 征兵 180 at 统 25, 570 at 60, 1400 at 100; 搜索 15% at 智 25, 42% at 60, 85% at 100; a low 政治 also pays more for everything
+    devBase: 1, devMax: 17, draftBase: 100, draftMax: 1300, effExp: 2, searchMax: 0.8, searchExp: 1.5, fortMax: 16, costMin: 0.6, costMax: 1.4, costPerPol: 1 / 125,
+    // v1.2 (D-103): the computer lords are harder: three levels, 困难 by default
+    // per game (s.diff, picked when a game starts): grace = months before the computer may attack you, attack = the
+    // power ratio it wants before marching, gold / food / draft = how much better than you it runs its lands
+    diffDefault: 'hard',
+    diff: {
+      normal: { grace: 6, attack: 1.25, gold: 1, food: 1, draft: 1, start: 1, coalition: 6 },   // as it was up to v1.1
+      hard: { grace: 4, attack: 1.1, gold: 1.3, food: 1.2, draft: 1.3, start: 1.25, coalition: 5 },
+      hell: { grace: 3, attack: 1.0, gold: 1.6, food: 1.4, draft: 1.6, start: 1.5, coalition: 4 },
+    },
     goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
-    searchBase: 0.15, searchPerInt: 1 / 160, treasure: [0.25, 80, 150], marchFrac: 0.8,
+    searchBase: 0.05, treasure: [0.25, 80, 150], marchFrac: 0.8,
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
     rounds: 30, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
     flee: 0.6, recruit: 0.4, recruitBond: 0.25, recruitLord: -0.3,
-    aiAttack: 1.25, aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
+    aiSafe: 2500, coalitionAt: 6, aiBoldGold: [40000, 0.35], aiBoldLast: 0.2,
     // v0.8 (D-74): one order per officer a month; passes (real parks, D-75); real terrain
-    minMarch: 100, fortCost: 60, fortBase: 4, fortPerStat: 1 / 6,
+    minMarch: 100, fortCost: 60, fortBase: 2,
     passTroops: [1400, 2000], passBigTroops: 2600, passDef: 80, passBigDef: 100, passDefMax: 120, passDefRegen: 2, passCap: 6000, passMul: 1.15,
     hillPerM: 0.012, hillMax: 0.24, riverPen: 0.15, valleyFood: 0.4,
     // v0.8.1 (D-75): seasons, stratagems (计略) and random events
