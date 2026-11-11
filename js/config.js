@@ -138,6 +138,12 @@ export const CFG = {
     // v0.9.6 (D-83): an officer leads 统率 x leadTroops troops; battles (no dice) go on to the end: up to
     // `rounds` rounds of a siege / fieldRounds in the field, until a side drops under `rout` of its start
     leadTroops: 60, fieldRounds: 40, rout: 0.25, aiSally: 1.1,
+    // v1.1 (D-97): treasure blind boxes. itemCount hidden per game (at most itemUR of the best); a search that finds
+    // no officer turns one up with itemBase + 智力 x itemPerInt (14% at 智力 50, 22% at 100)
+    itemCount: 10, itemUR: 2, itemBase: 0.06, itemPerInt: 0.0016,
+    // v1.1 (D-98): envoys (停战) and poaching (挖角)
+    envoyCost: 150, envoyBase: 0.35, envoyPol: 1 / 160, envoyStrong: 0.25, envoyWeak: 0.15, envoyCoalition: 0.3, envoyMonths: 6,
+    poachCost: 120, poachLoyal: 0.8, poachInt: 1 / 200, poachBond: 0.2, poachLosing: 0.1, poachSpurned: 6, aiPoach: 0.2, aiPoachMin: 0.25,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1
   post: { band: 0.17, maxR: 6 },      // tilt-shift: sharp half-band (screen fraction), blur radius px @900p

@@ -393,3 +393,33 @@ useMap(CLASSIC);
 // faction colours (player first), chosen so they also differ in lightness
 export const FACTION_COLORS = ['#2f7de1', '#d64545', '#7c55c9', '#e8892b'];
 export const NEUTRAL_COLOR = '#9aa0a6';
+
+// ---------------------------------------------------------------- treasures (v1.1, D-97)
+// Blind-box treasures found by searching. One per officer; fx adds to his stats (hp / sp: duel stamina / spirit).
+// Each game hides `itemCount` of them. kind picks the card colour; the last four are Markham's own.
+export const ITEMS = {
+  fangtian: { zh: '方天画戟', en: 'Sky Piercer Halberd', glyph: '戟', kind: 'weapon', tier: 'UR', fx: { war: 10 } },
+  chitu: { zh: '赤兔马', en: 'Red Hare', glyph: '马', kind: 'horse', tier: 'UR', fx: { lead: 10 } },
+  sunzi: { zh: '孙子兵法', en: 'The Art of War', glyph: '兵', kind: 'book', tier: 'UR', fx: { int: 10 } },
+  yuxi: { zh: '传国玉玺', en: 'Imperial Seal', glyph: '玺', kind: 'seal', tier: 'UR', fx: { pol: 10 } },
+  qinglong: { zh: '青龙偃月刀', en: 'Green Dragon Blade', glyph: '刀', kind: 'weapon', tier: 'SSR', fx: { war: 8 } },
+  zhangba: { zh: '丈八蛇矛', en: 'Serpent Spear', glyph: '矛', kind: 'weapon', tier: 'SSR', fx: { war: 7 } },
+  yitian: { zh: '倚天剑', en: 'Heaven Sword', glyph: '剑', kind: 'weapon', tier: 'SSR', fx: { war: 6, lead: 4 } },
+  wumu: { zh: '武穆遗书', en: "Wumu's Legacy", glyph: '穆', kind: 'book', tier: 'SSR', fx: { lead: 8 } },
+  taiping: { zh: '太平要术', en: 'The Way of Peace', glyph: '术', kind: 'book', tier: 'SSR', fx: { int: 7 } },
+  chunqiu: { zh: '春秋左传', en: 'Spring and Autumn Annals', glyph: '传', kind: 'book', tier: 'SSR', fx: { pol: 7 } },
+  qinggang: { zh: '青釭剑', en: 'Blue Steel Sword', glyph: '釭', kind: 'weapon', tier: 'SR', fx: { war: 5 } },
+  cixiong: { zh: '雌雄双股剑', en: 'Twin Swords', glyph: '双', kind: 'weapon', tier: 'SR', fx: { war: 4, lead: 3 } },
+  qixing: { zh: '七星宝刀', en: 'Seven Star Dagger', glyph: '星', kind: 'weapon', tier: 'SR', fx: { war: 4 } },
+  dilu: { zh: '的卢马', en: 'Dilu', glyph: '卢', kind: 'horse', tier: 'SR', fx: { lead: 6 } },
+  jueying: { zh: '绝影', en: 'Shadowless', glyph: '影', kind: 'horse', tier: 'SR', fx: { lead: 5 } },
+  mengde: { zh: '孟德新书', en: "Mengde's New Book", glyph: '新', kind: 'book', tier: 'SR', fx: { int: 4, lead: 4 } },
+  heshibi: { zh: '和氏璧', en: 'Jade of He', glyph: '璧', kind: 'seal', tier: 'SR', fx: { pol: 6 } },
+  qingnang: { zh: '青囊书', en: 'Book of Healing', glyph: '囊', kind: 'book', tier: 'SR', fx: { hp: 25 } },
+  boba: { zh: '大杯珍珠奶茶', en: 'Large Bubble Tea', glyph: '🧋', kind: 'local', tier: 'SR', fx: { sp: 30 } },
+  donut: { zh: '一打甜甜圈', en: 'A Dozen Donuts', glyph: '🍩', kind: 'local', tier: 'SR', fx: { hp: 15, pol: 3 } },
+  costgo: { zh: 'Costgo 会员卡', en: 'Costgo Membership', glyph: '💳', kind: 'local', tier: 'SR', fx: { pol: 5, int: 3 } },
+  viva: { zh: 'Viva 公交月票', en: 'Viva Monthly Pass', glyph: '🚌', kind: 'local', tier: 'SR', fx: { lead: 4 } },
+};
+export const ITEM_IDS = Object.keys(ITEMS);
+
