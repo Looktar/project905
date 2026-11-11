@@ -302,6 +302,59 @@ html:lang(en) .sgTabs button{width:76px;font:800 11px system-ui,sans-serif}#sg.s
 #sg.small .sgRoadRow{font-size:12px;padding:2px 0}
 #sg.small #sgTitle{display:none}#sg.small #sgTop #sgEnd{font-size:13px;padding:0 10px}#sg.small #sgRes span i{width:16px;height:16px}
 .sgChips button.on small{color:#7a2b1f}
+/* v1.1: treasures, truce, the first-game guide */
+.sgP{position:relative}.sgIt{position:absolute;left:-5px;bottom:-5px;min-width:17px;height:17px;border-radius:9px;background:#3a2a1c;border:1.5px solid #c9a6ff;color:#fff;font:900 10px/14px system-ui,sans-serif;font-style:normal;text-align:center;box-sizing:border-box;padding:0 2px}
+.sgIt.tSSR{border-color:#f2c14e}.sgIt.tUR{border-color:#ff9a5c;box-shadow:0 0 6px rgba(255,140,80,.9)}.sgCardT .sgIt{left:4px;bottom:22px}
+.sgItem{position:relative;width:118px;height:150px;flex:none;border-radius:10px;border:2px solid #b98cf0;background:linear-gradient(165deg,#4a3a5e,#2a2030);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px 6px;box-sizing:border-box;text-align:center}
+.sgItem.kweapon{background:linear-gradient(165deg,#6a3a34,#2a1c1a)}.sgItem.khorse{background:linear-gradient(165deg,#6a4a24,#2a2014)}.sgItem.kbook{background:linear-gradient(165deg,#2f4a66,#18222e)}.sgItem.kseal{background:linear-gradient(165deg,#2f5a48,#162a22)}.sgItem.klocal{background:linear-gradient(165deg,#b0486a,#3a1c2a)}
+.sgItem.tSSR{border-color:#f2c14e;box-shadow:0 0 12px rgba(242,193,78,.6)}.sgItem.tUR{border-color:#ff9a5c;animation:sgUr 1.6s infinite}
+.sgItem b{position:absolute;top:26px;left:0;right:0;font:900 58px 'STKaiti','KaiTi','Kaiti SC',serif;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}.sgItem span{font-weight:900;color:#fff;font-size:13px}.sgItem em{font-style:normal;font-size:11px;color:#f2c14e}
+.sgItem .sgCstar{position:absolute;top:6px;left:0;right:0;font-style:normal;color:#f2c14e;font-size:11px;letter-spacing:1px}
+.sgReveal.item{align-items:center}.sgTruce{color:#7fd1a1!important;font-weight:700}.sgGive{align-items:center}.sgGive span{font-size:12px;color:#7a5a3a;font-weight:700;margin-right:2px}
+#sgTut{position:absolute;left:330px;bottom:14px;width:min(330px,46%);background:#fff8ea;color:#3a2a1c;border:3px solid #f2c14e;border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);display:none;font-size:14px;line-height:1.5}
+#sgTut.show{display:block;animation:sgPop .25s}#sgTut b{color:#b8860b;font-size:12px}#sgTut p{margin:2px 0 8px}#sgTut div{display:flex;justify-content:flex-end;gap:8px}
+#sgTut button{border:0;border-radius:999px;padding:7px 16px;font-weight:900;background:#e8dcc6;color:#5a4632;font-family:inherit}#sgTut button.go{background:#f2c14e;color:#3a2a1c}
+.sgTutHi{outline:3px solid #f2c14e!important;outline-offset:2px;animation:sgTutHi 1s infinite;position:relative;z-index:2}
+@keyframes sgTutHi{0%,100%{box-shadow:0 0 0 0 rgba(242,193,78,.9)}50%{box-shadow:0 0 0 9px rgba(242,193,78,0)}}
+#sg.small #sgTut{font-size:12.5px;padding:8px 10px;bottom:8px}
+/* v1.1 (D-100): duels and battles with some theatre */
+.sgDuel.arena{align-items:flex-start;justify-content:center;gap:10px;margin:4px 0}
+.sgDs.dc{width:auto;flex:1;max-width:210px;flex-direction:column;align-items:center;gap:5px;--dir:1}.sgDs.dc.foe{--dir:-1}
+.sgDc{position:relative}.sgDs.dc .sgDi{width:100%;max-width:150px;align-items:stretch;text-align:center}.sgDs.dc .sgDi>span{display:flex;align-items:center;gap:5px}
+.sgDs.dc .sgHp,.sgDs.dc .sgSp{flex:1}.sgDs.dc .sgDi b{font-size:15px}.sgDs.dc .sgCardT .sgCglyph{font-size:44px;color:#fff}
+.sgDs.dc.lunge .sgCardT{animation:sgLunge .45s cubic-bezier(.3,1.6,.5,1)}.sgDs.dc.brace .sgCardT{animation:sgBrace .45s}.sgDs.dc.whiff .sgCardT{animation:sgWhiff .4s}
+.sgDs.dc.hit .sgCardT{animation:sgHit .4s .12s}.sgDs.dc.hit .sgDc::after{content:'';position:absolute;inset:0;border-radius:8px;background:#ff3b30;opacity:0;animation:sgFlash .45s .1s}
+.sgDs.dc.lunge.hit .sgCardT{animation:sgLunge .45s cubic-bezier(.3,1.6,.5,1),sgHit .4s .45s}
+.sgDs.dc.ko .sgCardT,.sgDs.dc.lose .sgCardT{filter:grayscale(.85) brightness(.75);transform:rotate(calc(var(--dir)*-13deg)) translateY(10px);transition:transform .5s .35s,filter .5s .35s}
+.sgDs.dc.win .sgCardT{transform:scale(1.07);box-shadow:0 0 0 3px #f2c14e,0 0 26px rgba(242,193,78,.95);transition:transform .4s .3s,box-shadow .4s .3s}
+.sgMv{position:absolute;left:50%;top:-9px;transform:translateX(-50%);white-space:nowrap;font:900 12px system-ui,sans-serif;font-style:normal;color:#fff;padding:2px 9px;border-radius:999px;border:2px solid #fff;animation:sgMv .3s cubic-bezier(.3,1.7,.5,1);z-index:2}
+.sgMv.atk{background:#d64545}.sgMv.def{background:#2f7de1}.sgMv.skill{background:#7a4fd0;box-shadow:0 0 10px #c9a6ff}
+.sgDs.dc .sgDmg{top:34%;font-size:32px;z-index:3;animation-delay:.15s;opacity:0}.sgDs.dc .sgKo{top:30%;z-index:3}
+.sgSeal{position:absolute;right:-12px;bottom:-8px;width:42px;height:42px;border-radius:8px;background:#c0392b;color:#fff;border:2px solid #fff;font:900 24px/40px 'STKaiti','KaiTi','Kaiti SC',serif;font-style:normal;text-align:center;transform:rotate(-10deg);animation:sgStamp .35s .5s cubic-bezier(.3,1.8,.5,1) backwards;z-index:3;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
+.sgDuel.arena .sgVs{align-self:center;position:relative;min-width:34px;text-align:center}
+.sgVs.slash::after,.sgVs.burst::after,.sgVs.clink::after{content:'';position:absolute;left:50%;top:50%;pointer-events:none}
+.sgVs.slash::after{width:120px;height:5px;margin:-2px 0 0 -60px;background:linear-gradient(90deg,transparent,#fff,#ffd98a,transparent);border-radius:3px;transform:rotate(-32deg) scaleX(0);animation:sgSlash .35s .1s}
+.sgVs.burst::after{width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:radial-gradient(circle,#fff,#f2c14e 40%,rgba(201,166,255,.7) 60%,transparent 70%);animation:sgBurst .5s .1s}
+.sgVs.clink::after{width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;animation:sgBurst .3s}
+@keyframes sgLunge{0%{transform:none}45%{transform:translateX(calc(var(--dir)*38px)) rotate(calc(var(--dir)*7deg)) scale(1.06)}100%{transform:none}}
+@keyframes sgBrace{0%,100%{transform:none;box-shadow:none}40%{transform:scale(.95);box-shadow:0 0 0 4px #7fb2f0,0 0 18px #2f7de1}}
+@keyframes sgWhiff{0%,100%{transform:none}50%{transform:translateX(calc(var(--dir)*14px))}}
+@keyframes sgFlash{0%{opacity:0}30%{opacity:.55}100%{opacity:0}}
+@keyframes sgMv{0%{transform:translateX(-50%) scale(.2)}100%{transform:translateX(-50%) scale(1)}}
+@keyframes sgStamp{0%{transform:rotate(-10deg) scale(2.6);opacity:0}100%{transform:rotate(-10deg) scale(1);opacity:1}}
+@keyframes sgSlash{0%{transform:rotate(-32deg) scaleX(0);opacity:1}60%{transform:rotate(-32deg) scaleX(1.2);opacity:1}100%{transform:rotate(-32deg) scaleX(1.5);opacity:0}}
+@keyframes sgBurst{0%{transform:scale(.3);opacity:1}100%{transform:scale(7);opacity:0}}
+#sg.small .sgDs.dc{flex-direction:row;align-items:center;gap:6px;max-width:none}#sg.small .sgDs.dc.foe{flex-direction:row-reverse}#sg.small .sgDs.dc .sgDi{text-align:left;max-width:none;flex:1}
+#sg.small .sgDuel.arena .sgCardT{width:60px;height:82px}#sg.small .sgDs.dc .sgCardT .sgCglyph{top:24px;font-size:27px}#sg.small .sgDuel.arena .sgCtier{display:none}#sg.small .sgDuel.arena .sgCname{font-size:10px}#sg.small .sgDuel.arena .sgCstat,#sg.small .sgDuel.arena .sgCstar{display:none}
+#sg.small .sgSeal{width:30px;height:30px;font-size:17px;line-height:28px;right:-8px}#sg.small .sgDs.dc .sgDmg{font-size:24px}#sg.small .sgMv{font-size:10px;padding:1px 6px;top:-7px}
+.sgBattle.charge .sgBside.me .sgBcards{animation:sgChargeL .5s cubic-bezier(.2,1.4,.4,1)}.sgBattle.charge .sgBside:not(.me) .sgBcards{animation:sgChargeR .5s cubic-bezier(.2,1.4,.4,1)}.sgBattle.charge .sgVs{animation:sgStamp .4s .35s backwards}
+@keyframes sgChargeL{0%{transform:translateX(-140%);opacity:0}70%{transform:translateX(14px);opacity:1}100%{transform:none}}
+@keyframes sgChargeR{0%{transform:translateX(140%);opacity:0}70%{transform:translateX(-14px);opacity:1}100%{transform:none}}
+.sgBhead{position:relative}.sgLoss{position:absolute;right:0;top:-4px;font:900 15px system-ui,sans-serif;font-style:normal;color:#ff6a5a;-webkit-text-stroke:1px #2b211a;animation:sgDmg .9s ease-out forwards;pointer-events:none}
+.sgBside.beaten .sgCardT{filter:grayscale(.85) brightness(.75);transform:rotate(-6deg) translateY(6px);transition:all .4s}.sgBside.victor .sgCardT{box-shadow:0 0 0 2px #f2c14e,0 0 16px rgba(242,193,78,.85);transition:all .4s}
+.sgBres.stamp{display:block;width:max-content;margin:8px auto;padding:3px 18px;border-radius:8px;border:3px solid currentColor;font:900 24px 'STKaiti','KaiTi','Kaiti SC',serif;transform:rotate(-4deg);animation:sgStamp .35s cubic-bezier(.3,1.8,.5,1)}
+.sgBres.stamp:empty{display:none}.sgBres.stamp.won{color:#f2c14e}.sgBres.stamp.lost{color:#ff8a80}
 </style>
 </head>
 <body>
@@ -348,6 +401,7 @@ html:lang(en) .sgTabs button{width:76px;font:800 11px system-ui,sans-serif}#sg.s
     <button id="sgPanelTab">»</button>
     <div id="sgZoom"><button id="sgZIn">+</button><button id="sgZOut">−</button><button id="sgZHome">◎</button></div>
     <div id="sgToast"></div>
+    <div id="sgTut"></div>
     <div id="sgLayer"></div>
   </div>
   <div id="plist" class="modal">
@@ -393,8 +447,8 @@ html:lang(en) .sgTabs button{width:76px;font:800 11px system-ui,sans-serif}#sg.s
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=5ae1108462","./js/bigmap.js":"./js/bigmap.js?v=5ae1108462","./js/config.js":"./js/config.js?v=5ae1108462","./js/fire.js":"./js/fire.js?v=5ae1108462","./js/game.js":"./js/game.js?v=5ae1108462","./js/geo.js":"./js/geo.js?v=5ae1108462","./js/glb.js":"./js/glb.js?v=5ae1108462","./js/hud.js":"./js/hud.js?v=5ae1108462","./js/i18n.js":"./js/i18n.js?v=5ae1108462","./js/input.js":"./js/input.js?v=5ae1108462","./js/main.js":"./js/main.js?v=5ae1108462","./js/math.js":"./js/math.js?v=5ae1108462","./js/missions.js":"./js/missions.js?v=5ae1108462","./js/models.js":"./js/models.js?v=5ae1108462","./js/nav.js":"./js/nav.js?v=5ae1108462","./js/orient.js":"./js/orient.js?v=5ae1108462","./js/poi.js":"./js/poi.js?v=5ae1108462","./js/pranks.js":"./js/pranks.js?v=5ae1108462","./js/props.js":"./js/props.js?v=5ae1108462","./js/renderer.js":"./js/renderer.js?v=5ae1108462","./js/sg_data.js":"./js/sg_data.js?v=5ae1108462","./js/sg_elev.js":"./js/sg_elev.js?v=5ae1108462","./js/sg_engine.js":"./js/sg_engine.js?v=5ae1108462","./js/sg_sites.js":"./js/sg_sites.js?v=5ae1108462","./js/sg_ui.js":"./js/sg_ui.js?v=5ae1108462","./js/signals.js":"./js/signals.js?v=5ae1108462","./js/world.js":"./js/world.js?v=5ae1108462"}}</script>
-<script type="module" src="js/main.js?v=5ae1108462"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=a55f389bf5","./js/bigmap.js":"./js/bigmap.js?v=a55f389bf5","./js/config.js":"./js/config.js?v=a55f389bf5","./js/fire.js":"./js/fire.js?v=a55f389bf5","./js/game.js":"./js/game.js?v=a55f389bf5","./js/geo.js":"./js/geo.js?v=a55f389bf5","./js/glb.js":"./js/glb.js?v=a55f389bf5","./js/hud.js":"./js/hud.js?v=a55f389bf5","./js/i18n.js":"./js/i18n.js?v=a55f389bf5","./js/input.js":"./js/input.js?v=a55f389bf5","./js/main.js":"./js/main.js?v=a55f389bf5","./js/math.js":"./js/math.js?v=a55f389bf5","./js/missions.js":"./js/missions.js?v=a55f389bf5","./js/models.js":"./js/models.js?v=a55f389bf5","./js/nav.js":"./js/nav.js?v=a55f389bf5","./js/orient.js":"./js/orient.js?v=a55f389bf5","./js/poi.js":"./js/poi.js?v=a55f389bf5","./js/pranks.js":"./js/pranks.js?v=a55f389bf5","./js/props.js":"./js/props.js?v=a55f389bf5","./js/renderer.js":"./js/renderer.js?v=a55f389bf5","./js/sg_art.js":"./js/sg_art.js?v=a55f389bf5","./js/sg_data.js":"./js/sg_data.js?v=a55f389bf5","./js/sg_elev.js":"./js/sg_elev.js?v=a55f389bf5","./js/sg_engine.js":"./js/sg_engine.js?v=a55f389bf5","./js/sg_sites.js":"./js/sg_sites.js?v=a55f389bf5","./js/sg_ui.js":"./js/sg_ui.js?v=a55f389bf5","./js/signals.js":"./js/signals.js?v=a55f389bf5","./js/world.js":"./js/world.js?v=a55f389bf5"}}</script>
+<script type="module" src="js/main.js?v=a55f389bf5"></script>
 <!-- stamp:end -->
 </body>
 </html>

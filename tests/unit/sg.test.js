@@ -8,6 +8,7 @@ import {
 } from '../../js/sg_engine.js';
 import { GENERALS, GEN_IDS, SANGUO_IDS, ERAS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
+import * as E from '../../js/sg_engine.js';
 import { SITES, PARKS } from '../../js/sg_sites.js';
 import { readFileSync } from 'node:fs';
 import { CFG } from '../../js/config.js';
@@ -662,5 +663,97 @@ describe('万锦群英传: great generals of every era, 32 a game (v1.0)', () =>
       if (s.over) ended++;
     }
     expect(ended).toBeGreaterThanOrEqual(4);
+  });
+});
+
+// ---------------------------------------------------------------- v1.1: treasures, truces, poaching (D-97, D-98)
+describe('万锦群英传 v1.1', () => {
+  const fresh = (seed = 42) => E.newGame(seed);
+  const mine = (s) => E.factionGens(s, E.PLAYER);
+  it('a game hides its own treasures, at most itemUR of the best', async () => {
+    const { ITEMS } = await import('../../js/sg_data.js');
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const s = fresh(seed);
+      expect(s.items.length).toBe(CFG.sg.itemCount);
+      expect(new Set(s.items).size).toBe(s.items.length);
+      expect(s.items.filter((i) => ITEMS[i].tier === 'UR').length).toBeLessThanOrEqual(CFG.sg.itemUR);
+    }
+    expect(fresh(7).items).toEqual(fresh(7).items);
+  });
+  it('a treasure raises its bearer and only its bearer, and can be handed over', () => {
+    const s = fresh(), [a, b] = mine(s), war = E.gen(a).war, lead = E.gen(a).lead;
+    s.gens[a].item = 'qinglong';
+    expect(E.gen(a).war).toBe(Math.min(110, war + 8));
+    expect(E.gen(b).war).toBe(GENERALS[b].war);
+    expect(E.passItem(s, a, b)).toBe(true);
+    expect(E.gen(a).war).toBe(war); expect(E.itemOf(b)).toBe('qinglong');
+    s.gens[a].item = 'chitu';
+    expect(E.commandOf(a)).toBe(Math.round(Math.min(110, lead + 10) * CFG.sg.leadTroops));
+    // another game does not see them
+    const s2 = fresh(43); E.loadMap(s2);
+    if (s2.gens[a]) expect(E.gen(a).lead).toBe(GENERALS[a].lead);
+  });
+  it('searching turns treasures up, and they end up on an officer of the finder', () => {
+    let found = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const s = fresh(seed), n0 = s.items.length;
+      for (let m = 0; m < 14; m++) E.runTurn(s, Object.fromEntries(mine(s).filter((g) => s.gens[g].c && !CITIES[s.gens[g].c].pass).map((g) => [g, { cmd: 'search' }])));
+      const carried = Object.values(s.gens).filter((g) => g.item).length;
+      expect(carried + s.items.length).toBe(n0);
+      found += carried;
+    }
+    expect(found).toBeGreaterThan(10);
+  });
+  it('an envoy buys a truce: no attacks either way until it runs out', () => {
+    const s = fresh(), g = mine(s)[0];
+    expect(E.validOrder(s, E.PLAYER, g, { cmd: 'envoy', f: 1 })).toBe(true);
+    expect(E.validOrder(s, E.PLAYER, g, { cmd: 'envoy', f: 0 })).toBe(false);
+    const p = E.envoyChance(s, E.PLAYER, g, 1);
+    expect(p).toBeGreaterThan(0.05); expect(p).toBeLessThanOrEqual(0.9);
+    s.truce['0-1'] = s.turn + 3;
+    expect(E.truceLeft(s, 0, 1)).toBe(3); expect(E.truceLeft(s, 1, 0)).toBe(3);
+    expect(E.isAlly(s, 1, 0)).toBe(true); expect(E.isAlly(s, 0, 2)).toBe(false);
+    expect(E.validOrder(s, E.PLAYER, g, { cmd: 'envoy', f: 1 })).toBe(false);
+    const cap1 = s.factions[1].cap;
+    expect(E.validOrder(s, E.PLAYER, g, { cmd: 'march', to: cap1 })).toBe(false);
+    let ended = false;
+    for (let m = 0; m < 4; m++) { for (const e of E.runTurn(s, {})) if (e.k === 'truceEnd') ended = true; if (!ended) expect(s.cities[s.factions[0].cap].owner).toBe(0); }
+    expect(ended).toBe(true); expect(E.truceLeft(s, 0, 1)).toBe(0);
+  });
+  it('poaching: only officers next door, never a lord; a success changes sides, a failure hardens him', () => {
+    const s = fresh(), agent = mine(s)[0], cap = s.factions[0].cap, f1 = s.factions[1];
+    const nb = ADJ[cap][0].c;
+    // put lord 1 and one of his officers in the city next door
+    Object.assign(s.cities[nb], { owner: 1 });
+    const theirs = E.factionGens(s, 1), officer = theirs.find((x) => x !== f1.lord);
+    for (const x of theirs) s.gens[x].c = nb;
+    expect(E.poachTargets(s, 0, cap)).toEqual([officer]);
+    expect(E.validOrder(s, 0, agent, { cmd: 'poach', g: f1.lord })).toBe(false);
+    s.gens[officer].loyal = 100;
+    const low = E.poachChance(s, 0, agent, officer);
+    s.gens[officer].loyal = 20;
+    expect(E.poachChance(s, 0, agent, officer)).toBeGreaterThan(low);
+    // certain success / certain failure by forcing the chance through loyalty and the dice
+    let ok = 0, no = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const t2 = JSON.parse(JSON.stringify(s)); t2.r = seed * 7919; t2.orders = {};
+      const gold = t2.factions[0].gold;
+      E.beginTurn(t2, { [agent]: { cmd: 'poach', g: officer } });
+      const e = t2.events.find((x) => x.k === 'poach' && x.f === 0);
+      if (!e) continue; // the computer moved him away first
+      expect(t2.factions[0].gold).toBeLessThan(gold);
+      if (e.ok) { ok++; expect(t2.gens[officer].f).toBe(0); expect(t2.gens[officer].c).toBe(cap); } else { no++; expect(t2.gens[officer].f).toBe(1); expect(t2.gens[officer].loyal).toBe(20 + CFG.sg.poachSpurned); }
+    }
+    expect(ok).toBeGreaterThan(5); expect(no).toBeGreaterThan(2);
+  });
+  it('whole games still end, with treasures and poaching in play', () => {
+    let poach = 0, items = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = E.newGame(seed, { map: 'random', roster: 'mix' });
+      for (let m = 0; m < 240 && !s.over; m++) for (const e of E.runTurn(s, E.autoPlayer(s))) { if (e.k === 'poach') poach++; if (e.k === 'item') items++; }
+      for (const g of Object.values(s.gens)) expect(Number.isFinite(E.gen(g.id).war)).toBe(true);
+    }
+    expect(items).toBeGreaterThan(5);
+    expect(poach).toBeGreaterThan(0);
   });
 });

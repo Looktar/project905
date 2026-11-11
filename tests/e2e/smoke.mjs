@@ -168,6 +168,11 @@ async function runViewport(browser, base, vp) {
     await sleep(700);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
     for (let i = 0; i < 3; i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
+    // v1.1: the first game opens the beginner guide; step through one note, then skip it
+    await page.waitForSelector('#sgTut.show', { timeout: 5000 });
+    await tap('[data-tut="next"]');
+    if (!(await page.$('.sgTutHi'))) throw new Error('sg: the guide highlights nothing');
+    // the guide locks nothing: orders and the month work with it still open (cards cover it)
     await tap('.sgCmd[data-cmd="search"]');
     await tap('#sgAuto');
     await tap('#sgEnd');

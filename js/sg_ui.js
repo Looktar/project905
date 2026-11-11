@@ -7,8 +7,9 @@ import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import * as sfx from './audio.js';
-import { GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
+import { ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
 import { ELEV } from './sg_elev.js';
+import { drawCity, cityKind } from './sg_art.js';
 
 extend({
   sgStart: '⚔ 万锦群英传', sgTitle: '万锦群英传', sgDateMix: '群英{y}年 {m}月', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
@@ -76,6 +77,31 @@ extend({
   sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are about reading your opponent (below).\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: each round your opponent takes a stance first and you answer it (Strike beats Special, Special breaks Guard, Guard stops Strike and counters). If your INT is no lower than his, the stance is real; a cleverer opponent sometimes feints. WAR sets the damage, and a gap of 25 or more ends it in one blow; LEAD gives stamina and spirit, and a Special costs 50 spirit. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
+// v1.1 (D-97, D-98): treasures, envoys, poaching, the first-game guide
+extend({
+  sgPoach: '挖角', sgPoachS: '策反邻城敌将', sgEnvoy: '停战', sgEnvoyS: '派使者，停战 {n} 个月', sgPickGen: '选要挖的敌将（只能挖邻城的，君主挖不动）', sgPickLord: '选要停战的君主', sgNoTarget: '现在没有可选的对象',
+  sgTruceWith: '🤝 停战中，还剩 {n} 个月：双方都不能进攻', sgItem: '宝物', sgItemGive: '转交给', sgLoyal: '忠诚', sgLoyalS: '越低越容易被挖走', sgItemBox: '宝物盲盒！', sgItemGot: '{g} 在 {c} 搜出了宝物！', sgItemTo: '{g} 佩带。可以在“将”页面里转交给别人',
+  itLead: '统率', itWar: '武力', itInt: '智力', itPol: '政治', itHp: '单挑体力', itSp: '单挑斗志',
+  evItem: '{c}：{g} 找到了宝物 {i}', evItemAI: '{f} 在 {c} 找到了宝物 {i}', evPoachOk: '{g} 说动了 {t}：{t} 离开{from}，投奔{f}！', evPoachNo: '{g} 去挖 {t}，被一口回绝', evPoachedYou: '{t} 被{f}挖走了！',
+  evTruceOk: '{g} 出使成功：{f}与{to}停战 {n} 个月', evTruceNo: '{g} 出使{to}，对方不肯停战', evTruceEnd: '{f}与{to}的停战到期了',
+  sgTutMenu: '新手引导', sgTutNext: '下一步', sgTutSkip: '跳过', sgTutDone: '开始吧',
+  sgTut1: '这是你的本城，已经帮你选中了。左边是这座城里的武将，每位武将每个月能做一件事。', sgTut2: '先让一位武将去“搜索”：有机会找到藏在城里的武将（开盲盒），也可能搜出宝物。按钮上的百分比是成功率，智力越高越容易。',
+  sgTut3: '再让另一位“征兵”或“内政”。嫌麻烦就点上面的“委任”，空闲的武将会自动安排好。', sgTut4: '兵够了就点“出征”，再点地图上发光的城。先打灰色的空城，别急着碰其他君主。', sgTut5: '“计略”里除了流言和火计，还能“挖角”邻城的敌将，或者派人“停战”。',
+  sgTut6: '都安排好了，点右上角的“结束本月”。占满所有城池，你就统一了万锦！',
+  sgHelpMore: '宝物：搜索没找到人时，有机会搜出宝物（每局藏 10 件）。宝物由一位武将佩带，直接加他的能力，可以在“将”页面里转交。武将被俘、被挖走时宝物跟着走。\n\n挖角和停战（在“计略”里）：挖角是花钱策反邻城的敌将，对方忠诚越低、你的武将智力越高越容易，君主挖不动；电脑也会来挖你的人。停战是派使者和一位君主讲和 6 个月，期间双方都不能进攻；你太强、或者对方已经结盟对付你时很难谈成。',
+}, {
+  sgPoach: 'Poach', sgPoachS: 'turn an officer next door', sgEnvoy: 'Truce', sgEnvoyS: 'an envoy: {n} months of peace', sgPickGen: 'Pick an enemy officer next door (lords cannot be turned)', sgPickLord: 'Pick a lord to make peace with', sgNoTarget: 'Nobody to pick right now',
+  sgTruceWith: '🤝 Truce, {n} months left: neither side may attack', sgItem: 'Treasure', sgItemGive: 'Hand to', sgLoyal: 'Loyalty', sgLoyalS: 'the lower, the easier to poach', sgItemBox: 'Treasure box!', sgItemGot: '{g} dug up a treasure in {c}!', sgItemTo: '{g} carries it. Hand it on from the Officers page',
+  itLead: 'LED', itWar: 'WAR', itInt: 'INT', itPol: 'POL', itHp: 'duel stamina', itSp: 'duel spirit',
+  evItem: '{c}: {g} found the treasure {i}', evItemAI: '{f} found the treasure {i} in {c}', evPoachOk: '{g} talked {t} round: {t} leaves {from} for {f}!', evPoachNo: '{g} tried to poach {t} and was turned down flat', evPoachedYou: '{t} was poached by {f}!',
+  evTruceOk: "{g}'s embassy worked: {f} and {to} are at peace for {n} months", evTruceNo: '{g} went to {to}, who would not make peace', evTruceEnd: 'The truce between {f} and {to} has run out',
+  sgTutMenu: 'Beginner guide', sgTutNext: 'Next', sgTutSkip: 'Skip', sgTutDone: "Let's go",
+  sgTut1: 'This is your capital, already selected. On the left are the officers in it; each officer does one thing a month.', sgTut2: 'Send one officer to Seek: he may find an officer hiding in the city (a blind box) or dig up a treasure. The percentage on the button is his chance; cleverer officers do better.',
+  sgTut3: 'Have another Draft or Build. Or tap Auto at the top and idle officers get a job by themselves.', sgTut4: 'With enough troops tap Attack, then a glowing city on the map. Take the grey unclaimed cities first and leave the other lords alone for now.', sgTut5: 'Under Plot, besides rumours and fire, you can Poach an enemy officer next door or send an envoy for a Truce.',
+  sgTut6: 'All set? Tap End month at the top right. Hold every city and Markham is yours!',
+  sgHelpMore: 'Treasures: a search that finds nobody may dig up a treasure (10 are hidden each game). One officer carries it and it adds straight to his stats; hand it on from the Officers page. It goes with him if he is captured or poached.\n\nPoaching and truces (under Plot): poaching pays an enemy officer next door to change sides; lower loyalty and a cleverer agent help, and lords cannot be turned. The computer poaches too. An envoy buys 6 months of peace with one lord, with no attacks either way; it rarely works when you are much stronger or the lords have united against you.',
+});
+
 const SAVE = 'p905sg';
 const $ = (id) => document.getElementById(id);
 const zh = () => getLang() === 'zh';
@@ -100,17 +126,17 @@ export function weatherOf(s) {
 }
 const WEATHER_EN = { 雪: 'snow', 秋收: 'harvest', 晴: 'fair', 雨: 'rain', 阴: 'cloudy', 炎热: 'hot', 秋风: 'windy' };
 const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F(s.roster === 'mix' ? 'sgDateMix' : 'sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
-const CMD_KEY = { dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
+const CMD_KEY = { poach: 'sgPoach', envoy: 'sgEnvoy', dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
 
 // v0.9.5 (D-82): rarity from the two best stats (UR: a 100 or two great ones), letter grades per stat
 export const tierOf = (id) => E.tierOf(id); // rarity lives in the engine now (it shapes each game's roster)
 const grade = (v) => (v >= 90 ? 'S' : v >= 80 ? 'A' : v >= 65 ? 'B' : v >= 45 ? 'C' : 'D');
 function portrait(id, size = 46) {
   const g = GENERALS[id], tr = tierOf(id);
-  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px">${esc(g.glyph)}${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}</span>`;
+  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px">${esc(g.glyph)}${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}${itemPip(id)}</span>`;
 }
 function statBars(id) {
-  const g = GENERALS[id], row = (l, v, c) => `<div class="sgSt"><span>${l}</span><i><b style="width:${v}%;background:${c}"></b></i><em>${v}</em><u class="g${grade(v)}">${grade(v)}</u></div>`;
+  const g = E.gen(id), row = (l, v, c) => `<div class="sgSt"><span>${l}</span><i><b style="width:${v}%;background:${c}"></b></i><em>${v}</em><u class="g${grade(v)}">${grade(v)}</u></div>`;
   return (zh() ? [['统', g.lead], ['武', g.war], ['智', g.int], ['政', g.pol]] : [['LED', g.lead], ['WAR', g.war], ['INT', g.int], ['POL', g.pol]])
     .map(([l, v], i) => row(l, v, ['#7fb2f0', '#f08a6e', '#b79cf0', '#7fd1a1'][i])).join('');
 }
@@ -118,13 +144,21 @@ function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span cla
 // a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
 // rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
 const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
+const iName = (i) => (zh() ? ITEMS[i].zh : ITEMS[i].en);
+const FXK = { lead: 'itLead', war: 'itWar', int: 'itInt', pol: 'itPol', hp: 'itHp', sp: 'itSp' };
+export const itemFxText = (i) => Object.entries(ITEMS[i].fx).map(([k, v]) => `${t(FXK[k])} +${v}`).join(' · ');
+const itemPip = (id) => { const i = E.itemOf(id); return i ? `<i class="sgIt t${ITEMS[i].tier}" title="${esc(iName(i))}">${ITEMS[i].glyph}</i>` : ''; };
+function itemCard(i) {
+  const it = ITEMS[i];
+  return `<div class="sgItem t${it.tier} k${it.kind}"><i class="sgCstar">${'★'.repeat(STARS[it.tier])}</i><b>${it.glyph}</b><span>${esc(iName(i))}</span><em>${esc(itemFxText(i))}</em></div>`;
+}
 function tallCard(id, opts = {}) {
-  const g = GENERALS[id], tr = tierOf(id), top = [['统', 'L', g.lead], ['武', 'W', g.war], ['智', 'I', g.int], ['政', 'P', g.pol]].sort((a, b) => b[2] - a[2])[0];
+  const g = E.gen(id), tr = tierOf(id), top = [['统', 'L', g.lead], ['武', 'W', g.war], ['智', 'I', g.int], ['政', 'P', g.pol]].sort((a, b) => b[2] - a[2])[0];
   const bar = opts.troops !== undefined ? `<i class="sgCbar"><b style="width:${Math.max(0, Math.min(100, opts.pct ?? 100))}%"></b></i><em class="sgCtroops">${kNum(opts.troops)}</em>` : '';
   return `<div class="sgCardT t${tr} k${g.k}${opts.big ? ' big' : ''}${opts.cls ? ' ' + opts.cls : ''}" ${opts.data || ''}>
     <i class="sgCtag${zh() ? '' : ' v'}">${g.tag[zh() ? 0 : 1]}</i><i class="sgCstar">${'★'.repeat(STARS[tr])}</i>
     <b class="sgCglyph">${esc(g.glyph)}</b><i class="sgCtier">${tr}</i>
-    <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${bar}</div>`;
+    <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${itemPip(id)}${bar}</div>`;
 }
 function genCard(id, opts = {}) {
   return `<div class="sgG${opts.on ? ' on' : ''}${opts.pick ? ' pick' : ''}" ${opts.data || ''}>${portrait(id)}<div class="sgGi"><b>${esc(gName(id))}</b>${statBars(id)}<div class="sgTrw">${traitTag(id)}</div></div></div>`;
@@ -351,7 +385,7 @@ export class Sanguo {
       const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
-      else castle(c, x, y, col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].glyph : '', ts, C.dev);
+      else drawCity(c, x, y, cityKind(id), col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].glyph : '', ts, C.dev);
     }
     // labels: the most important first (selected, yours, cities, then passes), each in the first free spot
     // around its castle (below, above, right, left); when nothing is free a city shows just its troops
@@ -407,6 +441,7 @@ export class Sanguo {
         const gs = E.gensIn(st, id, E.PLAYER);
         if (gs.length) { const n = gs.filter((g) => ordered.has(g)).length; pill(c, x + 28 * ts, y - 28 * ts, n === gs.length ? '#f2c14e' : '#fff', `${n}/${gs.length}`); }
       }
+      if (C.owner > 0 && st.factions[C.owner].cap === id && E.truceLeft(st, E.PLAYER, C.owner)) badge(c, x - 28 * ts, y - 26 * ts, '#2f8f4e', zh() ? '和' : '☮');
       if (C.owner === -1 && E.guardsIn(st, id).length) badge(c, x - 28 * ts, y - 24 * ts, '#6b4f8a', GENERALS[E.guardsIn(st, id)[0]].glyph);
     }
     // armies on the road (v0.9.3): a banner part of the way along the road, with troops and arrival
@@ -483,6 +518,7 @@ export class Sanguo {
     $('sgGenBtn').textContent = zh() ? '将' : t('sgOfficersBtn');
     for (const id of ['sgGenBtn', 'sgLogBtn']) $(id).classList.toggle('pill', this.small && !zh()); // English words do not fit a round button
     $('sgPanel').innerHTML = this.sel ? this.cityPanel(this.sel) : this.sidePanel();
+    if (this.mode) { const pk = [...document.querySelectorAll('#sgPanel .sgChips')].pop(); if (pk && pk.scrollIntoView) pk.scrollIntoView({ block: 'nearest' }); } // the choices for the order being given stay in view on a phone
     this.save();
   }
   sidePanel() {
@@ -512,6 +548,7 @@ export class Sanguo {
       <div class="sgGrid"><div><small>${t('sgTroops')}</small><b>${C.troops.toLocaleString()}</b></div><div><small>${t('sgDef')}</small><b>${C.def}</b></div>
       ${info.pass ? `<div><small>${t('sgWalls')}</small><b>×${E.wallMul(C).toFixed(2)}</b></div><div><small>${t('sgGarrison')}</small><b>${gs.length}</b></div>`
         : `<div><small>${t('sgDev')}</small><b>${C.dev}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div>`}</div>`;
+    if (C.owner > 0 && E.truceLeft(st, E.PLAYER, C.owner)) h += `<p class="sgHint sgTruce">${esc(F('sgTruceWith', { n: E.truceLeft(st, E.PLAYER, C.owner) }))}</p>`;
     if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
     if (info.pass) h += `<p class="sgHint">${t('sgPassNote')}</p>`;
     if (info.valley) h += `<p class="sgHint">🌾 ${t('sgValley')}</p>`;
@@ -539,6 +576,8 @@ export class Sanguo {
   eta(a) { return a.left <= 1 ? t('sgEtaNow') : F('sgEta', { n: a.left }); }
   orderText(o) {
     const k = o.cmd === 'plot' ? (o.kind === 'fire' ? 'sgFire' : 'sgRumor') : CMD_KEY[o.cmd];
+    if (o.cmd === 'poach') return `${t(k)} → ${gName(o.g)}`;
+    if (o.cmd === 'envoy') return `${t(k)} → ${this.fName(o.f)}`;
     if (o.cmd === 'intercept') { const A = (this.s.armies || []).find((a) => a.id === o.army); return t(k) + (A ? ` → ${this.fName(A.f)}` : '') + (o.n ? ' · ' + kNum(o.n) : ''); }
     return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}` : '');
   }
@@ -555,7 +594,7 @@ export class Sanguo {
         if (cmd === 'march') return E.marchTargets(st, E.PLAYER, c).some((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
         if (cmd === 'move') return E.moveTargets(st, E.PLAYER, c).length > 0;
         if (cmd === 'intercept') return st.cities[c].troops >= CFG.sg.minMarch;
-        if (cmd === 'plot') return gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id) && ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n }));
+        if (cmd === 'plot') return gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id) && (ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n })) || this.plotKinds(c, id).length > 0);
         return E.validOrder(st, E.PLAYER, id, { cmd }) && gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id);
       };
       // what this officer would get done: his stats, made visible on the buttons (D-82)
@@ -568,15 +607,19 @@ export class Sanguo {
         plot: cost('plot'), move: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), march: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), intercept: '',
       };
       const cmds = [...(CITIES[c].pass ? ['fort', 'plot', 'move', 'march'] : ['dev', 'draft', 'search', 'fort', 'plot', 'move', 'march']), ...(E.interceptTargets(st, E.PLAYER, c).length ? ['intercept'] : [])];
-      const g = GENERALS[id];
+      const g = E.gen(id);
       h += `<div class="sgO${o ? ' set' : ''}"><div class="sgOh">${portrait(id, 34)}<div><b>${esc(gName(id))}</b><small>${zh() ? '统' : 'L'}${g.lead} ${zh() ? '武' : 'W'}${g.war} ${zh() ? '智' : 'I'}${g.int} ${zh() ? '政' : 'P'}${g.pol}</small></div>
         <em>${o ? esc(this.orderText(o)) : t('sgCmdRest')}</em></div>
-        <div class="sgCmds">${cmds.map((cmd) => `<button class="sgCmd${cur === cmd || (m && m.cmd === cmd) ? ' on' : ''}" data-g="${id}" data-cmd="${cmd}" ${can(cmd) ? '' : 'disabled'}>${t(CMD_KEY[cmd])}${prev[cmd] ? `<small>${prev[cmd]}</small>` : ''}</button>`).join('')}<button class="sgCmd${!o && !m ? ' on' : ''}" data-g="${id}" data-cmd="rest">${t('sgCmdRest')}</button></div>`;
+        <div class="sgCmds">${cmds.map((cmd) => `<button class="sgCmd${cur === cmd || (cmd === 'plot' && (cur === 'poach' || cur === 'envoy')) || (m && m.cmd === cmd) ? ' on' : ''}" data-g="${id}" data-cmd="${cmd}" ${can(cmd) ? '' : 'disabled'}>${t(CMD_KEY[cmd])}${prev[cmd] ? `<small>${prev[cmd]}</small>` : ''}</button>`).join('')}<button class="sgCmd${!o && !m ? ' on' : ''}" data-g="${id}" data-cmd="rest">${t('sgCmdRest')}</button></div>`;
       if (m && m.cmd === 'intercept') {
         h += `<p class="sgPick">${t('sgPickArmy')}</p><div class="sgChips">${E.interceptTargets(st, E.PLAYER, c).map((A) => `<button data-g="${id}" data-army="${A.id}">${esc(F('sgArmyChip', { f: this.fName(A.f), n: kNum(A.troops), to: cName(A.to) }))}${this.odds(c, null, id, A)}</button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m && m.cmd === 'plot') {
-        h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${E.PLOTS.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(kd === 'fire' ? 'sgFire' : 'sgRumor')} <small>${t(kd === 'fire' ? 'sgFireS' : 'sgRumorS')}</small></button>`).join('')}</div>`;
-        if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+        const KT = { rumor: ['sgRumor', 'sgRumorS'], fire: ['sgFire', 'sgFireS'], poach: ['sgPoach', 'sgPoachS'], envoy: ['sgEnvoy', 'sgEnvoyS'] }, extra = this.plotKinds(c, id);
+        const kinds = [...(m.cities.length ? E.PLOTS : []), ...extra];
+        h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${kinds.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(KT[kd][0])} <small>${esc(F(KT[kd][1], { n: CFG.sg.envoyMonths }))} · ${E.costOf(kd === 'poach' || kd === 'envoy' ? kd : 'plot', id)}${zh() ? '金' : 'g'}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+        if (m.kind === 'poach') h += `<p class="sgPick">${t('sgPickGen')}</p><div class="sgChips">${E.poachTargets(st, E.PLAYER, c).map((x) => `<button data-g="${id}" data-pg="${x}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'poach', g: x }) ? '' : 'disabled'}>${esc(gName(x))} <small>${esc(cName(st.gens[x].c))} · ${t('sgLoyal')} ${st.gens[x].loyal ?? 70} · ${F('sgChance', { n: Math.round(E.poachChance(st, E.PLAYER, id, x) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
+        else if (m.kind === 'envoy') h += `<p class="sgPick">${t('sgPickLord')}</p><div class="sgChips">${st.factions.filter((x) => x.id !== E.PLAYER && x.alive && !E.truceLeft(st, E.PLAYER, x.id)).map((x) => `<button data-g="${id}" data-ef="${x.id}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'envoy', f: x.id }) ? '' : 'disabled'}><span class="sgDot" style="background:${x.color}"></span>${esc(this.fName(x.id))} <small>${F('sgChance', { n: Math.round(E.envoyChance(st, E.PLAYER, id, x.id) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
+        else if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m) {
         h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(this.lastHop(c, n), n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
@@ -587,6 +630,14 @@ export class Sanguo {
     }
     return h;
   }
+  // the extra stratagems an officer in city c could use now: poaching needs a target next door, a truce a lord to ask
+  plotKinds(c, id) {
+    const st = this.s, P = E.PLAYER, out = [];
+    if (CITIES[c].pass) return out;
+    if (E.poachTargets(st, P, c).length) out.push('poach');
+    if (st.factions.some((x) => x.id !== P && x.alive && !E.truceLeft(st, P, x.id))) out.push('envoy');
+    return out;
+  }
   panelClick(e) {
     if (this.busy) return;
     const st = this.s, c = this.sel, b = e.target.closest('button');
@@ -596,7 +647,9 @@ export class Sanguo {
     if (b.dataset.a === 'cancel') { this.mode = null; this.render(); return; }
     const id = b.dataset.g;
     if (!c || !id || !st.gens[id]) return;
-    if (b.dataset.kind && this.mode && this.mode.id === id) { this.mode.kind = b.dataset.kind; this.render(); return; }
+    if (b.dataset.kind && this.mode && this.mode.id === id) { this.mode.kind = b.dataset.kind; this.mode.targets = E.PLOTS.includes(b.dataset.kind) ? this.mode.cities : []; this.render(); return; }
+    if (b.dataset.pg) { st.orders[id] = { cmd: 'poach', g: b.dataset.pg }; this.mode = null; this.render(); return; }
+    if (b.dataset.ef) { st.orders[id] = { cmd: 'envoy', f: +b.dataset.ef }; this.mode = null; this.render(); return; }
     if (b.dataset.army) { const av = Math.min(E.commandOf(id), this.avail(c, id)); st.orders[id] = { cmd: 'intercept', army: +b.dataset.army, n: Math.floor(av * 0.8) }; this.mode = null; this.render(); return; }
     if (b.dataset.to) { this.mode = this.mode && this.mode.id === id ? this.mode : { id, c, cmd: 'move', targets: [b.dataset.to] }; this.setTarget(b.dataset.to); return; }
     if (b.dataset.cmd) {
@@ -606,7 +659,8 @@ export class Sanguo {
       else if (cmd === 'intercept') { delete st.orders[id]; this.mode = { id, c, cmd, targets: [] }; }
       else if (cmd === 'plot') {
         delete st.orders[id];
-        this.mode = { id, c, cmd, kind: null, targets: ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n })) };
+        const cities = ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n }));
+        this.mode = { id, c, cmd, kind: null, cities, targets: [] };
       } else if (cmd === 'march' || cmd === 'move') {
         const targets = (cmd === 'march' ? E.marchTargets(st, E.PLAYER, c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n })) : E.moveTargets(st, E.PLAYER, c)).sort((a, b) => E.travelMonths(E.routeOf(st, E.PLAYER, c, a)) - E.travelMonths(E.routeOf(st, E.PLAYER, c, b)));
         delete st.orders[id];
@@ -659,6 +713,7 @@ export class Sanguo {
     const evs = E.endTurn(st);
     st.orders = {};
     for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) }));
+    for (const e of evs) if (e.k === 'item' && e.f === E.PLAYER) await this.itemReveal(e);
     this.render();
     await this.report(evs);
     sfx.setBgmMood('calm');
@@ -695,7 +750,7 @@ export class Sanguo {
     };
     const L = $('sgLayer');
     L.className = 'show battle';
-    L.innerHTML = `<div class="sgCard sgBattle"><h2 class="sgCenter">${esc(where)} · ${ic} ${zh() ? w : WEATHER_EN[w]}</h2>
+    L.innerHTML = `<div class="sgCard sgBattle charge"><h2 class="sgCenter">${esc(where)} · ${ic} ${zh() ? w : WEATHER_EN[w]}</h2>
       <div class="sgBrow">${col(left)}<span class="sgVs">VS</span>${col(1 - left)}</div><p class="sgCenter sgBres"></p><button class="sgBig" data-ok="1" style="visibility:hidden">${t('sgContinue')}</button></div>`;
     let skip = false;
     const onTap = () => { skip = true; };
@@ -709,9 +764,18 @@ export class Sanguo {
         if (!gs.length) { const c = L.querySelector(`.sgBside${si === left ? '.me' : ':not(.me)'} .garrison`); if (c) { c.querySelector('.sgCbar b').style.width = pct + '%'; c.querySelector('.sgCtroops').textContent = kNum(v); } }
       }
     };
+    if (!this.skipFx) await new Promise((r) => setTimeout(r, 520)); // the charge
+    const acc = [0, 0], floatLoss = (si) => {
+      if (acc[si] < 1) return;
+      const head = L.querySelectorAll('.sgBside')[si === left ? 0 : 1]?.querySelector('.sgBhead');
+      if (head) { const el = document.createElement('i'); el.className = 'sgLoss'; el.textContent = '-' + kNum(acc[si]); head.appendChild(el); setTimeout(() => el.remove(), 900); }
+      acc[si] = 0;
+    };
     for (let i = 1; i < rounds.length && !skip && !this.skipFx; i++) {
       set(rounds[i]);
       const lost = [rounds[i - 1][0] - rounds[i][0], rounds[i - 1][1] - rounds[i][1]];
+      acc[0] += lost[0]; acc[1] += lost[1];
+      if (i % 5 === 0) { floatLoss(0); floatLoss(1); }
       for (const si of [0, 1]) if (lost[si] > rounds[0][si] * 0.06) { const side = L.querySelectorAll('.sgBside')[si === left ? 0 : 1]; side.classList.remove('hit'); void side.offsetWidth; side.classList.add('hit'); }
       if (i % 3 === 1) sfx.clash(0.5);
       await new Promise((r) => setTimeout(r, 110));
@@ -720,7 +784,9 @@ export class Sanguo {
     L.removeEventListener('pointerdown', onTap);
     const youWon = res ? (res.k === 'field' ? res.f === P : res.k === 'take' ? m.f === P : fd === P) : false;
     const txt = !res ? '' : res.k === 'field' ? t(youWon ? 'sgFxField' : 'sgFxFieldLost') : res.k === 'take' ? t(m.f === P ? 'sgFxTake' : 'sgFxLost') : t(fd === P ? 'sgFxHeld' : 'sgFxRepelled');
-    const out = L.querySelector('.sgBres'); out.textContent = txt; out.className = 'sgCenter sgBres ' + (youWon ? 'won' : 'lost');
+    const out = L.querySelector('.sgBres'); out.textContent = txt; out.className = 'sgCenter sgBres stamp ' + (youWon ? 'won' : 'lost');
+    const sidesEl = L.querySelectorAll('.sgBside'), last = rounds[rounds.length - 1], leftWon = res ? youWon : last[left] >= last[1 - left];
+    if (sidesEl.length === 2) { sidesEl[0].classList.add(leftWon ? 'victor' : 'beaten'); sidesEl[1].classList.add(leftWon ? 'beaten' : 'victor'); }
     L.querySelector('[data-ok]').style.visibility = 'visible';
     sfx.fanfare(youWon);
     await new Promise((res2) => { const h = (e) => { if (!e.target.closest('[data-ok]')) return; L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; res2(); }; L.addEventListener('click', h); });
@@ -735,7 +801,7 @@ export class Sanguo {
     const where = (id) => { const G = st.gens[id]; return G.guard ? `${cName(G.c)} · ${t('sgGuard')}` : G.c ? cName(G.c) : this.armyOf(id) ? F('sgMarching', { to: cName(this.armyOf(id).to), eta: this.eta(this.armyOf(id)) }) : t('sgOnRoad'); };
     const paint = () => {
       if (detail) {
-        const g = GENERALS[detail], G = st.gens[detail], tr = TRAITS[g.trait], bonds = BONDS.filter((x) => x.m.includes(detail));
+        const g = E.gen(detail), G = st.gens[detail], tr = TRAITS[g.trait], bonds = BONDS.filter((x) => x.m.includes(detail));
         const row = (k, v) => `<div class="sgDrow"><span>${k}</span><b>${v}</b><i>›</i></div>`;
         const stat = (l, v) => `${v} <u class="g${grade(v)}">${grade(v)}</u>`;
         L.innerHTML = `<div class="sgCard sgPage"><div class="sgPhead"><button class="sgBack" data-back="1">‹</button><b>${esc(gName(detail))}</b><button class="sgX" data-ok="1">✕</button></div>
@@ -746,6 +812,9 @@ export class Sanguo {
           ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)}`)}
           ${row(zh() ? '特技' : 'Trait', `${esc(zh() ? tr[0] : tr[1])} · ${esc(zh() ? tr[2] : tr[3])}`)}
           ${bonds.length ? row(t('sgBonds'), bonds.map((x) => esc(zh() ? x.zh : x.en)).join('、')) : ''}
+          ${G.f >= 0 ? row(t('sgLoyal'), `${G.loyal ?? 70} <small>${t('sgLoyalS')}</small>`) : ''}
+          ${G.item ? row(t('sgItem'), `${ITEMS[G.item].glyph} ${esc(iName(G.item))} · ${esc(itemFxText(G.item))}`) : ''}
+          ${G.item && G.f === P ? `<div class="sgChips sgGive"><span>${t('sgItemGive')}</span>${mine().filter((x) => x !== detail).map((x) => `<button data-give="${x}">${esc(gName(x))}${E.itemOf(x) ? ' ⇄' : ''}</button>`).join('')}</div>` : ''}
           ${row(zh() ? '所在' : 'Where', esc(where(detail)))}
           ${G.f === P ? row(t('sgOrder'), esc(st.orders[detail] ? this.orderText(st.orders[detail]) : t('sgCmdRest'))) : row(t('sgOwner'), esc(this.fName(G.f)))}
           </div></div></div>`;
@@ -764,8 +833,9 @@ export class Sanguo {
     L.className = 'show page';
     paint();
     const h = (e) => {
-      const b = e.target.closest('[data-tab],[data-gid],[data-back],[data-ok]');
+      const b = e.target.closest('[data-tab],[data-gid],[data-back],[data-ok],[data-give]');
       if (!b) return;
+      if (b.dataset.give) { E.passItem(st, detail, b.dataset.give); this.save(); this.render(); paint(); return; }
       if (b.dataset.ok) { L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; return; }
       if (b.dataset.back) detail = null;
       else if (b.dataset.tab) tab = b.dataset.tab;
@@ -793,6 +863,10 @@ export class Sanguo {
       case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'skip': return e.f === P ? F('evSkip', { g: gName(e.g) }) : null;
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });
+      case 'item': return e.f === P ? F('evItem', { c: cName(e.c), g: gName(e.g), i: iName(e.item) }) : F('evItemAI', { f, c: cName(e.c), i: iName(e.item) });
+      case 'poach': return e.ok ? (e.from === P ? F('evPoachedYou', { t: gName(e.t), f }) : F('evPoachOk', { g: gName(e.g), t: gName(e.t), from: this.fName(e.from), f })) : e.f === P || e.from === P ? F('evPoachNo', { g: gName(e.g), t: gName(e.t) }) : null;
+      case 'truce': return e.ok ? F('evTruceOk', { g: gName(e.g), f, to: this.fName(e.to), n: e.n }) : e.f === P ? F('evTruceNo', { g: gName(e.g), to: this.fName(e.to) }) : null;
+      case 'truceEnd': return e.f === P || e.to === P ? F('evTruceEnd', { f, to: this.fName(e.to) }) : null;
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
       case 'nothing': return e.f === P ? F('evNothing', { c: cName(e.c) }) : null;
       case 'move': return e.f === P ? F('evMove', { g: gName(e.gens[0]), c: cName(e.c), to: cName(e.to), n: e.n, m: e.months || 1 }) : null;
@@ -830,7 +904,7 @@ export class Sanguo {
   }
   async report(evs) {
     const lines = evs.map((e) => [e, this.evText(e)]).filter(([, x]) => x);
-    const imp = (e) => ['take', 'fall', 'coalition', 'coalitionEnd', 'duel', 'cut', 'hunger', 'found', 'recruit', 'event', 'harvest', 'plot'].includes(e.k);
+    const imp = (e) => ['take', 'fall', 'coalition', 'coalitionEnd', 'duel', 'cut', 'hunger', 'found', 'recruit', 'event', 'harvest', 'plot', 'item', 'poach', 'truce', 'truceEnd'].includes(e.k);
     await this.layer(`<h2>${t('sgReport')} · ${dateText({ turn: this.s.turn - 1 })}</h2>
       <ul class="sgEv">${lines.length ? lines.map(([e, x]) => `<li class="${imp(e) ? 'imp' : ''}${e.f === E.PLAYER ? ' me' : ''}">${esc(x)}</li>`).join('') : `<li>${t('sgQuiet')}</li>`}</ul>
       <button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
@@ -847,6 +921,13 @@ export class Sanguo {
     return this.layer(`<h2 class="sgCenter">${esc(title)}</h2><div class="sgReveal">${portrait(g, 96)}<div><div class="sgBigName">${esc(gName(g))}</div>${statBars(g)}<div class="sgTrw">${traitTag(g)}</div>${bonds}</div></div>
       <p class="sgCenter">${esc(line)}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip r' + tr);
   }
+  // a treasure blind box (v1.1): the card flips over like an officer's
+  itemReveal(e) {
+    const tr = ITEMS[e.item].tier;
+    sfx.sparkle(); if (tr !== 'SR') setTimeout(() => sfx.fanfare(true), 350);
+    return this.layer(`<h2 class="sgCenter">${t('sgItemBox')}</h2><div class="sgReveal item">${itemCard(e.item)}<div><div class="sgBigName">${esc(iName(e.item))}</div><p>${esc(F('sgItemGot', { g: gName(e.g), c: cName(e.c) }))}</p>
+      <div class="sgTrw"><span class="sgTr">${esc(itemFxText(e.item))}</span></div><p class="sgHint">${esc(F('sgItemTo', { g: gName(e.to) }))}</p></div></div><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip r' + tr);
+  }
   async intro() {
     const st = this.s;
     await this.reveal(E.factionGens(st, E.PLAYER)[0], t('sgBlindStart'), F('sgJoined', { g: gName(E.factionGens(st, E.PLAYER)[0]) }));
@@ -855,6 +936,35 @@ export class Sanguo {
     await this.layer(`<h2>${t('sgRivals')}</h2><div class="sgRivals">${[1, 2, 3].map((f) => `<div>${portrait(st.factions[f].lord, 56)}<b style="color:${st.factions[f].color}">${esc(this.fName(f))}</b><small>📍 ${esc(cName(st.factions[f].cap))}</small></div>`).join('')}</div>
       <p>${esc(F('sgIntro', { a, b, c, p: cName(PASS_IDS.find((x) => CITIES[x].big) || PASS_IDS[0]) }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
     this.sel = st.factions[E.PLAYER].cap; this.focus(this.sel); this.render();
+    this.tutorial(false);
+  }
+  // the first-game guide (v1.1): six short notes, each pointing at the thing it talks about. Shown once
+  // per browser (and again from the menu); nothing is locked while it shows
+  tutorial(force) {
+    let seen = false;
+    try { seen = localStorage.getItem('p905sgtut') === '1'; } catch (e) { /* ignore */ }
+    if (seen && !force) return;
+    const st = this.s, box = $('sgTut');
+    const steps = [['sgTut1', '#sgPanel h3'], ['sgTut2', '.sgCmd[data-cmd="search"]'], ['sgTut3', '#sgAuto'], ['sgTut4', '.sgCmd[data-cmd="march"]'], ['sgTut5', '.sgCmd[data-cmd="plot"]'], ['sgTut6', '#sgEnd']];
+    let i = 0;
+    const clear = () => { for (const el of document.querySelectorAll('.sgTutHi')) el.classList.remove('sgTutHi'); };
+    const show = () => {
+      clear();
+      if (this.panelHidden) this.togglePanel(false);
+      if (this.sel !== st.factions[E.PLAYER].cap && i < 5) { this.sel = st.factions[E.PLAYER].cap; this.mode = null; this.render(); }
+      const el = document.querySelector(steps[i][1]);
+      if (el) { el.classList.add('sgTutHi'); if (el.closest('#sgPanel')) el.scrollIntoView({ block: 'nearest' }); }
+      box.innerHTML = `<b>${i + 1}/${steps.length}</b><p>${esc(t(steps[i][0]))}</p><div><button data-tut="skip">${t('sgTutSkip')}</button><button class="go" data-tut="next">${t(i === steps.length - 1 ? 'sgTutDone' : 'sgTutNext')}</button></div>`;
+      box.className = 'show'; box.style.left = (this.panelHidden ? 60 : this.panelW + 24) + 'px';
+    };
+    box.onclick = (e) => {
+      const b = e.target.closest('[data-tut]');
+      if (!b) return;
+      if (b.dataset.tut === 'next' && ++i < steps.length) { show(); return; }
+      clear(); box.className = ''; box.innerHTML = '';
+      try { localStorage.setItem('p905sgtut', '1'); } catch (err) { /* ignore */ }
+    };
+    show();
   }
   // the duel (v0.9.9, D-86): the opponent takes a stance, you read it and answer. Your 智力 against his
   // says whether the stance can be trusted; 斗志 pays for 必杀; a big gap in 武力 ends it in one blow
@@ -865,33 +975,35 @@ export class Sanguo {
     L.className = 'show duel';
     const stance = () => {
       const lines = STANCES[d.tell][zh() ? 0 : 1], line = lines[(d.n + st.turn) % lines.length];
-      const gm = GENERALS[me], gf = GENERALS[foe];
+      const gm = E.gen(me), gf = E.gen(foe);
       const trust = d.feintP <= 0 ? `<i class="sgTrust ok">🔍 ${esc(F('sgTrustOk', { a: gm.int, b: gf.int }))}</i>`
         : `<i class="sgTrust warn">⚠ ${esc(F('sgTrustWarn', { a: gm.int, b: gf.int, n: Math.round(d.feintP * 100) }))}</i>`;
       return `<div class="sgStance s${d.tell}"><b>${esc(F(line, { g: gName(foe) }))}</b><small>${esc(t('sgLooks' + d.tell))}</small>${trust}</div>`;
     };
-    const paint = (msg, hitMe = 0, hitFoe = 0, big = false) => {
-      const side = (g, col, hit) => {
-        const [hp, max, sp] = hpOf(g), G = GENERALS[g];
-        if (this.small) { // a phone in landscape: portrait beside the bars, so the stance and buttons fit
-          return `<div class="sgDs sm${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 46)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<div class="sgDi">
-            <b>${esc(gName(g))} <small>${zh() ? `武${G.war} 智${G.int} 统${G.lead}` : `W${G.war} I${G.int} L${G.lead}`}</small></b>
-            <span><i class="sgHp"><b style="width:${hp / max * 100}%;background:${col}"></b></i><em>${hp}</em></span>
-            <span><i class="sgSp"><b style="width:${sp}%"></b></i><small class="sgSpN">${t('sgSpirit')} ${sp}</small></span></div></div>`;
-        }
-        return `<div class="sgDs${hit ? ' hit' : ''}${hp <= 0 ? ' ko' : ''}">${portrait(g, 76)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}<b>${esc(gName(g))}</b>
-          <small>${zh() ? `武${G.war} 智${G.int} 统${G.lead}` : `W${G.war} I${G.int} L${G.lead}`}</small>
-          <i class="sgHp"><b style="width:${hp / max * 100}%;background:${col}"></b></i><em>${hp}</em>
-          <i class="sgSp" title="${esc(t('sgSpirit'))}"><b style="width:${sp}%"></b></i><small class="sgSpN">${t('sgSpirit')} ${sp}</small></div>`;
+    const MV = { atk: ['sgAtk', '⚔'], def: ['sgDefM', '🛡'], skill: ['sgSkill', '✦'] };
+    const paint = (msg, hitMe = 0, hitFoe = 0, big = false, fxr = null) => {
+      // fxr: the round just fought { my, foe, won } -> what each card does (v1.1, D-100)
+      const anim = (mine) => {
+        if (!fxr) return '';
+        const mv = mine ? fxr.my : fxr.foe, hit = mine ? hitMe : hitFoe, dealt = mine ? hitFoe : hitMe;
+        return ` mv-${mv}${mv !== 'def' && dealt ? ' lunge' : mv === 'def' ? ' brace' : ' whiff'}${hit ? ' hit' : ''}${d.done && d.win ? ((d.win === R) === mine ? ' win' : ' lose') : ''}`;
+      };
+      const stamp = (mine) => (fxr ? `<i class="sgMv ${mine ? fxr.my : fxr.foe}">${MV[mine ? fxr.my : fxr.foe][1]} ${t(MV[mine ? fxr.my : fxr.foe][0])}</i>` : '');
+      const side = (g, col, hit, mine) => {
+        const [hp, max, sp] = hpOf(g), G = E.gen(g);
+        const bars = `<span><i class="sgHp"><b style="width:${hp / max * 100}%;background:${col}"></b></i><em>${hp}</em></span>
+            <span><i class="sgSp"><b style="width:${sp}%"></b></i><small class="sgSpN">${t('sgSpirit')} ${sp}</small></span>`;
+        return `<div class="sgDs dc ${mine ? 'me' : 'foe'}${hp <= 0 ? ' ko' : ''}${anim(mine)}"><div class="sgDc">${tallCard(g)}${stamp(mine)}${hit ? `<i class="sgDmg">-${hit}</i>` : ''}${hp <= 0 ? '<i class="sgKo">★ ★ ★</i>' : ''}${d.done && d.win && (d.win === R) === mine ? `<i class="sgSeal">${zh() ? '胜' : 'WIN'}</i>` : ''}</div>
+          <div class="sgDi"><b>${esc(gName(g))}</b><small>${zh() ? `武${G.war} 智${G.int} 统${G.lead}` : `W${G.war} I${G.int} L${G.lead}`}</small>${bars}</div></div>`;
       };
       const can = E.canSkill(d, R);
       const btns = d.done
         ? `<button class="sgBig" data-dm="ok">${t('sgContinue')}</button>`
         : `${stance()}<div class="sgDm"><button data-dm="atk">${t('sgAtk')}</button><button data-dm="def">${t('sgDefM')}</button><button data-dm="skill"${can ? '' : ' disabled'}>${t('sgSkill')}<small>${F('sgSkillCost', { n: k.duelSkillCost })}</small></button></div>
           <p class="sgRule">${t('sgDuelRule')} · <button class="sgLink" data-dm="auto">${t('sgDuelAuto')}</button></p>`;
-      const gap = GENERALS[d.a].war - GENERALS[d.d].war, ko = Math.abs(gap) >= k.duelKoGap && d.n === 0 && !d.done ? `<p class="sgCenter sgKoWarn">${esc(F('sgKoGap', { g: gName(gap > 0 ? d.a : d.d) }))}</p>` : '';
+      const gap = E.gen(d.a).war - E.gen(d.d).war, ko = Math.abs(gap) >= k.duelKoGap && d.n === 0 && !d.done ? `<p class="sgCenter sgKoWarn">${esc(F('sgKoGap', { g: gName(gap > 0 ? d.a : d.d) }))}</p>` : '';
       L.innerHTML = `<div class="sgCard${big ? ' jolt' : ''}"><h2 class="sgCenter">${t('sgDuel')} <small>${d.rival ? esc(F('sgRival', { r: zh() ? d.rival : d.rivalEn })) + ' · ' : ''}${F('sgRound', { n: Math.min(d.n + 1, k.duelRounds) })}/${k.duelRounds}</small></h2>
-        <div class="sgDuel">${side(me, '#2f7de1', hitMe)}<span class="sgVs">VS</span>${side(foe, '#d64545', hitFoe)}</div>
+        <div class="sgDuel arena">${side(me, '#2f7de1', hitMe, true)}<span class="sgVs${fxr && (hitMe || hitFoe) ? (fxr.my === 'skill' || fxr.foe === 'skill' ? ' burst' : ' slash') : fxr ? ' clink' : ''}">VS</span>${side(foe, '#d64545', hitFoe, false)}</div>
         ${ko}${msg ? `<p class="sgCenter sgMsg">${msg}</p>` : ''}${btns}</div>`;
     };
     paint(this.small ? '' : esc(F('sgDuelVs', { a: gName(d.a), d: gName(d.d) })));
@@ -913,7 +1025,8 @@ export class Sanguo {
         if (d.done) msg += `<br><b>${esc(d.win ? F('sgDuelWin', { g: gName(d.win === 'a' ? d.a : d.d) }) : t('sgDuelDraw'))}</b>`;
         if (hitMe || hitFoe) { sfx.punch(big ? 1.2 : 0.8); if (big) sfx.clash(0.6); } else sfx.clash(0.4);
         if (d.done) setTimeout(() => (d.win ? sfx.fanfare(d.win === R) : sfx.drum(1)), 250);
-        paint(msg, hitMe, hitFoe, big);
+        if ((myMv === 'skill' || foeMv === 'skill') && (hitMe || hitFoe)) sfx.sparkle();
+        paint(msg, hitMe, hitFoe, big, { my: myMv, foe: foeMv, won: r.won });
       };
       L.addEventListener('click', h);
     });
@@ -935,10 +1048,11 @@ export class Sanguo {
   async menu() {
     if (this.busy) return;
     const r = await this.layer(`<h2>${t('sgMenu')}<button class="sgX" data-ok="x">✕</button></h2>
-      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}</button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
+      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}</button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
     if (r === 'back') { this.save(); sfx.bgm(false); this.onClose(); }
     else if (r === 'music') { this.music = !this.music; sfx.bgm(this.music); this.menu(); }
-    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText'))}</p>`);
+    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore'))}</p>`);
+    else if (r === 'tut') this.tutorial(true);
     else if (r === 'new') this.newGame(true);
   }
 }
@@ -948,31 +1062,6 @@ function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w
 function shade(hex, f) {
   const n = parseInt(hex.slice(1), 16), ch = (v) => Math.round(f < 1 ? v * f : v + (255 - v) * (f - 1));
   return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
-}
-// a little low-poly castle: stone base, keep, two roofs in the owner's colour, a flag with a character
-// the castle grows with the city (D-82): a village under 40 development, side towers from 70
-function castle(c, x, y, col, cap, ch, ts = 1, dev = 50) {
-  const k = (cap ? 1.15 : 1) * ts * (dev < 40 ? 0.86 : dev >= 70 ? 1.1 : 1);
-  c.save(); c.translate(x, y); c.scale(k, k);
-  c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 9, 30, 10, 0, 0, 7); c.fill();
-  const poly = (pts, f) => { c.fillStyle = f; c.beginPath(); pts.forEach(([a, b], i) => (i ? c.lineTo(a, b) : c.moveTo(a, b))); c.closePath(); c.fill(); };
-  poly([[-24, 0], [-12, 8], [12, 8], [24, 0], [24, 6], [12, 14], [-12, 14], [-24, 6]], '#b5a285');
-  poly([[-24, 0], [-12, -8], [12, -8], [24, 0], [12, 8], [-12, 8]], '#e8decd');
-  if (dev >= 70) for (const sx of [-17, 17]) { // side towers of a big city
-    poly([[sx - 5, 0], [sx + 5, 0], [sx + 5, -13], [sx - 5, -13]], '#efe4d2');
-    poly([[sx - 7, -13], [sx + 7, -13], [sx, -21]], shade(col, 0.82));
-  }
-  poly([[-11, 2], [11, 2], [11, -16], [-11, -16]], '#f6eee1');
-  poly([[11, 2], [16, -2], [16, -20], [11, -16]], '#d9cbb4');
-  poly([[-3, -6], [3, -6], [3, 2], [-3, 2]], '#6b4a2e');
-  poly([[-17, -15], [20, -15], [12, -25], [-9, -25]], col);
-  poly([[-6, -25], [8, -25], [8, -32], [-6, -32]], '#f6eee1');
-  poly([[-11, -31], [13, -31], [7, -39], [-5, -39]], shade(col, 0.82));
-  c.strokeStyle = '#5a4632'; c.lineWidth = 2; c.beginPath(); c.moveTo(20, -4); c.lineTo(20, -52); c.stroke();
-  poly([[20, -52], [42, -50], [37, -43], [42, -36], [20, -38]], col);
-  c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.stroke();
-  if (ch) { c.fillStyle = '#fff'; c.font = "900 12px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 30, -44); }
-  c.restore();
 }
 function badge(c, x, y, bg, txt, fg = '#fff', r = 10) {
   c.fillStyle = bg; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();

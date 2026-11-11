@@ -15,10 +15,10 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
+import { ITEMS, ITEM_IDS, GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
 import { SITES, PARKS, PAIRS } from './sg_sites.js';
 
-export const SAVE_V = 5;
+export const SAVE_V = 6; // v1.1: treasures, truces, poaching
 const K = () => CFG.sg;
 export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
 export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
@@ -37,7 +37,8 @@ function shuffle(s, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math
 // ---------------------------------------------------------------- the board of this game
 // The data tables (CITIES, ADJ, ...) describe one map at a time; every entry point switches them to the
 // map of the state it is given, so several games (tests, a save next to a new game) never mix up.
-export function loadMap(s) { if (s.map && s.map.key !== currentMapKey()) useMap(s.map); return s; }
+let CUR = null; // the game being played: treasures change an officer's stats, so gen() has to know whose game it is
+export function loadMap(s) { CUR = s; if (s.map && s.map.key !== currentMapKey()) useMap(s.map); return s; }
 
 // a random board (v0.9, D-77): `cityCount` real places at least `siteSpacing` apart, linked to their
 // natural neighbours (Gabriel graph: a and b are linked when no other city sits inside the circle on a-b),
@@ -91,7 +92,18 @@ export function genMap(seed) {
 
 // ---------------------------------------------------------------- helpers
 export const PLAYER = 0;
-export const gen = (id) => GENERALS[id];
+// an officer's stats in the current game: his own plus his treasure's (v1.1, D-97), at most 110
+const BOOST = new Map();
+export const itemOf = (id) => (CUR && CUR.gens && CUR.gens[id] && CUR.gens[id].item) || null;
+export function gen(id) {
+  const it = itemOf(id);
+  if (!it || !ITEMS[it]) return GENERALS[id];
+  const key = id + '|' + it;
+  let g = BOOST.get(key);
+  if (!g) { const b = GENERALS[id], f = ITEMS[it].fx; g = { ...b }; for (const k of ['lead', 'war', 'int', 'pol']) if (f[k]) g[k] = Math.min(110, b[k] + f[k]); BOOST.set(key, g); }
+  return g;
+}
+export const itemFx = (id, k) => { const it = itemOf(id); return (it && ITEMS[it].fx[k]) || 0; };
 export const fx = (id, k) => (TRAIT_FX[gen(id).trait] || {})[k] || 0;
 export const gensIn = (s, c, f) => Object.values(s.gens).filter((g) => g.c === c && g.f === f && !g.hidden).map((g) => g.id);
 export const guardsIn = (s, c) => Object.values(s.gens).filter((g) => g.guard && g.c === c).map((g) => g.id);
@@ -195,6 +207,7 @@ export function rivalry(a, d) { // rival pair across two armies (first found)
 }
 export function isAlly(s, f, g) { // coalition partners (never the leader); everyone not the leader counts as a partner
   if (f === g) return true;
+  if (truceLeft(s, f, g)) return true;
   const L = s.coalition;
   return L !== null && L !== undefined && f !== L && g !== L && g >= 0 && f > 0; // AI members leave each other (and the player) alone
 }
@@ -266,6 +279,14 @@ export function newGame(seed = Date.now(), opts = {}) {
   const big = PASS_IDS.find((c) => CITIES[c].big);
   const guard = pool.reduce((m, id) => (m && gen(m).war >= gen(id).war ? m : id), null);
   if (big && guard) Object.assign(s.gens[guard], { c: big, hidden: false, guard: true });
+  // v1.1 (D-97): this game's treasures, drawn with a generator of their own so older seeds play as before
+  let r2 = (s.seed ^ 0x9e3779b9) >>> 0;
+  const rnd2 = () => { r2 = (Math.imul(r2, 1664525) + 1013904223) >>> 0; return r2 / 4294967296; };
+  const all = [...ITEM_IDS];
+  for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(rnd2() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
+  let ur = 0;
+  s.items = all.filter((id) => ITEMS[id].tier !== 'UR' || ur++ < k.itemUR).slice(0, k.itemCount);
+  s.truce = {};
   return s;
 }
 
@@ -276,7 +297,47 @@ export const hiddenIn = (s, c) => Object.values(s.gens).filter((g) => g.hidden &
 // one order per officer: orders = { [general id]: { cmd, to, n } }
 // cmd: 'dev' | 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
 //      'plot' (计略) with kind 'rumor' (流言: troops desert) or 'fire' (火计: walls burn) against a neighbour
-export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost' };
+export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost', envoy: 'envoyCost', poach: 'poachCost' };
+// ---- truces (v1.1, D-98): an envoy buys a few months of peace with one lord
+const tKey = (f, g) => (f < g ? f + '-' + g : g + '-' + f);
+export const truceLeft = (s, f, g) => (f < 0 || g < 0 || f === g || !s.truce ? 0 : Math.max(0, (s.truce[tKey(f, g)] || 0) - s.turn));
+export function envoyChance(s, f, id, tf) {
+  const k = K(), mine = citiesOf(s, f).length, theirs = citiesOf(s, tf).length;
+  let p = k.envoyBase + (gen(id).pol - 60) * k.envoyPol + (theirs >= mine + 2 ? -k.envoyStrong : theirs < mine ? k.envoyWeak : 0);
+  if (s.coalition === f) p *= k.envoyCoalition; // the lords have sworn to bring you down
+  return Math.max(0.05, Math.min(0.9, p));
+}
+// ---- poaching (v1.1, D-98): talk an enemy officer next door into changing sides
+export function poachTargets(s, f, c) {
+  const out = [];
+  for (const { c: n } of ADJ[c]) { const o = s.cities[n].owner; if (o < 0 || o === f) continue; for (const g of gensIn(s, n, o)) if (s.factions[o].lord !== g) out.push(g); }
+  return out;
+}
+export function poachChance(s, f, id, tid) {
+  const k = K(), T = s.gens[tid], mine = factionGens(s, f);
+  let p = (100 - (T.loyal ?? 70)) / 100 * k.poachLoyal + (gen(id).int - 70) * k.poachInt;
+  if (BONDS.some((b) => b.m.includes(tid) && b.m.some((x) => x !== tid && mine.includes(x)))) p += k.poachBond;
+  if (T.f >= 0 && citiesOf(s, T.f).length <= 1) p += k.poachLosing;
+  return Math.max(0.03, Math.min(0.8, p));
+}
+// ---- treasures: who carries what
+// a found treasure goes to the finder; if he has one already, to the best officer of his without one
+function giveItem(s, f, finder, item) {
+  const free = (id) => !s.gens[id].item;
+  const key = ITEMS[item].fx.war ? 'war' : ITEMS[item].fx.int ? 'int' : ITEMS[item].fx.pol ? 'pol' : 'lead';
+  const to = free(finder) ? finder : best(factionGens(s, f).filter(free), key);
+  if (!to) return null;
+  s.gens[to].item = item;
+  return to;
+}
+// the player hands a treasure from one of his officers to another (no order needed, they swap)
+export function passItem(s, from, to) {
+  const A = s.gens[from], B = s.gens[to];
+  if (!A || !B || A.f !== B.f || A.f < 0 || !A.item || from === to) return false;
+  [A.item, B.item] = [B.item || null, A.item];
+  if (!A.item) delete A.item;
+  return true;
+}
 export const PLOTS = ['rumor', 'fire'];
 // chance that a stratagem by officer id works against node c
 export function plotChance(s, id, c) {
@@ -317,9 +378,11 @@ export function validOrder(s, f, id, o) {
     case 'search': return !city.pass;
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
     case 'move': return moveTargets(s, f, c).includes(o.to);
-    case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'envoy': return o.f !== f && !!s.factions[o.f] && s.factions[o.f].alive && !truceLeft(s, f, o.f) && fa.gold >= costOf('envoy', id);
+    case 'poach': return !city.pass && !!s.gens[o.g] && poachTargets(s, f, c).includes(o.g) && fa.gold >= costOf('poach', id);
     case 'intercept': return interceptTargets(s, f, c).some((a) => a.id === o.army) && city.troops >= k.minMarch;
-    case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && fa.gold >= costOf('plot', id);
+    case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && fa.gold >= costOf('plot', id);
     default: return false;
   }
 }
@@ -343,10 +406,17 @@ function runOrder(s, f, id, o) {
       const nid = pick(s, hid);
       Object.assign(s.gens[nid], { f, c, hidden: false, rumor: false, loyal: 75 + fx(nid, 'loyal') });
       ev(s, { k: 'found', f, c, g: nid, by: id });
-    } else if (rnd(s) < k.treasure[0]) {
-      const n = Math.round(k.treasure[1] + rnd(s) * (k.treasure[2] - k.treasure[1]));
-      fa.gold += n; ev(s, { k: 'treasure', f, c, g: id, n });
-    } else ev(s, { k: 'nothing', f, c, g: id, left: hid.length });
+    } else {
+      // one roll: gold as before, and above that slice a treasure (v1.1); cleverer officers find more
+      const r = rnd(s), pItem = (s.items || []).length ? k.itemBase + gen(id).int * k.itemPerInt : 0;
+      if (r < k.treasure[0]) {
+        const n = Math.round(k.treasure[1] + rnd(s) * (k.treasure[2] - k.treasure[1]));
+        fa.gold += n; ev(s, { k: 'treasure', f, c, g: id, n });
+      } else if (r < k.treasure[0] + pItem) {
+        const item = s.items.shift(), to = giveItem(s, f, id, item);
+        if (to) ev(s, { k: 'item', f, c, g: id, to, item }); else { s.items.push(item); ev(s, { k: 'nothing', f, c, g: id, left: hid.length }); }
+      } else ev(s, { k: 'nothing', f, c, g: id, left: hid.length });
+    }
   } else if (o.cmd === 'fort') {
     const amt = fortAmt(id);
     fa.gold -= costOf('fort', id); city.def = Math.min(defMaxOf(city), city.def + amt);
@@ -358,6 +428,17 @@ function runOrder(s, f, id, o) {
     if (ok && o.kind === 'rumor') { n = Math.round(T.troops * (k.rumorBase + G.int * k.rumorPerInt)); T.troops -= n; }
     if (ok && o.kind === 'fire') { n = Math.min(T.def - 10, Math.round(k.fireBase + G.int * k.firePerInt)); T.def -= Math.max(0, n); T.troops = Math.round(T.troops * 0.97); }
     ev(s, { k: 'plot', f, c, to: o.to, g: id, kind: o.kind, ok, n, fd: T.owner });
+  } else if (o.cmd === 'envoy') {
+    const ok = rnd(s) < envoyChance(s, f, id, o.f);
+    fa.gold -= costOf('envoy', id);
+    if (ok) s.truce[tKey(f, o.f)] = s.turn + k.envoyMonths + 1;
+    ev(s, { k: 'truce', f, g: id, to: o.f, ok, n: k.envoyMonths });
+  } else if (o.cmd === 'poach') {
+    const T = s.gens[o.g], from = T.f, ok = rnd(s) < poachChance(s, f, id, o.g);
+    fa.gold -= costOf('poach', id);
+    if (ok) { Object.assign(T, { f, c, hidden: false, guard: false, loyal: 70 }); fixLord(s, from); }
+    else T.loyal = Math.min(100, (T.loyal ?? 70) + k.poachSpurned);
+    ev(s, { k: 'poach', f, c, g: id, t: o.g, from, ok });
   } else if (o.cmd === 'move' || o.cmd === 'march') {
     // the officer sets off with his troops; a short road takes one month (he arrives this month)
     const march = o.cmd === 'march';
@@ -456,7 +537,7 @@ export function aiOrders(s, f, opts = {}) {
   const incoming = {};
   for (const c of mine) {
     const C = s.cities[c];
-    let gs = free(c), searched = false, fed = false, plotted = false;
+    let gs = free(c), searched = false, fed = false, plotted = false, poached = false;
     const take = (key) => { const g = best(gs, key); gs = gs.filter((x) => x !== g); return g; };
     const threat = threatOf(c), front = isFront(c);
     const canDraft = () => !C.pass && gold >= k.draftCost && C.troops < capOf(C);
@@ -467,6 +548,10 @@ export function aiOrders(s, f, opts = {}) {
       if (war && !plotted && front && gold >= k.plotCost + 100 && gen(best(gs, 'int')).int >= 75) {
         const t = ADJ[c].map((a) => a.c).filter((n) => enemy(s.cities[n].owner) && s.cities[n].owner !== f).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0];
         if (t && rnd(s) < 0.7) { out[take('int')] = { cmd: 'plot', kind: s.cities[t].def > 50 ? 'fire' : 'rumor', to: t }; gold -= k.plotCost; plotted = true; continue; }
+      }
+      if (war && !C.pass && !poached && front && f !== PLAYER && gold >= k.poachCost + 200 && gen(best(gs, 'int')).int >= 80) {
+        const g0 = best(gs, 'int'), tg = poachTargets(s, f, c).filter((x) => enemy(s.gens[x].f)).sort((a, b) => poachChance(s, f, g0, b) - poachChance(s, f, g0, a))[0];
+        if (tg && poachChance(s, f, g0, tg) >= k.aiPoachMin && rnd(s) < k.aiPoach) { out[take('int')] = { cmd: 'poach', g: tg }; gold -= k.poachCost; poached = true; continue; }
       }
       if (front && gold >= k.fortCost && C.def < (C.pass ? defMaxOf(C) : 60) && (C.pass || threat > C.troops * 0.6)) { out[take('pol')] = { cmd: 'fort' }; gold -= k.fortCost; continue; }
       if (!C.pass && C.dev < 90 && gold >= k.devCost) { out[take('pol')] = { cmd: 'dev' }; gold -= k.devCost; continue; }
@@ -632,7 +717,8 @@ function duelIntent(s, d) {
   d.tell = d.feint ? BEATEN[mv] : mv; // a feint shows the stance whose answer his real move beats
 }
 export function newDuel(s, a, dd, fa, fd, riv = null) {
-  const k = K(), hp = (g) => Math.round(k.duelHp + gen(g).lead * k.duelHpLead), sp = (g) => Math.round(gen(g).lead * k.duelSpLead);
+  loadMap(s);
+  const k = K(), hp = (g) => Math.round(k.duelHp + gen(g).lead * k.duelHpLead) + itemFx(g, 'hp'), sp = (g) => Math.min(100, Math.round(gen(g).lead * k.duelSpLead) + itemFx(g, 'sp'));
   const d = { a, d: dd, fa, fd, reader: fd === PLAYER && fa !== PLAYER ? 'd' : 'a', alt: fa !== PLAYER && fd !== PLAYER, hpA: hp(a), hpD: hp(dd), maxA: hp(a), maxD: hp(dd), spA: sp(a), spD: sp(dd),
     n: 0, log: [], rival: riv ? riv.zh : null, rivalEn: riv ? riv.en : null, done: false, win: null };
   duelIntent(s, d);
@@ -881,6 +967,7 @@ export function endTurn(s) {
   // armies still on the road: one month nearer (the armies of a fallen lord have broken up)
   s.armies = s.armies.filter((a) => s.factions[a.f].alive);
   for (const a of s.armies) a.left--;
+  for (const key of Object.keys(s.truce || {})) if (s.truce[key] <= s.turn + 1) { const [a, b] = key.split('-').map(Number); delete s.truce[key]; if (s.factions[a].alive && s.factions[b].alive) ev(s, { k: 'truceEnd', f: a, to: b }); }
   if (dateOf(s).month === 9) ev(s, { k: 'harvest' });
   const mine = citiesOf(s, PLAYER).length;
   if (mine === CITY_IDS.length) s.over = 'win';
