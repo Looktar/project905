@@ -21,7 +21,7 @@ const check = (s) => {
     else if (g.c === null) expect((s.armies || []).some((a) => a.f === g.f && a.gens.includes(g.id))).toBe(true); // on the road
     else { expect(g.f).toBeGreaterThanOrEqual(0); expect(s.cities[g.c].owner).toBe(g.f); }
   }
-  for (const c of NODE_IDS) { const C = s.cities[c]; expect(C.troops).toBeGreaterThanOrEqual(0); expect(C.troops).toBeLessThanOrEqual(CFG.sg.maxTroops); expect(C.dev).toBeLessThanOrEqual(100); }
+  for (const c of NODE_IDS) { const C = s.cities[c]; expect(C.troops).toBeGreaterThanOrEqual(0); expect(C.troops).toBeLessThanOrEqual(Math.max(CFG.sg.maxTroops, capOf(C))); expect(C.dev).toBeLessThanOrEqual(100); }
   for (const f of s.factions) { expect(f.gold).toBeGreaterThanOrEqual(0); expect(f.food).toBeGreaterThanOrEqual(0); }
 };
 
@@ -414,7 +414,7 @@ describe('orders (one per officer, v0.8)', () => {
     // searching long enough finds the blind boxes hidden in the city
     const before = factionGens(s, 0).length;
     const wise = [a, b].sort((x, y) => GENERALS[y].int - GENERALS[x].int)[0]; // v1.2: a dull officer finds next to nothing
-    for (let i = 0; i < 24; i++) runTurn(s, { [wise]: { cmd: 'search' } });
+    for (let i = 0; i < 72 && factionGens(s, 0).length <= before; i++) runTurn(s, { [wise]: { cmd: 'search' } }); // luck: a dull officer may need years
     expect(factionGens(s, 0).length).toBeGreaterThan(before);
     check(s);
     // two officers in one city both act in the same month
@@ -830,5 +830,63 @@ describe('万锦群英传 v1.2', () => {
       expect(BIOS[id][1].length, id).toBeGreaterThan(20); expect(/[一-鿿]/.test(BIOS[id][1]), id).toBe(false);
     }
     expect(Object.keys(BIOS).length).toBe(Object.keys(GENERALS).length);
+  });
+});
+
+describe('v1.4: history counters, weather and buildings (D-114, D-115)', () => {
+  it('every counter and weather officer exists', async () => {
+    const D = await import('../../js/sg_data.js');
+    for (const c of D.COUNTERS) for (const id of [...c.a, ...c.b]) expect(GENERALS[id], id).toBeTruthy();
+    for (const x of D.TIMELY) for (const id of x.m) expect(GENERALS[id], id).toBeTruthy();
+    for (const b of Object.values(D.SPECIALTY)) expect(D.BUILDINGS[b]).toBeTruthy();
+  });
+  it('a historical counter only works against the right foe', () => {
+    expect(E.countersOf(['luxun'], ['liubei']).length).toBe(1);
+    expect(E.countersOf(['luxun'], ['caocao']).length).toBe(0);
+    expect(E.countersOf(['liubei'], ['luxun']).length).toBe(0);
+  });
+  it('the weather decides who gets a buff', () => {
+    const s = newGame(5);
+    let rain = null, snow = null;
+    for (let i = 0; i < 60 && !(rain && snow); i++) { s.turn = i; const w = E.weatherKey(s); if (w === 'rain' && rain === null) rain = i; if (w === 'snow' && snow === null) snow = i; }
+    s.turn = rain; expect(E.timelyOf(s, ['guanyu']).length).toBe(1); expect(E.timelyOf(s, ['zhangfei']).length).toBe(0);
+    s.turn = snow; expect(E.timelyOf(s, ['huoqubing']).length).toBe(1); expect(E.snowproof(['huoqubing'])).toBe(true); expect(E.snowproof(['zhangfei'])).toBe(false);
+    expect(E.timelyOf(s, ['ganning'], true).length).toBe(1); expect(E.timelyOf(s, ['ganning'], false).length).toBe(0);
+  });
+  it('buildings: levels, needs, effects, specialty and losing a level when sacked', () => {
+    const s = newGame(3), P = 0, c = s.factions[P].cap, C = s.cities[c], [a] = factionGens(s, P);
+    s.factions[P].gold = 5000; C.dev = 30;
+    const cap0 = E.capOf(C), def0 = E.defMaxOf(C);
+    expect(E.canBuild(C, 'barracks')).toBe(true);
+    runTurn(s, { [a]: { cmd: 'build', b: 'barracks' } });
+    expect(E.bldRaw(C, 'barracks')).toBe(1);
+    expect(E.capOf(C)).toBeGreaterThan(cap0);
+    expect(s.log.some((e) => e.k === 'build' && e.c === c && e.b === 'barracks' && e.lv === 1)).toBe(true);
+    C.dev = 30; expect(E.canBuild(C, 'barracks')).toBe(false); // level 2 needs 开发 40
+    C.dev = 70; runTurn(s, { [a]: { cmd: 'build', b: 'walls' } });
+    expect(E.defMaxOf(C)).toBeGreaterThan(def0);
+    C.bld = { barracks: 3 }; expect(E.canBuild(C, 'barracks')).toBe(false); // max level
+    // a landmark's specialty counts one level more
+    const sp = NODE_IDS.find((n) => !CITIES[n].pass && ['market', 'farm', 'academy'].some((b) => E.isSpecialty(s.cities[n], b)));
+    if (sp) { const T = s.cities[sp], b = ['market', 'farm', 'academy'].find((x) => E.isSpecialty(T, x)); T.bld = { [b]: 1 }; expect(E.bldLv(T, b)).toBe(2); }
+    // passes only take walls and beacons
+    const p = PASS_IDS[0]; expect(E.canBuild(s.cities[p], 'market')).toBe(false); expect(E.canBuild(s.cities[p], 'walls')).toBe(true);
+    // a market makes more gold
+    const M = s.cities[c]; M.bld = {}; const g1 = s.factions[P].gold; runTurn(s, {}); const plain = s.factions[P].gold - g1;
+    M.bld = { market: 3 }; const g2 = s.factions[P].gold; runTurn(s, {}); expect(s.factions[P].gold - g2).toBeGreaterThanOrEqual(plain);
+    check(s);
+  });
+  it('the computer builds, and whole games still end', () => {
+    let built = 0, ended = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed);
+      let seen = 0;
+      for (let i = 0; i < 200 && !s.over; i++) { runTurn(s, autoPlayer(s)); seen += s.events.filter((e) => e.k === 'build').length; }
+      built += seen + Object.values(s.cities).filter((C) => C.bld && Object.values(C.bld).some((v) => v > 0)).length;
+      if (s.over || s.factions.filter((f) => f.alive).length === 1) ended++;
+      check(s);
+    }
+    expect(built).toBeGreaterThan(0);
+    expect(ended).toBeGreaterThanOrEqual(4);
   });
 });

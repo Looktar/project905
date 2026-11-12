@@ -7,7 +7,7 @@ import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import * as sfx from './audio.js';
-import { ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
+import { BUILDINGS, BLD_IDS, COUNTERS, TIMELY, ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
 import { drawCity, cityKind } from './sg_art.js';
 import { BIOS } from './sg_bios.js';
 import { portraitURL } from './sg_portrait.js';
@@ -34,6 +34,8 @@ extend({
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
   sgTargets: '目标（也可以点地图）', sgOfficersBtn: '武将', sgGarrisonCard: '守军', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
+  sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
+  sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
@@ -66,6 +68,8 @@ extend({
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
   sgTargets: 'Targets (or tap the map)', sgOfficersBtn: 'Officers', sgGarrisonCard: 'Garrison', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
+  sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
+  sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
@@ -133,13 +137,12 @@ const STANCES = {
 };
 // the weather of a month (flavour, v0.9.7): snow in winter, the rest picked from the season and the month
 export function weatherOf(s) {
-  const m = E.dateOf(s).month, r = (s.turn * 7 + (s.seed || 0)) % 3;
-  const w = E.isWinter(s) ? 'snow' : m === 9 ? 'harvest' : m <= 5 ? ['sun', 'rain', 'cloud'][r] : m <= 8 ? ['sun', 'hot', 'sun'][r] : ['sun', 'wind', 'cloud'][r];
+  const w = E.weatherKey(s); // v1.4: the engine owns the weather (TIMELY officers fight better in theirs)
   return { snow: ['雪', '❄'], harvest: ['秋收', '🌾'], sun: ['晴', '☀'], rain: ['雨', '☂'], cloud: ['阴', '☁'], hot: ['炎热', '☀'], wind: ['秋风', '🍂'] }[w];
 }
 const WEATHER_EN = { 雪: 'snow', 秋收: 'harvest', 晴: 'fair', 雨: 'rain', 阴: 'cloudy', 炎热: 'hot', 秋风: 'windy' };
 const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F(s.roster === 'mix' ? 'sgDateMix' : 'sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
-const CMD_KEY = { poach: 'sgPoach', envoy: 'sgEnvoy', dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
+const CMD_KEY = { build: 'sgCmdBuild', poach: 'sgPoach', envoy: 'sgEnvoy', dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
 
 // v0.9.5 (D-82): rarity from the two best stats (UR: a 100 or two great ones), letter grades per stat
 export const tierOf = (id) => E.tierOf(id); // rarity lives in the engine now (it shapes each game's roster)
@@ -157,6 +160,30 @@ function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span cla
 // a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
 // rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
 const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
+const bName = (b) => (zh() ? BUILDINGS[b].zh : BUILDINGS[b].en);
+// a building's effect for one level, numbers from config
+function bFx(b) {
+  const k = CFG.sg, pc = (x) => Math.round(x * 100);
+  const v = { market: { n: pc(k.bldMarket) }, farm: { n: pc(k.bldFarm) }, barracks: { c: k.bldCap, n: pc(k.bldDraft) }, walls: { c: k.bldWall }, academy: { n: pc(k.bldAcadSearch), m: pc(k.bldAcadDev) }, beacon: { n: pc(k.bldBeacon) } }[b];
+  return (zh() ? '每级 ' : 'per level: ') + (zh() ? BUILDINGS[b].fxZh : BUILDINGS[b].fxEn).replace(/\{(\w)\}/g, (_, x) => v[x]);
+}
+// v1.4: a city's buildings as level pips (★ = this landmark's specialty)
+function bldRow(C) {
+  const list = BLD_IDS.filter((b) => E.bldRaw(C, b));
+  if (!list.length) return `<p class="sgHint">🏗 ${t('sgBldNone')}</p>`;
+  return `<div class="sgBlds">${list.map((b) => `<span class="sgBldC" title="${esc(bFx(b))}">${BUILDINGS[b].icon} ${esc(bName(b))}${E.isSpecialty(C, b) ? '★' : ''}<i>${'●'.repeat(E.bldRaw(C, b))}${'○'.repeat(3 - E.bldRaw(C, b))}</i></span>`).join('')}</div>`;
+}
+const genName = (id) => (GENERALS[id] ? gName(id) : id);
+// v1.4: the counters and weather buffs history gives an officer (for his page)
+function edgeText(id) {
+  const out = [];
+  for (const c of COUNTERS) if (c.a.includes(id)) out.push(`${esc(zh() ? c.zh : c.en)} → ${c.b.filter((x) => GENERALS[x]).map((x) => esc(genName(x))).join('、')} +${Math.round(c.fx * 100)}%${c.def ? (zh() ? '（守城）' : ' (defending)') : ''}`);
+  return out;
+}
+function timelyText(id) {
+  const W = { rain: ['雨天', 'in rain'], dry: ['秋冬无雨', 'dry autumn/winter'], snow: ['雪天，且不怕雪', 'in snow, and no snow penalty'], river: ['渡河攻城', 'attacking across a river'] };
+  return TIMELY.filter((x) => x.m.includes(id)).map((x) => `${esc(zh() ? x.zh : x.en)} · ${W[x.when][zh() ? 0 : 1]} +${Math.round(x.fx * 100)}%`);
+}
 const bio = (id) => (BIOS[id] ? `<p class="sgBio">${esc(BIOS[id][zh() ? 0 : 1])}</p>` : '');
 const iName = (i) => (zh() ? ITEMS[i].zh : ITEMS[i].en);
 const FXK = { lead: 'itLead', war: 'itWar', int: 'itInt', pol: 'itPol', hp: 'itHp', sp: 'itSp' };
@@ -574,6 +601,7 @@ export class Sanguo {
       ${info.pass ? `<div><small>${t('sgWalls')}</small><b>×${E.wallMul(C).toFixed(2)}</b></div><div><small>${t('sgGarrison')}</small><b>${gs.length}</b></div>`
         : `<div><small>${t('sgDev')}</small><b>${C.dev}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div>`}</div>`;
     if (C.owner > 0 && E.truceLeft(st, E.PLAYER, C.owner)) h += `<p class="sgHint sgTruce">${esc(F('sgTruceWith', { n: E.truceLeft(st, E.PLAYER, C.owner) }))}</p>`;
+    if (C.owner >= 0 || BLD_IDS.some((b) => E.bldRaw(C, b))) h += `<h4>${t('sgBld')}</h4>` + bldRow(C);
     if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
     if (info.pass) h += `<p class="sgHint">${t('sgPassNote')}</p>`;
     if (info.valley) h += `<p class="sgHint">🌾 ${t('sgValley')}</p>`;
@@ -601,6 +629,7 @@ export class Sanguo {
   eta(a) { return a.left <= 1 ? t('sgEtaNow') : F('sgEta', { n: a.left }); }
   orderText(o) {
     const k = o.cmd === 'plot' ? (o.kind === 'fire' ? 'sgFire' : 'sgRumor') : CMD_KEY[o.cmd];
+    if (o.cmd === 'build') return `${t(k)} · ${BUILDINGS[o.b] ? bName(o.b) : ''}`;
     if (o.cmd === 'poach') return `${t(k)} → ${gName(o.g)}`;
     if (o.cmd === 'envoy') return `${t(k)} → ${this.fName(o.f)}`;
     if (o.cmd === 'intercept') { const A = (this.s.armies || []).find((a) => a.id === o.army); return t(k) + (A ? ` → ${this.fName(A.f)}` : '') + (o.n ? ' · ' + kNum(o.n) : ''); }
@@ -619,24 +648,31 @@ export class Sanguo {
         if (cmd === 'march') return E.marchTargets(st, E.PLAYER, c).some((n) => E.validOrder(st, E.PLAYER, id, { cmd, to: n }));
         if (cmd === 'move') return E.moveTargets(st, E.PLAYER, c).length > 0;
         if (cmd === 'intercept') return st.cities[c].troops >= CFG.sg.minMarch;
+        if (cmd === 'build') return BLD_IDS.some((b) => E.validOrder(st, E.PLAYER, id, { cmd, b })) && gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id);
         if (cmd === 'plot') return gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id) && (ADJ[c].some(({ c: n }) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n })) || this.plotKinds(c, id).length > 0);
         return E.validOrder(st, E.PLAYER, id, { cmd }) && gold + E.orderCost(o, id) >= E.orderCost({ cmd }, id);
       };
       // what this officer would get done: his stats, made visible on the buttons (D-82)
       const C = st.cities[c], cost = (cmd) => (E.costOf(cmd, id) ? `${E.costOf(cmd, id)}${zh() ? '金' : 'g'}` : '');
       const prev = {
-        dev: `+${Math.min(100 - C.dev, E.devAmt(st, E.PLAYER, id))} · ${cost('dev')}`,
-        draft: `+${kNum(Math.max(0, Math.min(E.capOf(C) - C.troops, E.draftAmt(id))))} · ${cost('draft')}`,
-        search: `${Math.round(E.searchChance(st, E.PLAYER, id) * 100)}%`,
+        dev: `+${Math.min(100 - C.dev, E.devAmt(st, E.PLAYER, id, C))} · ${cost('dev')}`,
+        draft: `+${kNum(Math.max(0, Math.min(E.capOf(C) - C.troops, E.draftAmt(id, C))))} · ${cost('draft')}`,
+        search: `${Math.round(E.searchChance(st, E.PLAYER, id, C) * 100)}%`, build: cost('build'),
         fort: `+${E.fortAmt(id)} · ${cost('fort')}`,
         plot: cost('plot'), move: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), march: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), intercept: '',
       };
-      const cmds = [...(CITIES[c].pass ? ['fort', 'plot', 'move', 'march'] : ['dev', 'draft', 'search', 'fort', 'plot', 'move', 'march']), ...(E.interceptTargets(st, E.PLAYER, c).length ? ['intercept'] : [])];
+      const cmds = [...(CITIES[c].pass ? ['fort', 'build', 'plot', 'move', 'march'] : ['dev', 'draft', 'search', 'fort', 'build', 'plot', 'move', 'march']), ...(E.interceptTargets(st, E.PLAYER, c).length ? ['intercept'] : [])];
       const g = E.gen(id);
       h += `<div class="sgO${o ? ' set' : ''}"><div class="sgOh">${portrait(id, 34)}<div><b>${esc(gName(id))}</b><small>${zh() ? '统' : 'L'}${g.lead} ${zh() ? '武' : 'W'}${g.war} ${zh() ? '智' : 'I'}${g.int} ${zh() ? '政' : 'P'}${g.pol}</small></div>
         <em>${o ? esc(this.orderText(o)) : t('sgCmdRest')}</em></div>
         <div class="sgCmds">${cmds.map((cmd) => `<button class="sgCmd${cur === cmd || (cmd === 'plot' && (cur === 'poach' || cur === 'envoy')) || (m && m.cmd === cmd) ? ' on' : ''}" data-g="${id}" data-cmd="${cmd}" ${can(cmd) ? '' : 'disabled'}>${t(CMD_KEY[cmd])}${prev[cmd] ? `<small>${prev[cmd]}</small>` : ''}</button>`).join('')}<button class="sgCmd${!o && !m ? ' on' : ''}" data-g="${id}" data-cmd="rest">${t('sgCmdRest')}</button></div>`;
-      if (m && m.cmd === 'intercept') {
+      if (m && m.cmd === 'build') {
+        const k = CFG.sg;
+        h += `<p class="sgPick">${t('sgPickBld')}</p><div class="sgChips sgBldPick">${BLD_IDS.filter((b) => !C.pass || ['walls', 'beacon'].includes(b)).map((b) => {
+          const L = E.bldRaw(C, b), ok = E.canBuild(C, b), why = L >= 3 ? t('sgBldMax') : ok ? `${E.costOf('build', id)}${zh() ? '金' : 'g'}` : F('sgBldNeed', { n: k.bldDev[L] });
+          return `<button data-g="${id}" data-bld="${b}" ${ok ? '' : 'disabled'}>${BUILDINGS[b].icon} ${esc(bName(b))}${E.isSpecialty(C, b) ? '★' : ''} <b>Lv${L}${L < 3 ? '→' + (L + 1) : ''}</b><small>${esc(bFx(b))} · ${why}</small></button>`;
+        }).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+      } else if (m && m.cmd === 'intercept') {
         h += `<p class="sgPick">${t('sgPickArmy')}</p><div class="sgChips">${E.interceptTargets(st, E.PLAYER, c).map((A) => `<button data-g="${id}" data-army="${A.id}">${esc(F('sgArmyChip', { f: this.fName(A.f), n: kNum(A.troops), to: cName(A.to) }))}${this.odds(c, null, id, A)}</button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m && m.cmd === 'plot') {
         const KT = { rumor: ['sgRumor', 'sgRumorS'], fire: ['sgFire', 'sgFireS'], poach: ['sgPoach', 'sgPoachS'], envoy: ['sgEnvoy', 'sgEnvoyS'] }, extra = this.plotKinds(c, id);
@@ -677,6 +713,7 @@ export class Sanguo {
     if (!c || !id || !st.gens[id]) return;
     if (b.dataset.kind && this.mode && this.mode.id === id) { this.mode.kind = b.dataset.kind; this.mode.targets = E.PLOTS.includes(b.dataset.kind) ? this.mode.cities : []; this.render(); return; }
     if (b.dataset.with && this.mode && this.mode.id === id) { const w = this.mode.with || (this.mode.with = []), x = b.dataset.with, k = w.indexOf(x); if (k >= 0) w.splice(k, 1); else w.push(x); this.render(); return; }
+    if (b.dataset.bld) { st.orders[id] = { cmd: 'build', b: b.dataset.bld }; this.mode = null; this.render(); return; }
     if (b.dataset.pg) { st.orders[id] = { cmd: 'poach', g: b.dataset.pg }; this.mode = null; this.render(); return; }
     if (b.dataset.ef) { st.orders[id] = { cmd: 'envoy', f: +b.dataset.ef }; this.mode = null; this.render(); return; }
     if (b.dataset.army) { const av = Math.min(E.commandOf(id), this.avail(c, id)); st.orders[id] = { cmd: 'intercept', army: +b.dataset.army, n: Math.floor(av * 0.8) }; this.mode = null; this.render(); return; }
@@ -686,6 +723,7 @@ export class Sanguo {
       this.mode = null;
       if (cmd === 'rest') delete st.orders[id];
       else if (cmd === 'intercept') { delete st.orders[id]; this.mode = { id, c, cmd, targets: [] }; }
+      else if (cmd === 'build') { delete st.orders[id]; this.mode = { id, c, cmd, targets: [] }; }
       else if (cmd === 'plot') {
         delete st.orders[id];
         const cities = ADJ[c].map((a) => a.c).filter((n) => E.validOrder(st, E.PLAYER, id, { cmd, kind: 'rumor', to: n }));
@@ -830,6 +868,7 @@ export class Sanguo {
     const L = $('sgLayer');
     L.className = 'show battle';
     L.innerHTML = `<div class="sgCard sgBattle charge"><h2 class="sgCenter">${esc(where)} · ${ic} ${zh() ? w : WEATHER_EN[w]}</h2>
+      ${(m.edge || []).length ? `<div class="sgEdge">${[left, 1 - left].map((si) => `<span class="${si === left ? 'me' : ''}">${(m.edge || []).filter((x) => x[0] === si).map((x) => `${esc(zh() ? x[1] : x[2])}${x[3] ? ' +' + Math.round(x[3] * 100) + '%' : ''}`).join(' · ')}</span>`).join('<i>⚔</i>')}</div>` : ''}
       <div class="sgBrow">${col(left)}<span class="sgVs">VS</span>${col(1 - left)}</div><p class="sgCenter sgBres"></p><button class="sgBig" data-ok="1" style="visibility:hidden">${t('sgContinue')}</button></div>`;
     let skip = false;
     const onTap = () => { skip = true; };
@@ -891,6 +930,8 @@ export class Sanguo {
           ${row(zh() ? '智力' : 'Intellect', stat('', g.int) + ` · ${zh() ? '搜索' : 'search'} ${Math.round(E.searchChance(st, P, detail) * 100)}%`)}
           ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)} · ${zh() ? '花费' : 'costs'} ×${(E.costOf('dev', detail) / CFG.sg.devCost).toFixed(2)}`)}
           ${row(zh() ? '特技' : 'Trait', `${esc(zh() ? tr[0] : tr[1])} · ${esc(zh() ? tr[2] : tr[3])}`)}
+          ${edgeText(detail).length ? row(t('sgCounterOf'), edgeText(detail).join('<br>')) : ''}
+          ${timelyText(detail).length ? row(t('sgTimelyOf'), timelyText(detail).join('<br>')) : ''}
           ${bonds.length ? row(t('sgBonds'), bonds.map((x) => esc(zh() ? x.zh : x.en)).join('、')) : ''}
           ${G.f >= 0 ? row(t('sgLoyal'), `${G.loyal ?? 70} <small>${t('sgLoyalS')}</small>`) : ''}
           ${G.item ? row(t('sgItem'), `${ITEMS[G.item].glyph} ${esc(iName(G.item))} · ${esc(itemFxText(G.item))}`) : ''}
@@ -942,6 +983,7 @@ export class Sanguo {
     switch (e.k) {
       case 'dev': return e.f === P ? F('evDev', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'draft': return e.f === P ? F('evDraft', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
+      case 'build': return e.f === P ? F('evBuild', { c: cName(e.c), g: gName(e.g), b: bName(e.b), lv: e.lv }) : ADJ[e.c].some((x) => this.s.cities[x.c].owner === P) ? F('evBuildAi', { f: this.fName(e.f), c: cName(e.c), b: bName(e.b), lv: e.lv }) : null;
       case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'skip': return e.f === P ? F('evSkip', { g: gName(e.g) }) : null;
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });

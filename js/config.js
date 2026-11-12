@@ -150,6 +150,12 @@ export const CFG = {
     // v0.9.6 (D-83): an officer leads 统率 x leadTroops troops; battles (no dice) go on to the end: up to
     // `rounds` rounds of a siege / fieldRounds in the field, until a side drops under `rout` of its start
     leadTroops: 60, fieldRounds: 40, rout: 0.25, aiSally: 1.1,
+    // v1.4 (D-114): historical counters add up to counterMax to a side's attack; (D-115) buildings, per level:
+    // market gold +15%, farm food +15%, barracks troop cap +1000 and drafting +10%, walls max defence +15,
+    // academy search +6% and development +10%, beacon defenders +8%. One build costs bldCost (x 政治), level 2 needs
+    // 开发 40 and level 3 needs 65. The computer builds with aiBuild odds when it has bldCost + aiBuildSpare gold.
+    counterMax: 0.4, bldCost: 250, bldDev: [0, 40, 65], bldMarket: 0.15, bldFarm: 0.15, bldCap: 1000, bldDraft: 0.1, bldWall: 15,
+    bldAcadSearch: 0.06, bldAcadDev: 0.1, bldBeacon: 0.08, aiBuild: 0.35, aiBuildSpare: 250,
     // v1.1 (D-97): treasure blind boxes. itemCount hidden per game (at most itemUR of the best); a search that finds
     // no officer turns one up with itemBase + 智力 x itemPerInt (14% at 智力 50, 22% at 100)
     itemCount: 10, itemUR: 2, itemBase: 0.06, itemPerInt: 0.0016,
