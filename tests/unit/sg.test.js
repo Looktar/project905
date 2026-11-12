@@ -9,6 +9,7 @@ import {
 import { GENERALS, GEN_IDS, SANGUO_IDS, ERAS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, ADJ, LINKS, CITIES, BONDS, TRAITS, TRAIT_FX } from '../../js/sg_data.js';
 import { ELEV } from '../../js/sg_elev.js';
 import * as E from '../../js/sg_engine.js';
+import * as M from '../../js/sg_map.js';
 import { SITES, PARKS } from '../../js/sg_sites.js';
 import { readFileSync } from 'node:fs';
 import { CFG } from '../../js/config.js';
@@ -401,10 +402,11 @@ describe('new game', () => {
 
 describe('orders (one per officer, v0.8)', () => {
   oneMonthRoads();
-  it('develop, draft and search', () => {
+  it('grow, draft and search', () => {
     const s = newGame(3), c = s.factions[0].cap, C = s.cities[c], g0 = s.factions[0].gold, [a, b] = factionGens(s, 0);
     const dev0 = C.dev;
-    runTurn(s, { [a]: { cmd: 'dev' } });
+    expect(validOrder(s, 0, a, { cmd: 'dev' })).toBe(false); // v1.5: no 内政 order, the city grows by itself
+    for (let i = 0; i < 6; i++) runTurn(s, {}); // even a poor governor gets somewhere in half a year
     expect(C.dev).toBeGreaterThan(dev0);
     const t0 = C.troops;
     runTurn(s, { [a]: { cmd: 'draft' } });
@@ -420,8 +422,8 @@ describe('orders (one per officer, v0.8)', () => {
     // two officers in one city both act in the same month
     const s2 = newGame(3), cap = s2.factions[0].cap, d0 = s2.cities[cap].dev, t1 = s2.cities[cap].troops;
     s2.factions.slice(1).forEach((f) => { f.alive = false; });
-    runTurn(s2, { [a]: { cmd: 'dev' }, [b]: { cmd: 'draft' } });
-    expect(s2.cities[cap].dev).toBeGreaterThan(d0);
+    runTurn(s2, { [a]: { cmd: 'search' }, [b]: { cmd: 'draft' } });
+    expect(s2.cities[cap].dev).toBeGreaterThanOrEqual(d0);
     expect(s2.cities[cap].troops).toBeGreaterThan(t1);
   });
   it('a city with no officers cannot act; officers move and take troops along', () => {
@@ -434,7 +436,7 @@ describe('orders (one per officer, v0.8)', () => {
     runTurn(s, { [a]: { cmd: 'move', to: n, n: 1000 } });
     expect(s.gens[a].c).toBe(n);
     expect(s.cities[c].troops).toBeLessThan(t0 - 900);
-    expect(validOrder(s, 0, a, { cmd: 'dev' })).toBe(s.cities[n].dev < 100);
+    expect(validOrder(s, 0, a, { cmd: 'draft' })).toBe(true);
     check(s);
   });
   it('auto-assign gives every idle officer a peaceful job and keeps the given orders', () => {
@@ -888,5 +890,71 @@ describe('v1.4: history counters, weather and buildings (D-114, D-115)', () => {
     }
     expect(built).toBeGreaterThan(0);
     expect(ended).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('v1.5: no 内政 order, cities grow under their governors (D-116)', () => {
+  it('a good governor makes a city grow faster than a poor one or nobody', () => {
+    const s = newGame(3), P = 0, c = s.factions[P].cap, C = s.cities[c];
+    expect(E.devAmt(s, P, 'xunyu', C)).toBeGreaterThan(E.devAmt(s, P, 'zhangfei', C) * 3);
+    expect(E.devAmt(s, P, 'zhangfei', C)).toBeGreaterThan(E.devAmt(s, P, null, C));
+    expect(E.growthOf(s, c)).toBe(E.devAmt(s, P, E.governorOf(s, c), C));
+    expect(E.gen(E.governorOf(s, c)).pol).toBe(Math.max(...E.gensIn(s, c, P).map((x) => E.gen(x).pol)));
+    C.bld = { academy: 2 }; expect(E.growthOf(s, c)).toBeGreaterThan(E.devAmt(s, P, E.governorOf(s, c), { ...C, bld: {} }));
+    C.dev = 100; expect(E.growthOf(s, c)).toBe(0);
+    const pass = PASS_IDS[0]; expect(E.growthOf(s, pass)).toBe(0);
+  });
+  it('growth adds up over months, building brings people in, and nobody is ever told to 内政', () => {
+    const s = newGame(4), P = 0, c = s.factions[P].cap, C = s.cities[c], [a] = factionGens(s, P);
+    C.dev = 20; C.grow = 0;
+    const per = E.growthOf(s, c);
+    for (let i = 0; i < 6; i++) runTurn(s, {});
+    expect(C.dev).toBeGreaterThanOrEqual(20 + Math.floor(per * 6) - 1);
+    s.factions[P].gold = 3000; const d = C.dev;
+    runTurn(s, { [a]: { cmd: 'build', b: 'market' } });
+    expect(C.dev).toBeGreaterThanOrEqual(d + CFG.sg.bldDevUp);
+    for (let seed = 1; seed <= 3; seed++) {
+      const g = newGame(seed);
+      for (let i = 0; i < 40 && !g.over; i++) {
+        for (const f of g.factions.filter((x) => x.alive)) for (const o of Object.values(f.id === P ? autoPlayer(g) : E.aiOrders(g, f.id))) expect(o.cmd).not.toBe('dev');
+        runTurn(g, autoPlayer(g));
+      }
+      check(g);
+    }
+  });
+  it('cityIncome matches what the month pays', () => {
+    const s = newGame(6), P = 0, c = s.factions[P].cap;
+    for (const f of s.factions.slice(1)) f.alive = false;
+    const owned = Object.keys(s.cities).filter((x) => s.cities[x].owner === P && !s.cities[x].pass);
+    const want = owned.reduce((a, x) => a + E.cityIncome(s, x)[0], 0), g0 = s.factions[P].gold;
+    runTurn(s, {});
+    expect(s.factions[P].gold - g0).toBeGreaterThanOrEqual(want - 1);
+    expect(E.cityIncome(s, c)[0]).toBeGreaterThan(0);
+  });
+});
+
+describe('v1.5: curved roads for the map (D-118)', () => {
+  it('a road starts and ends at its cities, is the same both ways, and bends a little', () => {
+    E.newGame(11); // loads a board
+    for (const [a, b] of LINKS.slice(0, 8)) {
+      const p = M.roadPath(a, b), q = M.roadPath(b, a);
+      expect(p.pts[0][0]).toBeCloseTo(CITIES[a].x, 5); expect(p.pts[p.pts.length - 1][1]).toBeCloseTo(CITIES[b].z, 5);
+      expect(q.pts[0][0]).toBeCloseTo(CITIES[b].x, 5);
+      for (let i = 0; i < p.pts.length; i++) { expect(p.pts[i][0]).toBeCloseTo(q.pts[q.pts.length - 1 - i][0], 5); }
+      const straight = Math.hypot(CITIES[b].x - CITIES[a].x, CITIES[b].z - CITIES[a].z);
+      expect(p.len).toBeGreaterThanOrEqual(straight);
+      expect(p.len).toBeLessThan(straight * 1.2);
+      const [x0, z0] = M.along(p, 0), [x1, z1] = M.along(p, 1);
+      expect(Math.hypot(x0 - CITIES[a].x, z0 - CITIES[a].z)).toBeLessThan(1e-6);
+      expect(Math.hypot(x1 - CITIES[b].x, z1 - CITIES[b].z)).toBeLessThan(1e-6);
+    }
+  });
+  it('a route joins its roads, and a slice stays on it', () => {
+    const [a, b] = LINKS[0], n = ADJ[b].map((x) => x.c).find((x) => x !== a);
+    const r = M.routePath([a, b, n]);
+    expect(r.len).toBeCloseTo(M.roadPath(a, b).len + M.roadPath(b, n).len, 3);
+    const sl = M.slice(r, 0.2, 0.7);
+    expect(sl.length).toBeGreaterThan(2);
+    expect(M.along(r, 0.5)[0]).toBeTypeOf('number');
   });
 });

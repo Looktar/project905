@@ -390,6 +390,9 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 .sgBldPick button:disabled{opacity:.45}
 .sgEdge{display:flex;justify-content:center;align-items:center;gap:8px;margin:-4px 0 6px;font-size:12px;font-weight:800;color:#f2c14e;text-align:center}
 .sgEdge span{flex:1;min-height:1em}.sgEdge span:first-child{text-align:right}.sgEdge span:last-child{text-align:left}.sgEdge i{font-style:normal;color:#d9c8ae}
+/* v1.5 (D-116): a city's monthly growth and income */
+.sgGrow{font-style:normal;font-size:12px;font-weight:800;color:#9fd38f;margin-left:5px}
+.sgInc{color:#f5ebdd}
 </style>
 </head>
 <body>
@@ -482,8 +485,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=fd3d0b4893","./js/bigmap.js":"./js/bigmap.js?v=fd3d0b4893","./js/config.js":"./js/config.js?v=fd3d0b4893","./js/fire.js":"./js/fire.js?v=fd3d0b4893","./js/game.js":"./js/game.js?v=fd3d0b4893","./js/geo.js":"./js/geo.js?v=fd3d0b4893","./js/glb.js":"./js/glb.js?v=fd3d0b4893","./js/hud.js":"./js/hud.js?v=fd3d0b4893","./js/i18n.js":"./js/i18n.js?v=fd3d0b4893","./js/input.js":"./js/input.js?v=fd3d0b4893","./js/main.js":"./js/main.js?v=fd3d0b4893","./js/math.js":"./js/math.js?v=fd3d0b4893","./js/missions.js":"./js/missions.js?v=fd3d0b4893","./js/models.js":"./js/models.js?v=fd3d0b4893","./js/nav.js":"./js/nav.js?v=fd3d0b4893","./js/orient.js":"./js/orient.js?v=fd3d0b4893","./js/poi.js":"./js/poi.js?v=fd3d0b4893","./js/pranks.js":"./js/pranks.js?v=fd3d0b4893","./js/props.js":"./js/props.js?v=fd3d0b4893","./js/renderer.js":"./js/renderer.js?v=fd3d0b4893","./js/sg_art.js":"./js/sg_art.js?v=fd3d0b4893","./js/sg_bios.js":"./js/sg_bios.js?v=fd3d0b4893","./js/sg_data.js":"./js/sg_data.js?v=fd3d0b4893","./js/sg_elev.js":"./js/sg_elev.js?v=fd3d0b4893","./js/sg_engine.js":"./js/sg_engine.js?v=fd3d0b4893","./js/sg_paper.js":"./js/sg_paper.js?v=fd3d0b4893","./js/sg_portrait.js":"./js/sg_portrait.js?v=fd3d0b4893","./js/sg_sites.js":"./js/sg_sites.js?v=fd3d0b4893","./js/sg_ui.js":"./js/sg_ui.js?v=fd3d0b4893","./js/signals.js":"./js/signals.js?v=fd3d0b4893","./js/world.js":"./js/world.js?v=fd3d0b4893"}}</script>
-<script type="module" src="js/main.js?v=fd3d0b4893"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=3e72301b45","./js/bigmap.js":"./js/bigmap.js?v=3e72301b45","./js/config.js":"./js/config.js?v=3e72301b45","./js/fire.js":"./js/fire.js?v=3e72301b45","./js/game.js":"./js/game.js?v=3e72301b45","./js/geo.js":"./js/geo.js?v=3e72301b45","./js/glb.js":"./js/glb.js?v=3e72301b45","./js/hud.js":"./js/hud.js?v=3e72301b45","./js/i18n.js":"./js/i18n.js?v=3e72301b45","./js/input.js":"./js/input.js?v=3e72301b45","./js/main.js":"./js/main.js?v=3e72301b45","./js/math.js":"./js/math.js?v=3e72301b45","./js/missions.js":"./js/missions.js?v=3e72301b45","./js/models.js":"./js/models.js?v=3e72301b45","./js/nav.js":"./js/nav.js?v=3e72301b45","./js/orient.js":"./js/orient.js?v=3e72301b45","./js/poi.js":"./js/poi.js?v=3e72301b45","./js/pranks.js":"./js/pranks.js?v=3e72301b45","./js/props.js":"./js/props.js?v=3e72301b45","./js/renderer.js":"./js/renderer.js?v=3e72301b45","./js/sg_art.js":"./js/sg_art.js?v=3e72301b45","./js/sg_bios.js":"./js/sg_bios.js?v=3e72301b45","./js/sg_data.js":"./js/sg_data.js?v=3e72301b45","./js/sg_elev.js":"./js/sg_elev.js?v=3e72301b45","./js/sg_engine.js":"./js/sg_engine.js?v=3e72301b45","./js/sg_map.js":"./js/sg_map.js?v=3e72301b45","./js/sg_paper.js":"./js/sg_paper.js?v=3e72301b45","./js/sg_portrait.js":"./js/sg_portrait.js?v=3e72301b45","./js/sg_sites.js":"./js/sg_sites.js?v=3e72301b45","./js/sg_ui.js":"./js/sg_ui.js?v=3e72301b45","./js/signals.js":"./js/signals.js?v=3e72301b45","./js/world.js":"./js/world.js?v=3e72301b45"}}</script>
+<script type="module" src="js/main.js?v=3e72301b45"></script>
 <!-- stamp:end -->
 </body>
 </html>

@@ -331,7 +331,7 @@ export const hiddenIn = (s, c) => Object.values(s.gens).filter((g) => g.hidden &
 
 // ---------------------------------------------------------------- orders
 // one order per officer: orders = { [general id]: { cmd, to, n } }
-// cmd: 'dev' | 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
+// cmd: 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
 //      'plot' (计略) with kind 'rumor' (流言: troops desert) or 'fire' (火计: walls burn) against a neighbour
 export const COST = { build: 'bldCost', dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost', envoy: 'envoyCost', poach: 'poachCost' };
 // ---- truces (v1.1, D-98): an envoy buys a few months of peace with one lord
@@ -385,7 +385,22 @@ export const costOf = (cmd, id) => (COST[cmd] ? Math.round(K()[COST[cmd]] * (id 
 export const orderCost = (o, id) => (o && COST[o.cmd] ? costOf(o.cmd, id) : 0);
 // what an officer would achieve (the numbers the order buttons show, and what runOrder does).
 // v1.2 (D-102): the curves are squares of the stat, so a 文官 and a 武将 are far apart at each other's work
-export function devAmt(s, f, id, city = null) { const k = K(); return Math.round((k.devBase + k.devMax * (gen(id).pol / 100) ** k.effExp) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev') + bldLv(city, 'academy') * k.bldAcadDev)); }
+// v1.5 (D-116): no more 内政 order. A city grows by itself every month: a little with nobody there, much more with a
+// good governor (the officer with the best 政治 stationed in it, squared like every other job). devAmt is that
+// monthly growth (one decimal) for officer id governing city; id = null means nobody is there.
+export function devAmt(s, f, id, city = null) {
+  const k = K(), base = id ? k.growBase + k.growMax * (gen(id).pol / 100) ** k.effExp : k.growBase * k.growAlone;
+  return Math.round(base * (1 + (id ? fx(id, 'dev') + bondFx(s, f, [id], 'dev') : 0) + bldLv(city, 'academy') * k.bldAcadDev) * 10) / 10;
+}
+// a city's gold and food a month for its owner (before the September harvest)
+export function cityIncome(s, c) {
+  const k = K(), C = s.cities[c], ai = C.owner >= 0 && C.owner !== PLAYER;
+  if (C.pass || C.owner < 0) return [0, 0];
+  return [Math.round((k.goldBase + C.dev * k.goldPerDev) * (ai ? D(s).gold : 1) * (1 + bldLv(C, 'market') * k.bldMarket)),
+    Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)) * (ai ? D(s).food : 1) * (1 + bldLv(C, 'farm') * k.bldFarm))];
+}
+export const governorOf = (s, c) => { const C = s.cities[c], gs = C && C.owner >= 0 ? gensIn(s, c, C.owner) : []; return gs.length ? best(gs, 'pol') : null; };
+export const growthOf = (s, c) => { const C = s.cities[c]; return C.pass || C.owner < 0 || C.dev >= 100 ? 0 : devAmt(s, C.owner, governorOf(s, c), C); };
 export function draftAmt(id, city = null) { const k = K(); return Math.round((k.draftBase + k.draftMax * (gen(id).lead / 100) ** k.effExp) * (1 + fx(id, 'draft') + bldLv(city, 'barracks') * k.bldDraft)); }
 export function searchChance(s, f, id, city = null) { const k = K(); return Math.min(0.95, k.searchBase + k.searchMax * (gen(id).int / 100) ** k.searchExp + fx(id, 'search') + bondFx(s, f, [id], 'search') + bldLv(city, 'academy') * k.bldAcadSearch); }
 export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + k.fortMax * (Math.max(G.lead, G.pol) / 100) ** k.effExp + (fx(id, 'def') > 0 ? 4 : 0)); }
@@ -410,7 +425,6 @@ export function validOrder(s, f, id, o) {
   const c = G.c, city = s.cities[c], fa = s.factions[f], k = K();
   if (city.owner !== f) return false;
   switch (o.cmd) {
-    case 'dev': return !city.pass && fa.gold >= costOf('dev', id) && city.dev < 100;
     case 'draft': return !city.pass && fa.gold >= costOf('draft', id) && city.troops < capOf(city);
     case 'search': return !city.pass;
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
@@ -435,11 +449,7 @@ function runOrder(s, f, id, o) {
   const k = K(), fa = s.factions[f];
   if (!validOrder(s, f, id, o)) { if (s.gens[id] && s.gens[id].f === f) ev(s, { k: 'skip', f, g: id, cmd: o && o.cmd }); return; }
   const c = s.gens[id].c, city = s.cities[c], G = gen(id);
-  if (o.cmd === 'dev') {
-    const amt = devAmt(s, f, id, city);
-    fa.gold -= costOf('dev', id); city.dev = Math.min(100, city.dev + amt);
-    ev(s, { k: 'dev', f, c, g: id, n: amt });
-  } else if (o.cmd === 'draft') {
+  if (o.cmd === 'draft') {
     const amt = Math.min(capOf(city) - city.troops, Math.round(draftAmt(id, city) * (f !== PLAYER ? D(s).draft : 1)));
     fa.gold -= costOf('draft', id); city.troops += amt;
     ev(s, { k: 'draft', f, c, g: id, n: amt });
@@ -465,6 +475,7 @@ function runOrder(s, f, id, o) {
     fa.gold -= costOf('build', id);
     city.bld = city.bld || {};
     city.bld[o.b] = bldRaw(city, o.b) + 1;
+    if (!city.pass) city.dev = Math.min(100, city.dev + k.bldDevUp); // v1.5: building brings people in
     if (o.b === 'walls') city.def = Math.min(defMaxOf(city), city.def + 5);
     ev(s, { k: 'build', f, c, g: id, b: o.b, lv: city.bld[o.b] });
   } else if (o.cmd === 'fort') {
@@ -609,7 +620,6 @@ export function aiOrders(s, f, opts = {}) {
         const want = (front ? ['walls', 'beacon', 'barracks', 'market'] : ['market', 'farm', 'academy', 'barracks']).find((b) => canBuild(C, b));
         if (want) { out[take('pol')] = { cmd: 'build', b: want }; gold -= k.bldCost; continue; }
       }
-      if (!C.pass && C.dev < 90 && gold >= k.devCost) { out[take('pol')] = { cmd: 'dev' }; gold -= k.devCost; continue; }
       // a spare officer goes where there is nobody, so every city can act
       if (gs.length >= 2 || !front) {
         const need = ADJ[c].map((a) => a.c).filter((n) => s.cities[n].owner === f && sup.has(n) && !gensIn(s, n, f).length && !incoming[n]);
@@ -1015,8 +1025,12 @@ export function endTurn(s) {
       C.def = Math.min(defMaxOf(C), C.def + (C.pass ? k.passDefRegen : k.defRegen));
       if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
       else if (!C.pass) {
-        fa.gold += Math.round((k.goldBase + C.dev * k.goldPerDev) * (fa.id !== PLAYER ? D(s).gold : 1) * (1 + bldLv(C, 'market') * k.bldMarket));
-        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)) * (fa.id !== PLAYER ? D(s).food : 1) * (1 + bldLv(C, 'farm') * k.bldFarm));
+        // v1.5 (D-116): the city grows by itself, faster under a good governor (whole points; the rest carries over)
+        C.grow = (C.grow || 0) + growthOf(s, c);
+        const up = Math.floor(C.grow); C.grow = Math.round((C.grow - up) * 100) / 100;
+        if (up > 0) { const was = C.dev; C.dev = Math.min(100, C.dev + up); if (fa.id === PLAYER && ((was < 40 && C.dev >= 40) || (was < 65 && C.dev >= 65))) ev(s, { k: 'grow', f: fa.id, c, n: C.dev }); }
+        const [gold, food] = cityIncome(s, c);
+        fa.gold += gold;
         fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
       }
       troops += C.troops;
@@ -1057,7 +1071,7 @@ export function runTurn(s, orders = {}) {
 
 // a computer plays the player's side too (tests / balance)
 export function autoPlayer(s) { return aiOrders(s, PLAYER); }
-// 委任: give every officer without an order a peaceful job (develop, draft, search, fortify, spread out)
+// 委任: give every officer without an order a peaceful job (draft, search, fortify, build, spread out)
 export function autoAssign(s, orders = {}) {
   const spent = Object.entries(orders).reduce((a, [id, o]) => a + orderCost(o, id), 0);
   return { ...aiOrders(s, PLAYER, { war: false, skip: new Set(Object.keys(orders)), gold: s.factions[PLAYER].gold - spent }), ...orders };
