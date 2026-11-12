@@ -753,7 +753,7 @@ describe('万锦群英传 v1.1', () => {
   it('whole games still end, with treasures and poaching in play', () => {
     let poach = 0, items = 0;
     for (let seed = 1; seed <= 12; seed++) {
-      const s = E.newGame(seed, { map: 'random', roster: 'mix' });
+      const s = E.newGame(seed, { map: 'random', roster: 'mix', diff: 'normal' }); // longer games: more chances to poach
       for (let m = 0; m < 240 && !s.over; m++) for (const e of E.runTurn(s, E.autoPlayer(s))) { if (e.k === 'poach') poach++; if (e.k === 'item') items++; }
       for (const g of Object.values(s.gens)) expect(Number.isFinite(E.gen(g.id).war)).toBe(true);
     }
@@ -926,7 +926,7 @@ describe('v1.5: no 内政 order, cities grow under their governors (D-116)', () 
     const s = newGame(6), P = 0, c = s.factions[P].cap;
     for (const f of s.factions.slice(1)) f.alive = false;
     const owned = Object.keys(s.cities).filter((x) => s.cities[x].owner === P && !s.cities[x].pass);
-    const want = owned.reduce((a, x) => a + E.cityIncome(s, x)[0], 0), g0 = s.factions[P].gold;
+    const want = owned.reduce((a, x) => a + E.cityIncome(s, x)[0], 0) - E.payOf(s, P), g0 = s.factions[P].gold; // v1.6: minus 军饷
     runTurn(s, {});
     expect(s.factions[P].gold - g0).toBeGreaterThanOrEqual(want - 1);
     expect(E.cityIncome(s, c)[0]).toBeGreaterThan(0);
@@ -956,5 +956,67 @@ describe('v1.5: curved roads for the map (D-118)', () => {
     const sl = M.slice(r, 0.2, 0.7);
     expect(sl.length).toBeGreaterThan(2);
     expect(M.along(r, 0.5)[0]).toBeTypeOf('number');
+  });
+});
+
+describe('v1.6: bonds you can see, troop pay, harder lords (D-120 to D-122)', () => {
+  it('a new game gives you a bond to chase, and finding the member switches it on with an event', () => {
+    for (let seed = 1; seed <= 8; seed++) {
+      const s = E.newGame(seed, { map: 'random', roster: 'mix' }), P = 0;
+      expect(s.lead).toBeTruthy();
+      const b = BONDS.find((x) => x.id === s.lead.b), v = E.bondView(s, P).find((x) => x.b.id === b.id);
+      expect(v.have.length).toBeGreaterThanOrEqual(1);
+      expect(v.where[s.lead.g].k).toBe('wild');
+      expect(s.gens[s.lead.g].c).toBe(s.lead.c);
+      expect(CITIES[s.lead.c].pass).toBeFalsy();
+      if (v.need - v.have.length !== 1) continue;
+      Object.assign(s.gens[s.lead.g], { f: P, c: s.factions[P].cap, hidden: false });
+      const evs = runTurn(s, {});
+      expect(evs.some((e) => e.k === 'bond' && e.b === b.id && e.f === P)).toBe(true);
+      expect(s.bondsOn).toContain(b.id);
+      // losing him again switches it off
+      Object.assign(s.gens[s.lead.g], { f: -1, hidden: true });
+      expect(runTurn(s, {}).some((e) => e.k === 'bondLost' && e.b === b.id)).toBe(true);
+    }
+  });
+  it('bonds show on the battle screen', () => {
+    const s = newGame(3);
+    s.gens.guanyu = s.gens.guanyu || { id: 'guanyu', f: 0, c: s.factions[0].cap }; Object.assign(s.gens.guanyu, { f: 0, hidden: false });
+    s.gens.liubei = s.gens.liubei || { id: 'liubei', f: 0, c: s.factions[0].cap }; Object.assign(s.gens.liubei, { f: 0, hidden: false });
+    const edge = E.edgeOf(s, ['liubei', 'guanyu'], [], false, false, 0, 1);
+    expect(edge.some((x) => x[0] === 0 && x[1].includes('桃园'))).toBe(true);
+  });
+  it('troop pay: what it costs, and what happens when you cannot pay', () => {
+    const s = newGame(3), P = 0, k = CFG.sg, cap = s.factions[P].cap;
+    for (const f of s.factions.slice(1)) f.alive = false;
+    const troops = Object.values(s.cities).filter((c) => c.owner === P).reduce((a, c) => a + c.troops, 0);
+    expect(E.payOf(s, P)).toBe(Math.round(Math.max(0, troops - k.payFree * E.citiesOf(s, P).length) * k.payTroop + factionGens(s, P).length * k.payGen));
+    s.cities[cap].troops = 9000; s.factions[P].gold = 0;
+    const evs = runTurn(s, {});
+    if (s.factions[P].gold === 0) {
+      expect(evs.some((e) => e.k === 'unpaid' && e.f === P)).toBe(true);
+      expect(s.cities[cap].troops).toBeLessThan(9000);
+    }
+    check(s);
+  });
+  it('a rich computer lord hires soldiers for its front; the player never does', () => {
+    const s = E.newGame(5, { diff: 'hard' });
+    const f = 1, fa = s.factions[f];
+    fa.gold = 5000;
+    const before = E.citiesOf(s, f).reduce((a, c) => a + s.cities[c].troops, 0) + s.armies.filter((a) => a.f === f).reduce((a, x) => a + x.troops, 0);
+    s.factions[0].gold = 5000;
+    const p0 = s.factions[0].gold;
+    s.events = [];
+    E.endTurn(s);
+    const after = E.citiesOf(s, f).reduce((a, c) => a + s.cities[c].troops, 0) + s.armies.filter((a) => a.f === f).reduce((a, x) => a + x.troops, 0);
+    expect(fa.gold).toBeLessThan(5000 - E.payOf(s, f) + 2000);
+    expect(after).toBeGreaterThanOrEqual(before);
+    expect(s.factions[0].gold).toBeGreaterThan(p0 - 1000); // only pay and income, no hiring
+    check(s);
+  });
+  it('the difficulty levels still go easy → hard', () => {
+    const d = CFG.sg.diff;
+    expect(d.normal.merc).toBeLessThan(d.hard.merc); expect(d.hard.merc).toBeLessThan(d.hell.merc);
+    expect(d.normal.hunt).toBeLessThan(d.hell.hunt); expect(d.hard.grace).toBeLessThan(d.normal.grace);
   });
 });

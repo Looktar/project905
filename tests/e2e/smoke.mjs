@@ -167,7 +167,8 @@ async function runViewport(browser, base, vp) {
     await page.waitForSelector('#sgLayer.show', { timeout: 15000 });
     await sleep(700);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
-    for (let i = 0; i < 3; i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
+    // two blind boxes, the rival lords, and (v1.6) the bond rumour: tap through whatever cards there are
+    for (let i = 0; i < 6 && await page.evaluate(() => document.getElementById('sgLayer').classList.contains('show')); i++) { await tap('#sgLayer [data-ok]'); await sleep(300); }
     // v1.1: the first game opens the beginner guide; step through one note, then skip it
     await page.waitForSelector('#sgTut.show', { timeout: 5000 });
     await tap('[data-tut="next"]');

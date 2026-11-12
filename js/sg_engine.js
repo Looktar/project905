@@ -233,6 +233,29 @@ export function activeBonds(s, f, ids) {
   const fac = new Set(factionGens(s, f)), army = new Set(ids || []);
   return BONDS.filter((b) => b.m.filter((m) => (b.scope === 'army' ? army : fac).has(m)).length >= b.need);
 }
+// v1.6 (D-120): every bond that can happen in this game (enough of its members drawn) or that f has a member of,
+// with where each member is: 'mine' | 'wild' (hiding in city c) | 'guard' (holding a pass) | 'lord' (serving f2) | 'out'
+export function bondView(s, f) {
+  const out = [];
+  for (const b of BONDS) {
+    const there = b.m.filter((m) => s.gens[m]), have = b.m.filter((m) => s.gens[m] && s.gens[m].f === f);
+    if (there.length < b.need && !have.length) continue;
+    const where = Object.fromEntries(b.m.map((m) => {
+      const G = s.gens[m];
+      return [m, !G ? { k: 'out' } : G.f === f ? { k: 'mine', c: G.c } : G.hidden ? { k: 'wild', c: G.c } : G.guard ? { k: 'guard', c: G.c } : G.f >= 0 ? { k: 'lord', f: G.f, c: G.c } : { k: 'wild', c: G.c }];
+    }));
+    out.push({ b, have, need: b.need, ready: have.length >= b.need, possible: there.length >= b.need, where });
+  }
+  return out.sort((x, y) => (y.ready - x.ready) || (y.have.length / y.need - x.have.length / x.need) || (y.possible - x.possible));
+}
+// a bond switched on or off for the player this month: a card for each (faction bonds work at once, army bonds once
+// enough of them march together)
+function checkBonds(s) {
+  const now = bondView(s, PLAYER).filter((x) => x.ready).map((x) => x.b.id), was = s.bondsOn || [];
+  for (const id of now) if (!was.includes(id)) ev(s, { k: 'bond', f: PLAYER, b: id });
+  for (const id of was) if (!now.includes(id)) ev(s, { k: 'bondLost', f: PLAYER, b: id });
+  s.bondsOn = now;
+}
 function bondFx(s, f, ids, k) { return activeBonds(s, f, ids).reduce((a, b) => a + (b.fx[k] || 0), 0); }
 export function rivalry(a, d) { // rival pair across two armies (first found)
   for (const r of RIVALS) {
@@ -315,6 +338,22 @@ export function newGame(seed = Date.now(), opts = {}) {
   const big = PASS_IDS.find((c) => CITIES[c].big);
   const guard = pool.reduce((m, id) => (m && gen(m).war >= gen(id).war ? m : id), null);
   if (big && guard) Object.assign(s.gens[guard], { c: big, hidden: false, guard: true });
+  // v1.6 (D-120): a bond to chase from the start (games with a drawn roster): you get one of its members, and word
+  // of another one hiding in a city near your capital
+  if (opts.roster) {
+    const P = s.factions[PLAYER], cap = P.cap, mine = factionGens(s, PLAYER);
+    const b = shuffle(s, BONDS.filter((x) => x.m.filter((m) => s.gens[m] && s.gens[m].hidden).length >= 2))[0];
+    if (b) {
+      const [m1, m2] = shuffle(s, b.m.filter((m) => s.gens[m] && s.gens[m].hidden));
+      const out = mine.find((x) => !b.m.includes(x)) || mine[mine.length - 1];
+      Object.assign(s.gens[out], { f: -1, c: s.gens[m1].c, hidden: true, loyal: 70 });
+      Object.assign(s.gens[m1], { f: PLAYER, c: cap, hidden: false, guard: false, loyal: 85 + fx(m1, 'loyal') });
+      const h = hops(cap), near = CITY_IDS.filter((c) => c !== cap && s.cities[c].owner === -1).sort((x, y) => h[x] - h[y])[0];
+      if (near) s.gens[m2].c = near;
+      s.lead = { b: b.id, g: m2, c: s.gens[m2].c };
+    }
+  }
+  s.bondsOn = bondView(s, PLAYER).filter((x) => x.ready).map((x) => x.b.id);
   // v1.1 (D-97): this game's treasures, drawn with a generator of their own so older seeds play as before
   let r2 = (s.seed ^ 0x9e3779b9) >>> 0;
   const rnd2 = () => { r2 = (Math.imul(r2, 1664525) + 1013904223) >>> 0; return r2 / 4294967296; };
@@ -554,6 +593,7 @@ export function aiOrders(s, f, opts = {}) {
   const used = new Set();
   // a rich lord, or one of the last two, gets bolder (no endless stand-offs between full cities)
   const thr = D(s).attack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
+  const playerLeads = f !== PLAYER && citiesOf(s, PLAYER).length >= Math.max(...s.factions.filter((x) => x.alive && x.id !== PLAYER).map((x) => citiesOf(s, x.id).length));
   for (let n = 0; war && n < 2; n++) {
     let pick1 = null;
     const targets = new Set();
@@ -570,6 +610,7 @@ export function aiOrders(s, f, opts = {}) {
       let sc = armyPower(troops, ids) * (tw / troops) * (isWinter(s) ? 1 - k.snowPen : 1) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
       if (T.owner === -1) sc += 0.1;
       if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
+      if (T.owner === PLAYER && playerLeads) sc += D(s).hunt; // v1.6 (D-121): the computer lords gang up on a leading player
       if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc };
     }
     if (!pick1) break;
@@ -837,9 +878,11 @@ export function duelRound(s, d, mv = null) {
 export function autoDuel(s, d) { while (!d.done) duelRound(s, d); return d.win; }
 
 // what the battle screen shows (v1.4): each side's counters and weather buffs, [side, zh, en, fx]
-export function edgeOf(s, aIds, bIds, river = false, siege = false) {
+export function edgeOf(s, aIds, bIds, river = false, siege = false, fa = -1, fb = -1) {
   const out = [];
-  for (const [si, ids, foes, att] of [[0, aIds, bIds, true], [1, bIds, aIds, !siege]]) {
+  for (const [si, ids, foes, att, f] of [[0, aIds, bIds, true, fa], [1, bIds, aIds, !siege, fb]]) {
+    // v1.6 (D-120): bonds show on the battle screen too, with their attack (and, defending a city, defence) bonus
+    for (const b of activeBonds(s, f, ids)) { const v = (b.fx.atk || 0) + (att ? 0 : b.fx.def || 0); if (v) out.push([si, '♥ ' + b.zh, '♥ ' + b.en, v]); }
     for (const x of countersOf(ids, foes, !att)) out.push([si, x.c.zh, x.c.en, x.c.fx, x.a, x.b]);
     for (const x of timelyOf(s, ids, si === 0 && river)) out.push([si, x.t.zh, x.t.en, x.t.fx, x.id]);
     if (isWinter(s) && snowproof(ids)) out.push([si, '不惧风雪', 'Snow-hardy', 0]);
@@ -869,7 +912,7 @@ function resolveField(s, m, duelWin, duel) {
   }
   let A = a.troops, B = b.troops;
   m.rounds = [[A, B]]; m.sideGens = [[...a.gens], [...b.gens]]; // the battle screen plays these back
-  m.edge = edgeOf(s, a.gens, b.gens, false, false);
+  m.edge = edgeOf(s, a.gens, b.gens, false, false, a.f, b.f);
   for (let r = 0; r < k.fieldRounds && A > 0 && B > 0; r++) {
     const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B, foes: b.gens }) * aMul;
     const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A, foes: a.gens }) * bMul;
@@ -906,7 +949,7 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   let A = m.troops, D = T.troops;
   const walls = wallMul(T);
   m.rounds = [[A, D]]; m.sideGens = [[...m.gens], [...dGens]]; // the battle screen plays these back
-  m.edge = edgeOf(s, m.gens, dGens, crossesRiver(m), true);
+  m.edge = edgeOf(s, m.gens, dGens, crossesRiver(m), true, m.f, o);
   // v0.9.6: no dice in the fighting itself (troops x 武力 x walls decide); the siege goes on until one
   // side breaks, so the stronger side always carries the day
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {
@@ -1007,6 +1050,12 @@ function randomEvents(s) {
   }
 }
 
+// a month's 军饷 for lord f (troops: everything he has under arms, cities and armies; counted if not given)
+export function payOf(s, f, troops = null) {
+  const k = K();
+  if (troops === null) troops = ownedBy(s, f).reduce((a, c) => a + s.cities[c].troops, 0) + s.armies.filter((a) => a.f === f).reduce((a, x) => a + x.troops, 0);
+  return Math.round(Math.max(0, troops - k.payFree * citiesOf(s, f).length) * k.payTroop + factionGens(s, f).length * k.payGen); // each city keeps payFree soldiers on its own fields
+}
 export function endTurn(s) {
   loadMap(s);
   const k = K();
@@ -1037,9 +1086,32 @@ export function endTurn(s) {
     }
     for (const a of s.armies) if (a.f === fa.id) troops += a.troops; // armies on the road eat too
     fa.food -= Math.round(troops * k.foodPerTroop);
+    // v1.6 (D-122): 军饷. Soldiers and officers are paid every month; a lord who cannot pay loses soldiers
+    // (in proportion to what he owes) and his officers grow less loyal
+    const pay = payOf(s, fa.id, troops);
+    fa.pay = pay;
+    if (fa.gold >= pay) fa.gold -= pay;
+    else {
+      const short = 1 - fa.gold / pay; fa.gold = 0;
+      for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.desert * short));
+      for (const a of s.armies) if (a.f === fa.id) a.troops = Math.max(1, Math.round(a.troops * (1 - k.desert * short)));
+      for (const id of factionGens(s, fa.id)) if (id !== fa.lord) s.gens[id].loyal = Math.max(0, (s.gens[id].loyal ?? 80) - k.unpaidLoyal);
+      ev(s, { k: 'unpaid', f: fa.id, n: Math.round(short * 100) });
+    }
+    // v1.6 (D-121): a computer lord with gold to spare hires soldiers for its front (the weakest front city first)
+    if (fa.id !== PLAYER && D(s).merc && fa.gold > k.aiReserve) {
+      let spend = Math.floor((fa.gold - k.aiReserve) * D(s).merc);
+      const front = ownedBy(s, fa.id).filter((c) => sup.has(c) && ADJ[c].some(({ c: n }) => s.cities[n].owner !== fa.id)).sort((a, b) => s.cities[a].troops - s.cities[b].troops);
+      for (const c of front) {
+        const C = s.cities[c], n = Math.min(capOf(C) - C.troops, Math.floor(spend / k.mercCost) * 100);
+        if (n < 100) continue;
+        C.troops += n; const cost = n / 100 * k.mercCost; fa.gold -= cost; spend -= cost;
+      }
+    }
     if (fa.food < 0) { fa.food = 0; for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.hungerLoss)); ev(s, { k: 'hunger', f: fa.id }); }
     fixLord(s, fa.id);
   }
+  checkBonds(s);
   for (const c of NODE_IDS) {
     const C = s.cities[c], max = C.pass ? (CITIES[c].big ? k.passBigTroops : k.passTroops[1]) : k.neutralMax;
     if (C.owner === -1 && C.troops < max) C.troops = Math.min(max, C.troops + k.neutralRegen);

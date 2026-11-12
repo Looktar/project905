@@ -393,6 +393,30 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 /* v1.5 (D-116): a city's monthly growth and income */
 .sgGrow{font-style:normal;font-size:12px;font-weight:800;color:#9fd38f;margin-left:5px}
 .sgInc{color:#f5ebdd}
+/* v1.6 (D-120): bonds you can see */
+#sgLayer.wide .sgCard{width:min(760px,100%)}
+#sgPanel h4 small{font:700 12px system-ui,sans-serif;color:#d9c8ae;margin-left:4px}
+.sgMini{float:right;font:800 12px system-ui,sans-serif;background:linear-gradient(#7a2a22,#5a1c17);color:#f5ebdd;border:1px solid #c8963e;border-radius:999px;padding:3px 10px;margin-top:-1px}
+.sgBondR{background:linear-gradient(#33251a,#2a1f16);border:1px solid #5d4630;border-radius:12px;padding:7px 9px;margin:6px 0}
+.sgBondR.on{border-color:#f2c14e;box-shadow:0 0 0 1px rgba(242,193,78,.35),0 0 14px rgba(242,193,78,.18) inset}
+.sgBh{display:flex;align-items:baseline;gap:8px}.sgBh b{font:900 15px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f5ebdd}.sgBondR.on .sgBh b{color:#f2c14e}
+.sgBh i{font-style:normal;font-weight:900;font-size:12px;color:#2b211a;background:#d9c8ae;border-radius:6px;padding:0 6px}.sgBondR.on .sgBh i{background:#f2c14e}
+.sgBh em{font-style:normal;font-size:11px;font-weight:700;color:#d9c8ae;margin-left:auto;text-align:right}.sgBondR.on .sgBh em{color:#9fd38f}
+.sgBms{display:flex;flex-wrap:wrap;gap:6px 10px;margin:6px 0 4px}
+.sgBm{display:flex;flex-direction:column;align-items:center;max-width:92px;text-align:center}
+.sgBm b{font-size:11px;font-weight:800;color:#d9c8ae;margin-top:2px}.sgBm.on b{color:#f5ebdd}
+.sgBm small{font-size:10px;line-height:1.25;color:#b8a68a}.sgBm.out{opacity:.45}
+.sgMf{width:34px;height:34px;border-radius:50%;overflow:hidden;display:block;border:2px solid #5d4630;background:#4a3a2a;filter:grayscale(1) brightness(.75)}
+.sgMf.on{filter:none;border-color:#f2c14e}.sgMf img{width:100%;height:100%;display:block}
+.sgBfx{font-size:11px;font-weight:700;color:#f2c14e}
+.sgBook{max-height:60vh;overflow:auto;touch-action:pan-y}
+.sgBchip{display:inline-block;font-size:10px;font-weight:800;color:#d9c8ae;border:1px solid #6a5238;border-radius:6px;padding:0 4px;margin-left:2px}.sgBchip.on{color:#2b211a;background:#f2c14e;border-color:#f2c14e}
+.sgWith button.bond{border-color:#f2c14e!important;box-shadow:0 0 0 1px rgba(242,193,78,.5)}
+.sgBondOnH{color:#f2c14e!important;font-weight:800}
+.sgLeadH{color:#f2d79a!important}
+.sgBondBig{text-align:center}.sgBondBig .sgBigName{color:#f2c14e;font-size:26px}
+.sgBfaces{display:flex;justify-content:center;gap:14px;margin:10px 0}.sgBfaces>div{display:flex;flex-direction:column;align-items:center;gap:4px;filter:grayscale(1) opacity(.55)}.sgBfaces>div.on{filter:none}
+.sgBfaces b{font-size:13px;color:#f5ebdd}.sgBondBig.lost .sgBfaces>div{filter:grayscale(1)}
 </style>
 </head>
 <body>
@@ -485,8 +509,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=3e72301b45","./js/bigmap.js":"./js/bigmap.js?v=3e72301b45","./js/config.js":"./js/config.js?v=3e72301b45","./js/fire.js":"./js/fire.js?v=3e72301b45","./js/game.js":"./js/game.js?v=3e72301b45","./js/geo.js":"./js/geo.js?v=3e72301b45","./js/glb.js":"./js/glb.js?v=3e72301b45","./js/hud.js":"./js/hud.js?v=3e72301b45","./js/i18n.js":"./js/i18n.js?v=3e72301b45","./js/input.js":"./js/input.js?v=3e72301b45","./js/main.js":"./js/main.js?v=3e72301b45","./js/math.js":"./js/math.js?v=3e72301b45","./js/missions.js":"./js/missions.js?v=3e72301b45","./js/models.js":"./js/models.js?v=3e72301b45","./js/nav.js":"./js/nav.js?v=3e72301b45","./js/orient.js":"./js/orient.js?v=3e72301b45","./js/poi.js":"./js/poi.js?v=3e72301b45","./js/pranks.js":"./js/pranks.js?v=3e72301b45","./js/props.js":"./js/props.js?v=3e72301b45","./js/renderer.js":"./js/renderer.js?v=3e72301b45","./js/sg_art.js":"./js/sg_art.js?v=3e72301b45","./js/sg_bios.js":"./js/sg_bios.js?v=3e72301b45","./js/sg_data.js":"./js/sg_data.js?v=3e72301b45","./js/sg_elev.js":"./js/sg_elev.js?v=3e72301b45","./js/sg_engine.js":"./js/sg_engine.js?v=3e72301b45","./js/sg_map.js":"./js/sg_map.js?v=3e72301b45","./js/sg_paper.js":"./js/sg_paper.js?v=3e72301b45","./js/sg_portrait.js":"./js/sg_portrait.js?v=3e72301b45","./js/sg_sites.js":"./js/sg_sites.js?v=3e72301b45","./js/sg_ui.js":"./js/sg_ui.js?v=3e72301b45","./js/signals.js":"./js/signals.js?v=3e72301b45","./js/world.js":"./js/world.js?v=3e72301b45"}}</script>
-<script type="module" src="js/main.js?v=3e72301b45"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=2ac320ddeb","./js/bigmap.js":"./js/bigmap.js?v=2ac320ddeb","./js/config.js":"./js/config.js?v=2ac320ddeb","./js/fire.js":"./js/fire.js?v=2ac320ddeb","./js/game.js":"./js/game.js?v=2ac320ddeb","./js/geo.js":"./js/geo.js?v=2ac320ddeb","./js/glb.js":"./js/glb.js?v=2ac320ddeb","./js/hud.js":"./js/hud.js?v=2ac320ddeb","./js/i18n.js":"./js/i18n.js?v=2ac320ddeb","./js/input.js":"./js/input.js?v=2ac320ddeb","./js/main.js":"./js/main.js?v=2ac320ddeb","./js/math.js":"./js/math.js?v=2ac320ddeb","./js/missions.js":"./js/missions.js?v=2ac320ddeb","./js/models.js":"./js/models.js?v=2ac320ddeb","./js/nav.js":"./js/nav.js?v=2ac320ddeb","./js/orient.js":"./js/orient.js?v=2ac320ddeb","./js/poi.js":"./js/poi.js?v=2ac320ddeb","./js/pranks.js":"./js/pranks.js?v=2ac320ddeb","./js/props.js":"./js/props.js?v=2ac320ddeb","./js/renderer.js":"./js/renderer.js?v=2ac320ddeb","./js/sg_art.js":"./js/sg_art.js?v=2ac320ddeb","./js/sg_bios.js":"./js/sg_bios.js?v=2ac320ddeb","./js/sg_data.js":"./js/sg_data.js?v=2ac320ddeb","./js/sg_elev.js":"./js/sg_elev.js?v=2ac320ddeb","./js/sg_engine.js":"./js/sg_engine.js?v=2ac320ddeb","./js/sg_map.js":"./js/sg_map.js?v=2ac320ddeb","./js/sg_paper.js":"./js/sg_paper.js?v=2ac320ddeb","./js/sg_portrait.js":"./js/sg_portrait.js?v=2ac320ddeb","./js/sg_sites.js":"./js/sg_sites.js?v=2ac320ddeb","./js/sg_ui.js":"./js/sg_ui.js?v=2ac320ddeb","./js/signals.js":"./js/signals.js?v=2ac320ddeb","./js/world.js":"./js/world.js?v=2ac320ddeb"}}</script>
+<script type="module" src="js/main.js?v=2ac320ddeb"></script>
 <!-- stamp:end -->
 </body>
 </html>
