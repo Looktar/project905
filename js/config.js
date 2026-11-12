@@ -109,7 +109,10 @@ export const CFG = {
     maxTroops: 10000, capBase: 2000, capPerDev: 60, defRegen: 1, defMax: 80, devCost: 50, draftCost: 100,
     // v1.2 (D-102): what an officer achieves grows with the square of his stat: 内政 +2 at 政 25, +7 at 60, +18 at 100;
     // 征兵 180 at 统 25, 570 at 60, 1400 at 100; 搜索 15% at 智 25, 42% at 60, 85% at 100; a low 政治 also pays more for everything
-    devBase: 1, devMax: 17, draftBase: 100, draftMax: 1300, effExp: 2, searchMax: 0.8, searchExp: 1.5, fortMax: 16, costMin: 0.6, costMax: 1.4, costPerPol: 1 / 125,
+    // v1.5 (D-116): no 内政 order any more; a city grows growBase + growMax x (政/100)^2 a month under its best-政治
+    // officer (政 25: +0.5, 60: +1.4, 100: +3.3), growBase x growAlone with nobody there; each building adds bldDevUp
+    growBase: 0.3, growMax: 3, growAlone: 0.5, bldDevUp: 5,
+    draftBase: 100, draftMax: 1300, effExp: 2, searchMax: 0.8, searchExp: 1.5, fortMax: 16, costMin: 0.6, costMax: 1.4, costPerPol: 1 / 125,
     // v1.2 (D-103): the computer lords are harder: three levels, 困难 by default
     // per game (s.diff, picked when a game starts): grace = months before the computer may attack you, attack = the
     // power ratio it wants before marching, gold / food / draft = how much better than you it runs its lands
@@ -155,7 +158,7 @@ export const CFG = {
     // academy search +6% and development +10%, beacon defenders +8%. One build costs bldCost (x 政治), level 2 needs
     // 开发 40 and level 3 needs 65. The computer builds with aiBuild odds when it has bldCost + aiBuildSpare gold.
     counterMax: 0.4, bldCost: 250, bldDev: [0, 40, 65], bldMarket: 0.15, bldFarm: 0.15, bldCap: 1000, bldDraft: 0.1, bldWall: 15,
-    bldAcadSearch: 0.06, bldAcadDev: 0.1, bldBeacon: 0.08, aiBuild: 0.35, aiBuildSpare: 250,
+    bldAcadSearch: 0.06, bldAcadDev: 0.2, bldBeacon: 0.08, aiBuild: 0.5, aiBuildSpare: 250,
     // v1.1 (D-97): treasure blind boxes. itemCount hidden per game (at most itemUR of the best); a search that finds
     // no officer turns one up with itemBase + 智力 x itemPerInt (14% at 智力 50, 22% at 100)
     itemCount: 10, itemUR: 2, itemBase: 0.06, itemPerInt: 0.0016,

@@ -10,6 +10,7 @@ import * as sfx from './audio.js';
 import { BUILDINGS, BLD_IDS, COUNTERS, TIMELY, ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
 import { drawCity, cityKind } from './sg_art.js';
 import { BIOS } from './sg_bios.js';
+import { roadPath, routePath, along, slice, bakeTerritory, territoryKey, bakeDecor, boardKey, boatSpots, drawBoat, cloudShadows, birds, drawSquad } from './sg_map.js';
 import { portraitURL } from './sg_portrait.js';
 import { bakePaper, woodTile } from './sg_paper.js';
 
@@ -31,11 +32,12 @@ extend({
   sgDuelWin: '{g} 赢了单挑！', sgDuelDraw: '不分胜负！', sgRound: '第 {n} 回合', sgMoves: '你：{a} · 对方：{d}', sgHit: '{g} 受到 {n} 伤害', sgRival: '宿敌相见：{r}',
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
   sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
-  sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不能内政、征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
+  sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不会发展，不能征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
   sgTargets: '目标（也可以点地图）', sgOfficersBtn: '武将', sgGarrisonCard: '守军', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
+  sgPerM: '/月', sgIncome: '每月 +{g} 金 +{f} 粮', sgGov: '{g} 坐镇（政 {p}）', sgNoGov: '没人坐镇，发展很慢', evGrow: '{c} 日渐繁荣，开发到 {n}，可以建更高级的建筑了',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
   ev_nightmarket: '{c} 夜市人山人海，{f}多收 {n} 金', ev_bumper: '{c} 大丰收，{f}多收 {n} 粮', ev_volunteers: '{c} 来了 {n} 名义勇军', ev_merchant: '商队路过，{f}多赚 {n} 金',
@@ -46,7 +48,7 @@ extend({
   evTake: '{f} 攻下了 {c}！', evRepel: '{c} 挡住了 {f} 的进攻', evFlee: '{g} 逃到了 {c}', evRecruit: '{f} 俘虏并登用了 {g}', evRelease: '{g} 被俘后不肯投降，被放走了',
   evNewLord: '{g} 继任为君主', evFall: '{f} 灭亡了！', evCapital: '{f} 把本城迁到 {c}', evCut: '{c} 断粮了！兵力减少', evHunger: '{f} 粮草不足，士兵逃散',
   evCoalition: '群雄结成反{f}联盟！', evCoalitionYou: '你占了万锦一半，其他君主联合起来对付你了！', evCoalitionEnd: '反{f}联盟解散了',
-  sgHelpText: '一回合是一个月。每位武将每月做一件事：内政（开发，增加每月金粮）、征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑靠读招（见下）。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：对手每回合先亮架势，你读招应对（猛攻克必杀、必杀破防守、防守挡猛攻并反击）。你的智力不低于对手，架势一定是真的；对手智力更高，有时会佯攻骗你。武力决定伤害，武力相差 25 以上一击就能打倒对手；统率决定体力和斗志，必杀要花 50 斗志。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
+  sgHelpText: '一回合是一个月。每位武将每月做一件事：征兵（花金加兵）、搜索（找藏在这座城的在野武将，开盲盒）、筑城（加城防）、计略（对邻城用流言让守兵逃散，或用火计烧城防，智力越高越容易成功）、调动（带兵去相邻的自己城或关）、出征（带兵打邻城）、建设（盖建筑）。城市会自己发展（开发越高，每月金粮越多、兵上限越高）：留一位政治高的武将坐镇，发展快得多；盖建筑也会带来人口。没有武将的城下不了命令；武将多，一个月能做的事就多。\n\n武将：统率决定能带多少兵（统率 × 60，几位武将一起出征就加起来）；武力决定战斗力，打仗没有运气成分，兵力一样时武力高的一方一定赢（城防、地形、特技另算）。单挑靠读招（见下）。\n\n野战和截击：两支敌对的军队在同一条路上迎面相遇会打野战；敌军在经过你城的路上时，可以派武将“截击”，在城外把它打回去（不靠城墙，只比兵力 × 武力）。\n\n行军要花时间：路越长走得越久（1–3 个月），驿站路更快。行军中的军队会画在地图上，标着兵力和几个月后到；敌军来袭时左边面板会提醒你，赶紧征兵、筑城或调兵来守。不想一个个点，按“委任”让空闲武将自动干活（不会替你出征）。\n\n地形是真实的万锦：城和城之间的线是真实道路，也是粮道，只有和本城连成一片的城才有收入、能出征。胭脂河（Rouge River）两岸的城是沃野，粮多但地势低；渡河进攻 −15%，往高处打也吃亏（海拔来自真实地形数据）。\n\n每一局的地图都是新抽的：12 座城从 27 个真实地点（社区、商场广场、地标）里随机挑，按地理位置连上真实道路；路上的真实公园随机变成隘口，其中一个是“虎牢关”。隘口没有百姓，但城防极高；虎牢关开局有一位猛将守着，打下来有机会收降他。\n\n驿站和补给站：路上有真实加油站的是驿站路（地图上橙色“驿”字），沿这条路出征 +10%，调动还能一口气多走一段（中间那座城得是自己的）。有大商场、仓储店的城是补给站（绿色“补”字）。补给站本身就是粮源，连得上它的城都不断粮，粮也多 30%。\n\n季节：12–2 月下雪，进攻 −10%；9 月秋收，粮翻几倍；2 月春节庙会，每座城多收金。每月还可能有随机事件：商场夜市、丰收、义勇军、暴风雪、冰暴、胭脂河涨水、名士传闻……\n\n两边都有武将时可能单挑：对手每回合先亮架势，你读招应对（猛攻克必杀、必杀破防守、防守挡猛攻并反击）。你的智力不低于对手，架势一定是真的；对手智力更高，有时会佯攻骗你。武力决定伤害，武力相差 25 以上一击就能打倒对手；统率决定体力和斗志，必杀要花 50 斗志。同时拥有特定武将会激活羁绊，宿敌相见更容易单挑。谁占到 6 座城，其他君主就会结盟对付他。占满 12 座城（关不算）即统一万锦。',
 }, {
   sgStart: '⚔ Heroes of Markham', sgTitle: 'Heroes of Markham', sgDateMix: 'Year {Y}, month {m}', sgEnd: 'End month', sgDate: 'Year {Y}, month {m}', sgGold: 'Gold', sgFood: 'Food', sgTroops: 'Troops', sgCities: 'Cities',
   sgLog: 'Log', sgMenu: 'Menu', sgMusicOn: '🎵 Music: on', sgMusicOff: '🎵 Music: off', sgBack: 'Back to the streets', sgNew: 'New game', sgModeQ: 'A new game: whose officers?', sgModeMix: 'All eras', sgModeMixS: '32 drawn from 118 great generals, from the Warring States to the Qing', sgModeSg: 'Three Kingdoms only', sgModeSgS: '32 drawn from the 48 of the Three Kingdoms', sgNewQ: 'A new game deals new blind boxes and your progress is lost. Sure?', sgHelp: 'How to play', sgHide: 'Tuck the panel away', sgContinue: 'Continue',
@@ -65,11 +67,12 @@ extend({
   sgDuelWin: '{g} wins the duel!', sgDuelDraw: 'A draw!', sgRound: 'Round {n}', sgMoves: 'You: {a} · Them: {d}', sgHit: '{g} takes {n}', sgRival: 'Rivals meet: {r}',
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
   sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
-  sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no developing, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
+  sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no growth, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
   sgTargets: 'Targets (or tap the map)', sgOfficersBtn: 'Officers', sgGarrisonCard: 'Garrison', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
+  sgPerM: '/mo', sgIncome: '+{g} gold +{f} food a month', sgGov: 'governed by {g} (POL {p})', sgNoGov: 'nobody governs it: slow growth', evGrow: '{c} is thriving: development {n}, better buildings unlocked',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
   ev_nightmarket: 'The {c} night market is packed: {f} +{n} gold', ev_bumper: 'Bumper crop in {c}: {f} +{n} food', ev_volunteers: '{n} volunteers join up in {c}', ev_merchant: 'A caravan passes: {f} +{n} gold',
@@ -80,18 +83,18 @@ extend({
   evTake: '{f} took {c}!', evRepel: '{c} held off {f}', evFlee: '{g} fled to {c}', evRecruit: '{f} captured and recruited {g}', evRelease: '{g} was captured, refused to serve and was let go',
   evNewLord: '{g} is the new lord', evFall: '{f} is no more!', evCapital: '{f} moved its capital to {c}', evCut: '{c} is cut off! Troops desert', evHunger: '{f} ran out of food; troops desert',
   evCoalition: 'The lords unite against {f}!', evCoalitionYou: 'You hold half of Markham: the other lords unite against you!', evCoalitionEnd: 'The alliance against {f} broke up',
-  sgHelpText: 'One turn is one month. Every officer does one thing a month: Build (develop: more gold and food every month), Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour). A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are about reading your opponent (below).\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: each round your opponent takes a stance first and you answer it (Strike beats Special, Special breaks Guard, Guard stops Strike and counters). If your INT is no lower than his, the stance is real; a cleverer opponent sometimes feints. WAR sets the damage, and a gap of 25 or more ends it in one blow; LEAD gives stamina and spirit, and a Special costs 50 spirit. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
+  sgHelpText: 'One turn is one month. Every officer does one thing a month: Draft (gold for troops), Seek (search for officers hiding in that city: blind boxes), Walls (fortify), Plot (rumours make a neighbour\'s troops desert, fire burns its walls; cleverer officers succeed more), Move (take troops to a neighbouring city or pass of yours), Attack (take troops against a neighbour), Construct (buildings). Cities grow by themselves (more development, more gold and food a month and more troops); an officer with high POL stationed there makes it grow much faster, and every building brings people in too. A city with no officers gets no orders; more officers, more done.\n\nOfficers: 统率 (LED) is how many troops an officer can lead (LED x 60; officers marching together add up); 武力 (WAR) is how hard the army fights. There is no luck in a battle: with the same troops the higher WAR always wins (walls, terrain and traits on top). Duels are about reading your opponent (below).\n\nField battles and sallies: two hostile armies meeting head-on on a road fight in the open; an enemy army on a road through your city can be intercepted, so you beat it back before it reaches your walls (no walls: troops x WAR only).\n\nMarching takes time: the longer the road, the longer it takes (1–3 months); relay roads are quicker. Armies on the road are drawn on the map with their troops and when they arrive; the panel warns you when enemies are coming, so draft, fortify or bring troops in. Tap Auto to give idle officers a peaceful job (it never attacks for you).\n\nThe terrain is real Markham: the lines are real roads and your supply lines; only cities linked to your capital earn and can attack. Cities along the Rouge River are rich farmland but low ground; attacking across the river costs 15%, and attacking uphill costs too (heights from real elevation data).\n\nEvery game draws a new map: 12 cities picked at random from 27 real places (neighbourhoods, plazas, landmarks), linked by the real roads between them; real parks on those roads randomly become passes, one of them the Tiger Pass. Passes have no people but huge walls; a mighty officer guards the Tiger Pass at the start, and you may win him over if you take it.\n\nRelays and depots: roads with a real gas station are relay roads (orange “G” on the map): attacking along them +10%, and an officer can move one road further in the same month (the city in between must be yours). Cities with a big mall or warehouse store are supply depots (green “S”). A depot is a food source of its own, so cities linked to it are never cut off, and it grows 30% more food.\n\nSeasons: December to February it snows (attacking −10%); September is harvest (food several times over); February brings the Lunar New Year fair (more gold per city). Most months something happens: mall night markets, bumper crops, volunteers, blizzards, ice storms, Rouge River floods, rumoured officers…\n\nWhen both sides have officers a duel may happen: each round your opponent takes a stance first and you answer it (Strike beats Special, Special breaks Guard, Guard stops Strike and counters). If your INT is no lower than his, the stance is real; a cleverer opponent sometimes feints. WAR sets the damage, and a gap of 25 or more ends it in one blow; LEAD gives stamina and spirit, and a Special costs 50 spirit. Certain officers together switch on bonds; rivals duel more often. Whoever holds 6 cities gets the other lords allied against them. Hold all 12 cities (passes do not count) to unite Markham.',
 });
 
 // v1.2 (D-102..D-105): difficulty, marching together, a safety net
 extend({
   sgDiffQ: '电脑君主有多强？', sgDiff_normal: '普通', sgDiff_hard: '困难', sgDiff_hell: '地狱',
   sgDiffS_normal: '和以前一样：开局 6 个月不打你', sgDiffS_hard: '更早动手、兵更多、发展更快，你占到 5 城就会被围攻', sgDiffS_hell: '开局兵力是你的 1.5 倍，3 个月后就来，占 4 城就被围攻',
-  sgHelpV12: '文官和武将（v1.2）：能力低的一项现在更低，办事效果按能力的平方算。政治高的内政快、花钱少；统率高的征兵多、带兵多；智力高的搜索准；武力决定打仗。让合适的人做合适的事。\n\n出征和调动可以勾选同城的其他武将一起去，合成一军。难度在“重新开局”时选。', sgWith: '同行武将（可多选，一起出发、合成一军）', sgWithMove: '一起调动（可多选）', sgWithLeft: '{g} 兵不够，留下了', sgOops: '刚才出了点小问题，这个月的动画已跳过', sgDiffNow: '难度：{d}',
+  sgHelpV12: '文官和武将（v1.2）：能力低的一项现在更低，办事效果按能力的平方算。政治高的坐镇时城市发展快、办事花钱少；统率高的征兵多、带兵多；智力高的搜索准；武力决定打仗。让合适的人做合适的事。\n\n出征和调动可以勾选同城的其他武将一起去，合成一军。难度在“重新开局”时选。', sgWith: '同行武将（可多选，一起出发、合成一军）', sgWithMove: '一起调动（可多选）', sgWithLeft: '{g} 兵不够，留下了', sgOops: '刚才出了点小问题，这个月的动画已跳过', sgDiffNow: '难度：{d}',
 }, {
   sgDiffQ: 'How strong are the computer lords?', sgDiff_normal: 'Normal', sgDiff_hard: 'Hard', sgDiff_hell: 'Hell',
   sgDiffS_normal: 'As before: nobody attacks you for 6 months', sgDiffS_hard: 'They move sooner, with more troops and faster growth, and unite against you at 5 cities', sgDiffS_hell: '1.5x your starting troops, on you after 3 months, united against you at 4 cities',
-  sgHelpV12: 'Ministers and warriors (v1.2): weak stats are now weaker, and what an officer achieves grows with the square of his stat. Politics builds faster and cheaper; leadership drafts and leads more; intellect searches better; war wins battles. Give each job to the right person.\n\nWhen attacking or moving you can tick other officers of the same city to go along as one army. Difficulty is chosen when you start a new game.', sgWith: 'Marching with (pick any; they leave together as one army)', sgWithMove: 'Moving with (pick any)', sgWithLeft: '{g} has too few troops and stays', sgOops: 'Something went wrong; the rest of this month was played without the show', sgDiffNow: 'Difficulty: {d}',
+  sgHelpV12: 'Ministers and warriors (v1.2): weak stats are now weaker, and what an officer achieves grows with the square of his stat. Politics makes the city he governs grow faster and every job cheaper; leadership drafts and leads more; intellect searches better; war wins battles. Give each job to the right person.\n\nWhen attacking or moving you can tick other officers of the same city to go along as one army. Difficulty is chosen when you start a new game.', sgWith: 'Marching with (pick any; they leave together as one army)', sgWithMove: 'Moving with (pick any)', sgWithLeft: '{g} has too few troops and stays', sgOops: 'Something went wrong; the rest of this month was played without the show', sgDiffNow: 'Difficulty: {d}',
 });
 // v1.1 (D-97, D-98): treasures, envoys, poaching, the first-game guide
 extend({
@@ -102,7 +105,7 @@ extend({
   evTruceOk: '{g} 出使成功：{f}与{to}停战 {n} 个月', evTruceNo: '{g} 出使{to}，对方不肯停战', evTruceEnd: '{f}与{to}的停战到期了',
   sgTutMenu: '新手引导', sgTutNext: '下一步', sgTutSkip: '跳过', sgTutDone: '开始吧',
   sgTut1: '这是你的本城，已经帮你选中了。左边是这座城里的武将，每位武将每个月能做一件事。', sgTut2: '先让一位武将去“搜索”：有机会找到藏在城里的武将（开盲盒），也可能搜出宝物。按钮上的百分比是成功率，智力越高越容易。',
-  sgTut3: '再让另一位“征兵”或“内政”。嫌麻烦就点上面的“委任”，空闲的武将会自动安排好。', sgTut4: '兵够了就点“出征”，再点地图上发光的城。先打灰色的空城，别急着碰其他君主。', sgTut5: '“计略”里除了流言和火计，还能“挖角”邻城的敌将，或者派人“停战”。',
+  sgTut3: '再让另一位“征兵”或“建设”。政治高的武将留在城里坐镇，城市发展更快。嫌麻烦就点上面的“委任”，空闲的武将会自动安排好。', sgTut4: '兵够了就点“出征”，再点地图上发光的城。先打灰色的空城，别急着碰其他君主。', sgTut5: '“计略”里除了流言和火计，还能“挖角”邻城的敌将，或者派人“停战”。',
   sgTut6: '都安排好了，点右上角的“结束本月”。占满所有城池，你就统一了万锦！',
   sgHelpMore: '宝物：搜索没找到人时，有机会搜出宝物（每局藏 10 件）。宝物由一位武将佩带，直接加他的能力，可以在“将”页面里转交。武将被俘、被挖走时宝物跟着走。\n\n挖角和停战（在“计略”里）：挖角是花钱策反邻城的敌将，对方忠诚越低、你的武将智力越高越容易，君主挖不动；电脑也会来挖你的人。停战是派使者和一位君主讲和 6 个月，期间双方都不能进攻；你太强、或者对方已经结盟对付你时很难谈成。',
 }, {
@@ -113,7 +116,7 @@ extend({
   evTruceOk: "{g}'s embassy worked: {f} and {to} are at peace for {n} months", evTruceNo: '{g} went to {to}, who would not make peace', evTruceEnd: 'The truce between {f} and {to} has run out',
   sgTutMenu: 'Beginner guide', sgTutNext: 'Next', sgTutSkip: 'Skip', sgTutDone: "Let's go",
   sgTut1: 'This is your capital, already selected. On the left are the officers in it; each officer does one thing a month.', sgTut2: 'Send one officer to Seek: he may find an officer hiding in the city (a blind box) or dig up a treasure. The percentage on the button is his chance; cleverer officers do better.',
-  sgTut3: 'Have another Draft or Build. Or tap Auto at the top and idle officers get a job by themselves.', sgTut4: 'With enough troops tap Attack, then a glowing city on the map. Take the grey unclaimed cities first and leave the other lords alone for now.', sgTut5: 'Under Plot, besides rumours and fire, you can Poach an enemy officer next door or send an envoy for a Truce.',
+  sgTut3: 'Have another Draft or Construct; an officer with high POL left in a city makes it grow faster. Or tap Auto at the top and idle officers get a job by themselves.', sgTut4: 'With enough troops tap Attack, then a glowing city on the map. Take the grey unclaimed cities first and leave the other lords alone for now.', sgTut5: 'Under Plot, besides rumours and fire, you can Poach an enemy officer next door or send an envoy for a Truce.',
   sgTut6: 'All set? Tap End month at the top right. Hold every city and Markham is yours!',
   sgHelpMore: 'Treasures: a search that finds nobody may dig up a treasure (10 are hidden each game). One officer carries it and it adds straight to his stats; hand it on from the Officers page. It goes with him if he is captured or poached.\n\nPoaching and truces (under Plot): poaching pays an enemy officer next door to change sides; lower loyalty and a cleverer agent help, and lords cannot be turned. The computer poaches too. An envoy buys 6 months of peace with one lord, with no attacks either way; it rarely works when you are much stronger or the lords have united against you.',
 });
@@ -336,6 +339,36 @@ export class Sanguo {
     if (this.panelHidden) { this.togglePanel(false); return; }
     this.render();
   }
+  // v1.5 (D-117): every lord's territory as a
+  // watercolour wash (baked when a city changes hands, cross-fading from the old map over a second)
+  dress(c, x0, y0, mw, mh) {
+    const st = this.s, w = this.w, key = this.paperKey;
+    const tk = territoryKey(st), now = performance.now();
+    if (!this.terr || this.terr.key !== tk) {
+      const owners = Object.fromEntries(NODE_IDS.map((id) => [id, st.cities[id].owner])), colors = Object.fromEntries(st.factions.map((f) => [f.id, f.color]));
+      this.terrOld = this.terr && this.terr.boardKey === key ? { cv: this.terr.cv, t0: now } : null;
+      this.terr = { key: tk, boardKey: key, cv: bakeTerritory(w.map, owners, colors) };
+    }
+    c.save(); c.imageSmoothingEnabled = true;
+    const p = this.terrOld ? Math.min(1, (now - this.terrOld.t0) / 1200) : 1;
+    if (this.terrOld && p < 1) { c.globalAlpha = 1 - p; c.drawImage(this.terrOld.cv, x0, y0, mw, mh); } else this.terrOld = null;
+    c.globalAlpha = p; c.drawImage(this.terr.cv, x0, y0, mw, mh);
+    c.restore();
+  }
+  // live touches over the paper: cloud shadows drifting by, boats rowing on the river
+  sky(c) {
+    const t = performance.now() / 1000;
+    for (const [x, z, r] of cloudShadows(t, this.w.half)) {
+      const [sx, sy] = this.toScreen(x, z), R = r * this.k, g = c.createRadialGradient(sx, sy, R * 0.1, sx, sy, R);
+      g.addColorStop(0, 'rgba(50,40,30,.09)'); g.addColorStop(1, 'rgba(50,40,30,0)');
+      c.fillStyle = g; c.beginPath(); c.ellipse(sx, sy, R * 1.5, R, 0, 0, 7); c.fill();
+    }
+    for (const b of this.boats || []) {
+      const u = (Math.sin(t * b.sp + b.ph) + 1) / 2, dirn = Math.cos(t * b.sp + b.ph) >= 0 ? 0 : Math.PI;
+      const [wx, wz, ang] = along(b.path, b.t0 + (b.t1 - b.t0) * u), [sx, sy] = this.toScreen(wx, wz);
+      drawBoat(c, sx, sy, ang + dirn, Math.max(0.7, Math.min(1.6, this.k / 0.28)));
+    }
+  }
   // v1.3 (D-111): the month shows on the map. Snow falls and settles in winter, rain streaks in a wet month,
   // the paper warms to gold in autumn and greens a little in spring. All drawn live, cheap (a few hundred strokes).
   season(c, x0, y0, mw, mh) {
@@ -372,10 +405,19 @@ export class Sanguo {
     c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 24; c.fillStyle = '#9fd067'; c.fillRect(x0, y0, mw, mh); c.restore();
     c.save(); c.beginPath(); c.rect(x0, y0, mw, mh); c.clip();
     // v1.3 (D-110): the board is an old ink map of Markham on rice paper (js/sg_paper.js), baked once
-    if (!this.paper) this.paper = bakePaper(w.map);
+    // v1.5 (D-119): the land's little pictures are painted into the paper too (re-baked when a new board is drawn),
+    // so the map is still one opaque image to draw each frame
+    const bk = boardKey();
+    if (!this.paper || this.paperKey !== bk) {
+      this.paper = bakePaper(w.map); this.paperKey = bk;
+      this.paper.getContext('2d').drawImage(bakeDecor(w.map), 0, 0);
+      this.boats = boatSpots(w.map);
+    }
     c.imageSmoothingQuality = 'high';
     c.drawImage(this.paper, x0, y0, mw, mh);
+    this.dress(c, x0, y0, mw, mh);
     this.season(c, x0, y0, mw, mh);
+    this.sky(c);
     c.restore();
     // a mounted scroll: dark border, a gold line, corner pieces
     c.strokeStyle = '#5a3a1e'; c.lineWidth = 7; c.strokeRect(x0 - 3.5, y0 - 3.5, mw + 7, mh + 7);
@@ -384,25 +426,30 @@ export class Sanguo {
     for (const [cx, cy] of [[x0, y0], [x0 + mw, y0], [x0, y0 + mh], [x0 + mw, y0 + mh]]) { c.save(); c.translate(cx, cy); c.rotate(Math.PI / 4); c.fillRect(-7, -7, 14, 14); c.fillStyle = '#5a3a1e'; c.fillRect(-3.5, -3.5, 7, 7); c.restore(); c.fillStyle = '#c9a24e'; }
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
+    const armyAt = (st.armies || []).map((A) => this.toScreen(...along(routePath(A.route), Math.min(0.85, Math.max(0.15, (A.total - A.left) / A.total)))));
     for (const [a, b, road, river, station] of LINKS) {
-      const [ax, ay] = this.toScreen(CITIES[a].x, CITIES[a].z), [bx, by] = this.toScreen(CITIES[b].x, CITIES[b].z);
+      const path = roadPath(a, b), sp = path.pts.map((p) => this.toScreen(p[0], p[1]));
       const oa = st.cities[a].owner, ob = st.cities[b].owner;
-      // v1.3: a packed-earth road with ink edges; a road between two cities of one lord carries his colour
+      // v1.5 (D-118): a curved road painted with a brush: an ink edge, packed earth, a dry-brush streak;
+      // a road between two cities of one lord carries his colour
       const own = oa === ob && oa >= 0;
-      c.lineCap = 'round';
-      c.strokeStyle = 'rgba(70,48,28,.7)'; c.lineWidth = 11; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
-      c.strokeStyle = '#d8bf8e'; c.lineWidth = 7.5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      const stroke = (pts, dx = 0, dy = 0) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x + dx, y + dy) : c.moveTo(x + dx, y + dy))); c.stroke(); };
+      c.strokeStyle = 'rgba(70,48,28,.62)'; c.lineWidth = 10.5; stroke(sp);
+      c.strokeStyle = '#d8bf8e'; c.lineWidth = 7; stroke(sp);
+      c.strokeStyle = 'rgba(150,118,74,.35)'; c.lineWidth = 1.2; stroke(sp, 1.6, -1.4); // brush texture
       c.setLineDash(own ? [] : [3, 7]);
-      c.strokeStyle = own ? this.fColor(oa) : 'rgba(110,80,50,.7)'; c.lineWidth = own ? 3.6 : 2; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.strokeStyle = own ? this.fColor(oa) : 'rgba(110,80,50,.7)'; c.lineWidth = own ? 3.4 : 2; stroke(sp);
       c.setLineDash([]);
-      const mx = (ax + bx) / 2, my = (ay + by) / 2;
+      const [mx, my] = this.toScreen(...along(path, 0.5));
       const br = this.k < this.s0 * 1.3 ? 7 : 9; // little terrain marks, bigger when zoomed in
       if (river) badge(c, mx, my, '#2e6ed6', zh() ? '渡' : '≈', '#fff', br);
       if (station) { // 驿站: a real gas station, nudged off the river badge in the middle
         const t0 = station[1], tt = river && Math.abs(t0 - 0.5) < 0.18 ? (t0 >= 0.5 ? t0 + 0.2 : t0 - 0.2) : t0;
-        badge(c, ax + (bx - ax) * tt, ay + (by - ay) * tt, '#e8892b', zh() ? '驿' : 'G', '#fff', br);
+        const [gx, gy] = this.toScreen(...along(path, tt));
+        badge(c, gx, gy, '#e8892b', zh() ? '驿' : 'G', '#fff', br);
       }
-      if (this.k > this.s0 * 1.5) {
+      if (this.k > this.s0 * 1.5 && !armyAt.some(([ax, ay]) => Math.hypot(ax - mx, ay - my) < 70)) { // not under a marching army
         c.font = '700 11px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
         const tw = c.measureText(road).width + 10, ly = my + (river ? 18 : 0);
         c.fillStyle = 'rgba(255,255,255,.88)'; rr(c, mx - tw / 2, ly - 8, tw, 16, 8); c.fill();
@@ -418,9 +465,10 @@ export class Sanguo {
       // along the actual roads (v0.9.8: an order can go several roads far); the arrow head on the last one
       const r = E.routeOf(st, E.PLAYER, from, o.to), colr = o.cmd === 'march' ? '#e23d3d' : '#2f7de1';
       for (let i = 1; i < r.length; i++) {
-        const [ax, ay] = this.toScreen(CITIES[r[i - 1]].x, CITIES[r[i - 1]].z), [bx, by] = this.toScreen(CITIES[r[i]].x, CITIES[r[i]].z);
-        if (i === r.length - 1) arrow(c, ax, ay, bx, by, colr, this.pulse);
-        else { c.strokeStyle = colr; c.lineWidth = 4; c.setLineDash([]); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); }
+        const path = roadPath(r[i - 1], r[i]), pl = path.len * this.k, last = i === r.length - 1;
+        // keep clear of the castles at both ends (26 px at the start, 34 px before the target)
+        const pts = slice(path, i === 1 ? Math.min(0.4, 26 / pl) : 0, last ? Math.max(0.6, 1 - 34 / pl) : 1).map((p) => this.toScreen(p[0], p[1]));
+        curveArrow(c, pts, colr, this.pulse, last);
       }
     }
     // targets while picking
@@ -498,24 +546,15 @@ export class Sanguo {
     }
     // armies on the road (v0.9.3): a banner part of the way along the road, with troops and arrival
     for (const a of st.armies || []) {
-      const pts = a.route.map((n) => this.toScreen(CITIES[n].x, CITIES[n].z));
-      const seg = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])), len = seg.reduce((x, y) => x + y, 0);
-      let d = len * Math.min(0.85, Math.max(0.15, (a.total - a.left) / a.total)), i = 0;
-      while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; }
-      const u = seg[i] ? d / seg[i] : 0, x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u, [tx, ty] = pts[pts.length - 1];
+      // v1.5 (D-118): a squad of soldiers under the general's banner, marching along the curved road
+      const path = routePath(a.route), fr = Math.min(0.85, Math.max(0.15, (a.total - a.left) / a.total));
+      const [wx, wz, ang] = along(path, fr), [x, y] = this.toScreen(wx, wz);
       const col = this.fColor(a.f), lead = a.gens[0];
+      const rest = slice(path, fr, 1).map((p) => this.toScreen(p[0], p[1]));
       c.strokeStyle = col; c.lineWidth = 3; c.setLineDash([6, 5]); c.lineDashOffset = -this.pulse * 30;
-      c.beginPath(); c.moveTo(x, y); for (let j = i + 1; j < pts.length; j++) c.lineTo(pts[j][0], pts[j][1]); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
-      const ang = Math.atan2(ty - y, tx - x), bob = Math.sin(this.pulse * 6 + a.id) * 1.5;
-      c.save(); c.translate(x, y + bob);
-      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, 12, 12, 4, 0, 0, 7); c.fill();
-      c.strokeStyle = '#5a4632'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 10); c.lineTo(0, -22); c.stroke();
-      c.fillStyle = col; c.beginPath(); c.moveTo(0, -22); c.lineTo(Math.cos(ang) >= 0 ? 20 : -20, -17); c.lineTo(0, -10); c.closePath(); c.fill();
-      c.fillStyle = col; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(0, 2, 10, 0, 7); c.fill(); c.stroke();
-      c.fillStyle = '#fff'; c.font = "900 11px 'STKaiti','KaiTi','Kaiti SC',serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(lead ? GENERALS[lead].glyph : '兵', 0, 2.5);
-      c.restore();
-      pill(c, x, y + 24, a.f === E.PLAYER ? '#cfe3ff' : '#ffd6d0', `${kNum(a.troops)} · ${this.eta(a)}`);
+      c.beginPath(); rest.forEach(([px, py], j) => (j ? c.lineTo(px, py) : c.moveTo(px, py))); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+      drawSquad(c, x, y + 4, Math.cos(ang) >= 0 ? 1 : -1, col, shade(col, 0.6), lead ? GENERALS[lead].glyph : '兵', a.troops, this.pulse + a.id * 0.37, Math.max(0.8, Math.min(1.15, ts * 1.1)));
+      pill(c, x, y + 20, a.f === E.PLAYER ? '#cfe3ff' : '#ffd6d0', `${kNum(a.troops)} · ${this.eta(a)}`);
     }
     // battle effects (v0.9.4): clashing swords, a burst when a city falls, a rising banner
     const now = performance.now();
@@ -547,6 +586,9 @@ export class Sanguo {
       }
       c.restore();
     }
+    // a flock now and then (D-119)
+    const fl = birds(performance.now() / 1000, W, H);
+    if (fl) { c.strokeStyle = 'rgba(40,30,22,.7)'; c.lineWidth = 1.4; c.lineCap = 'round'; for (const [bx, by, fp] of fl) { const wy = 3 + fp * 3; c.beginPath(); c.moveTo(bx - 6, by - wy); c.quadraticCurveTo(bx - 2, by - 1, bx, by); c.quadraticCurveTo(bx + 2, by - 1, bx + 6, by - wy); c.stroke(); } }
     // compass, bottom left of the map area (the corners on the right hold the buttons)
     const nx = this.panelW + (this.panelHidden ? 70 : 32), ny = H - 30;
     c.fillStyle = 'rgba(38,29,22,.85)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.arc(nx, ny, 15, 0, 7); c.fill(); c.stroke();
@@ -599,7 +641,11 @@ export class Sanguo {
       <div class="sgSub">${esc(this.fName(C.owner))}${cap ? ' · ' + t('sgCap') : ''}${info.pass ? ' · ' + t('sgPass') : ''} · ${t('sgElev')} ${info.elev} m</div>
       <div class="sgGrid"><div><small>${t('sgTroops')}</small><b>${C.troops.toLocaleString()}</b></div><div><small>${t('sgDef')}</small><b>${C.def}</b></div>
       ${info.pass ? `<div><small>${t('sgWalls')}</small><b>×${E.wallMul(C).toFixed(2)}</b></div><div><small>${t('sgGarrison')}</small><b>${gs.length}</b></div>`
-        : `<div><small>${t('sgDev')}</small><b>${C.dev}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div>`}</div>`;
+        : `<div><small>${t('sgDev')}</small><b>${C.dev}${C.owner >= 0 && C.dev < 100 ? `<i class="sgGrow">+${E.growthOf(st, c)}${t('sgPerM')}</i>` : ''}</b></div><div><small>${t('sgRumour')}</small><b>${F('sgRumourN', { n: E.hiddenIn(st, c).length })}</b></div>`}</div>`;
+    if (!info.pass && C.owner >= 0) { // v1.5 (D-116): what the city earns, and who governs it
+      const [g, f] = E.cityIncome(st, c), gov = E.governorOf(st, c);
+      h += `<p class="sgHint sgInc">💰 ${F('sgIncome', { g, f })} · ${gov ? F('sgGov', { g: gName(gov), p: E.gen(gov).pol }) : t('sgNoGov')}</p>`;
+    }
     if (C.owner > 0 && E.truceLeft(st, E.PLAYER, C.owner)) h += `<p class="sgHint sgTruce">${esc(F('sgTruceWith', { n: E.truceLeft(st, E.PLAYER, C.owner) }))}</p>`;
     if (C.owner >= 0 || BLD_IDS.some((b) => E.bldRaw(C, b))) h += `<h4>${t('sgBld')}</h4>` + bldRow(C);
     if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
@@ -655,13 +701,12 @@ export class Sanguo {
       // what this officer would get done: his stats, made visible on the buttons (D-82)
       const C = st.cities[c], cost = (cmd) => (E.costOf(cmd, id) ? `${E.costOf(cmd, id)}${zh() ? '金' : 'g'}` : '');
       const prev = {
-        dev: `+${Math.min(100 - C.dev, E.devAmt(st, E.PLAYER, id, C))} · ${cost('dev')}`,
         draft: `+${kNum(Math.max(0, Math.min(E.capOf(C) - C.troops, E.draftAmt(id, C))))} · ${cost('draft')}`,
         search: `${Math.round(E.searchChance(st, E.PLAYER, id, C) * 100)}%`, build: cost('build'),
         fort: `+${E.fortAmt(id)} · ${cost('fort')}`,
         plot: cost('plot'), move: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), march: F('sgMaxLead', { n: kNum(E.commandOf(id)) }), intercept: '',
       };
-      const cmds = [...(CITIES[c].pass ? ['fort', 'build', 'plot', 'move', 'march'] : ['dev', 'draft', 'search', 'fort', 'build', 'plot', 'move', 'march']), ...(E.interceptTargets(st, E.PLAYER, c).length ? ['intercept'] : [])];
+      const cmds = [...(CITIES[c].pass ? ['fort', 'build', 'plot', 'move', 'march'] : ['draft', 'search', 'fort', 'build', 'plot', 'move', 'march']), ...(E.interceptTargets(st, E.PLAYER, c).length ? ['intercept'] : [])];
       const g = E.gen(id);
       h += `<div class="sgO${o ? ' set' : ''}"><div class="sgOh">${portrait(id, 34)}<div><b>${esc(gName(id))}</b><small>${zh() ? '统' : 'L'}${g.lead} ${zh() ? '武' : 'W'}${g.war} ${zh() ? '智' : 'I'}${g.int} ${zh() ? '政' : 'P'}${g.pol}</small></div>
         <em>${o ? esc(this.orderText(o)) : t('sgCmdRest')}</em></div>
@@ -928,7 +973,7 @@ export class Sanguo {
           ${row(zh() ? '统率' : 'Leadership', stat('', g.lead) + ` · ${zh() ? '带兵' : 'leads'} ≤${kNum(E.commandOf(detail))} · ${zh() ? '征兵' : 'drafts'} +${kNum(E.draftAmt(detail))}`)}
           ${row(zh() ? '武力' : 'War', stat('', g.war) + ` · ${zh() ? '战斗力' : 'fighting'} ×${(g.war / 100).toFixed(2)}`)}
           ${row(zh() ? '智力' : 'Intellect', stat('', g.int) + ` · ${zh() ? '搜索' : 'search'} ${Math.round(E.searchChance(st, P, detail) * 100)}%`)}
-          ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '内政' : 'develop'} +${E.devAmt(st, P, detail)} · ${zh() ? '花费' : 'costs'} ×${(E.costOf('dev', detail) / CFG.sg.devCost).toFixed(2)}`)}
+          ${row(zh() ? '政治' : 'Politics', stat('', g.pol) + ` · ${zh() ? '坐镇时每月开发' : 'as governor, dev'} +${E.devAmt(st, P, detail)}${zh() ? '' : '/month'} · ${zh() ? '花费' : 'costs'} ×${(E.costOf('dev', detail) / CFG.sg.devCost).toFixed(2)}`)}
           ${row(zh() ? '特技' : 'Trait', `${esc(zh() ? tr[0] : tr[1])} · ${esc(zh() ? tr[2] : tr[3])}`)}
           ${edgeText(detail).length ? row(t('sgCounterOf'), edgeText(detail).join('<br>')) : ''}
           ${timelyText(detail).length ? row(t('sgTimelyOf'), timelyText(detail).join('<br>')) : ''}
@@ -982,6 +1027,7 @@ export class Sanguo {
     const st = this.s, P = E.PLAYER, f = this.fName(e.f ?? -1);
     switch (e.k) {
       case 'dev': return e.f === P ? F('evDev', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
+      case 'grow': return e.f === P ? F('evGrow', { c: cName(e.c), n: e.n }) : null;
       case 'draft': return e.f === P ? F('evDraft', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'build': return e.f === P ? F('evBuild', { c: cName(e.c), g: gName(e.g), b: bName(e.b), lv: e.lv }) : ADJ[e.c].some((x) => this.s.cities[x.c].owner === P) ? F('evBuildAi', { f: this.fName(e.f), c: cName(e.c), b: bName(e.b), lv: e.lv }) : null;
       case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
@@ -1199,11 +1245,14 @@ function badge(c, x, y, bg, txt, fg = '#fff', r = 10) {
   c.fillStyle = bg; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();
   c.fillStyle = fg; c.font = `900 ${Math.round(r * 1.2)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 0.5);
 }
-function arrow(c, ax, ay, bx, by, col, t) {
-  const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L;
-  const sx = ax + ux * 26, sy = ay + uy * 26, ex = bx - ux * 34, ey = by - uy * 34;
-  c.strokeStyle = col; c.lineWidth = 5; c.setLineDash([12, 8]); c.lineDashOffset = -t * 40;
-  c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+// v1.5: an order along a curved road; the last leg is dashed and moving, with a head at the end
+function curveArrow(c, pts, col, t, head) {
+  if (pts.length < 2) return;
+  c.strokeStyle = col; c.lineWidth = head ? 5 : 4; c.lineCap = 'round'; c.lineJoin = 'round';
+  if (head) { c.setLineDash([12, 8]); c.lineDashOffset = -t * 40; }
+  c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  if (!head) return;
+  const [ex, ey] = pts[pts.length - 1], [px, py] = pts[Math.max(0, pts.length - 3)], L = Math.hypot(ex - px, ey - py) || 1, ux = (ex - px) / L, uy = (ey - py) / L;
   c.fillStyle = col; c.beginPath(); c.moveTo(ex + ux * 12, ey + uy * 12); c.lineTo(ex - uy * 9, ey + ux * 9); c.lineTo(ex + uy * 9, ey - ux * 9); c.closePath(); c.fill();
 }
 function pill(c, x, y, bg, txt) {
