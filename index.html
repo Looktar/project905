@@ -380,6 +380,16 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 .sgSeg button,.sgChips button{background:linear-gradient(180deg,#46352a,#33261c);border-color:#6a5034;box-shadow:inset 0 1px 0 rgba(255,230,180,.1)}
 .sgChips button.on,.sgSeg button.on{box-shadow:none}
 .sgCardT{border-radius:9px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 3px 0 rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.35)}
+/* v1.4 (D-114, D-115): buildings and the battle's history line */
+.sgBlds{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 6px}
+.sgBldC{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(#4a3726,#33251a);border:1px solid #8a6a3a;border-radius:8px;padding:3px 7px;font-size:12px;color:#f5ebdd}
+.sgBldC i{font-style:normal;color:#f2c14e;letter-spacing:1px;font-size:10px}
+.sgBldPick{display:grid;grid-template-columns:1fr 1fr}.sgBldPick button{display:flex;flex-direction:column;align-items:flex-start;border-radius:10px;padding:4px 9px;text-align:left;min-height:40px}
+.sgBldPick button b{color:#f2c14e;font-size:11px}.sgBldPick button.on b,.sgBldPick button:disabled b{color:inherit}
+.sgBldPick button small{font-weight:600;font-size:10px;color:#d9c8ae;white-space:normal}
+.sgBldPick button:disabled{opacity:.45}
+.sgEdge{display:flex;justify-content:center;align-items:center;gap:8px;margin:-4px 0 6px;font-size:12px;font-weight:800;color:#f2c14e;text-align:center}
+.sgEdge span{flex:1;min-height:1em}.sgEdge span:first-child{text-align:right}.sgEdge span:last-child{text-align:left}.sgEdge i{font-style:normal;color:#d9c8ae}
 </style>
 </head>
 <body>
@@ -472,8 +482,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=89a92f3401","./js/bigmap.js":"./js/bigmap.js?v=89a92f3401","./js/config.js":"./js/config.js?v=89a92f3401","./js/fire.js":"./js/fire.js?v=89a92f3401","./js/game.js":"./js/game.js?v=89a92f3401","./js/geo.js":"./js/geo.js?v=89a92f3401","./js/glb.js":"./js/glb.js?v=89a92f3401","./js/hud.js":"./js/hud.js?v=89a92f3401","./js/i18n.js":"./js/i18n.js?v=89a92f3401","./js/input.js":"./js/input.js?v=89a92f3401","./js/main.js":"./js/main.js?v=89a92f3401","./js/math.js":"./js/math.js?v=89a92f3401","./js/missions.js":"./js/missions.js?v=89a92f3401","./js/models.js":"./js/models.js?v=89a92f3401","./js/nav.js":"./js/nav.js?v=89a92f3401","./js/orient.js":"./js/orient.js?v=89a92f3401","./js/poi.js":"./js/poi.js?v=89a92f3401","./js/pranks.js":"./js/pranks.js?v=89a92f3401","./js/props.js":"./js/props.js?v=89a92f3401","./js/renderer.js":"./js/renderer.js?v=89a92f3401","./js/sg_art.js":"./js/sg_art.js?v=89a92f3401","./js/sg_bios.js":"./js/sg_bios.js?v=89a92f3401","./js/sg_data.js":"./js/sg_data.js?v=89a92f3401","./js/sg_elev.js":"./js/sg_elev.js?v=89a92f3401","./js/sg_engine.js":"./js/sg_engine.js?v=89a92f3401","./js/sg_paper.js":"./js/sg_paper.js?v=89a92f3401","./js/sg_portrait.js":"./js/sg_portrait.js?v=89a92f3401","./js/sg_sites.js":"./js/sg_sites.js?v=89a92f3401","./js/sg_ui.js":"./js/sg_ui.js?v=89a92f3401","./js/signals.js":"./js/signals.js?v=89a92f3401","./js/world.js":"./js/world.js?v=89a92f3401"}}</script>
-<script type="module" src="js/main.js?v=89a92f3401"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=fd3d0b4893","./js/bigmap.js":"./js/bigmap.js?v=fd3d0b4893","./js/config.js":"./js/config.js?v=fd3d0b4893","./js/fire.js":"./js/fire.js?v=fd3d0b4893","./js/game.js":"./js/game.js?v=fd3d0b4893","./js/geo.js":"./js/geo.js?v=fd3d0b4893","./js/glb.js":"./js/glb.js?v=fd3d0b4893","./js/hud.js":"./js/hud.js?v=fd3d0b4893","./js/i18n.js":"./js/i18n.js?v=fd3d0b4893","./js/input.js":"./js/input.js?v=fd3d0b4893","./js/main.js":"./js/main.js?v=fd3d0b4893","./js/math.js":"./js/math.js?v=fd3d0b4893","./js/missions.js":"./js/missions.js?v=fd3d0b4893","./js/models.js":"./js/models.js?v=fd3d0b4893","./js/nav.js":"./js/nav.js?v=fd3d0b4893","./js/orient.js":"./js/orient.js?v=fd3d0b4893","./js/poi.js":"./js/poi.js?v=fd3d0b4893","./js/pranks.js":"./js/pranks.js?v=fd3d0b4893","./js/props.js":"./js/props.js?v=fd3d0b4893","./js/renderer.js":"./js/renderer.js?v=fd3d0b4893","./js/sg_art.js":"./js/sg_art.js?v=fd3d0b4893","./js/sg_bios.js":"./js/sg_bios.js?v=fd3d0b4893","./js/sg_data.js":"./js/sg_data.js?v=fd3d0b4893","./js/sg_elev.js":"./js/sg_elev.js?v=fd3d0b4893","./js/sg_engine.js":"./js/sg_engine.js?v=fd3d0b4893","./js/sg_paper.js":"./js/sg_paper.js?v=fd3d0b4893","./js/sg_portrait.js":"./js/sg_portrait.js?v=fd3d0b4893","./js/sg_sites.js":"./js/sg_sites.js?v=fd3d0b4893","./js/sg_ui.js":"./js/sg_ui.js?v=fd3d0b4893","./js/signals.js":"./js/signals.js?v=fd3d0b4893","./js/world.js":"./js/world.js?v=fd3d0b4893"}}</script>
+<script type="module" src="js/main.js?v=fd3d0b4893"></script>
 <!-- stamp:end -->
 </body>
 </html>

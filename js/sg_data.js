@@ -429,3 +429,65 @@ export const ITEMS = {
 };
 export const ITEM_IDS = Object.keys(ITEMS);
 
+
+// ---------------------------------------------------------------- v1.4 (D-114): history in the fighting
+// COUNTERS: when an officer in `a` meets one in `b` on the field, `a` fights fx better (and hits harder in a duel).
+// Each from a real (or 演义) victory of one over the other.
+export const COUNTERS = [
+  { a: ['luxun'], b: ['liubei'], zh: '夷陵之战', en: 'Yiling', fx: 0.3 },
+  { a: ['lvmeng'], b: ['guanyu'], zh: '白衣渡江', en: 'The white-robed crossing', fx: 0.3 },
+  { a: ['huangzhong'], b: ['xiahouyuan'], zh: '定军山', en: 'Mount Dingjun', fx: 0.3 },
+  { a: ['zhangliao'], b: ['sunquan'], zh: '逍遥津', en: 'Xiaoyao Ford', fx: 0.3 },
+  { a: ['zhouyu', 'huanggai', 'zhugeliang'], b: ['caocao'], zh: '赤壁之战', en: 'Red Cliffs', fx: 0.25 },
+  { a: ['caocao'], b: ['yuanshao', 'lvbu', 'zhangjiao'], zh: '官渡 · 白门楼 · 破黄巾', en: 'Guandu, the White Gate, the Yellow Turbans', fx: 0.25 },
+  { a: ['guanyu'], b: ['yanliang', 'wenchou', 'huaxiong'], zh: '斩颜良诛文丑、温酒斩华雄', en: 'Slayer of Yan Liang, Wen Chou and Hua Xiong', fx: 0.3 },
+  { a: ['sunjian'], b: ['huaxiong'], zh: '阳人斩华雄', en: 'Hua Xiong falls at Yangren', fx: 0.25 },
+  { a: ['zhangfei'], b: ['zhanghe'], zh: '瓦口关', en: 'Wakou Pass', fx: 0.25 },
+  { a: ['zhugeliang'], b: ['menghuo', 'zhurong', 'zhanghe'], zh: '七擒孟获 · 木门道', en: 'Seven captures; Mumen Road', fx: 0.3 },
+  { a: ['xuhuang'], b: ['guanyu'], zh: '樊城解围', en: 'The relief of Fancheng', fx: 0.2 },
+  { a: ['simayi'], b: ['zhugeliang'], zh: '坚守五丈原', en: 'Holding out at Wuzhang Plains', fx: 0.2, def: true },
+  { a: ['ganning'], b: ['caocao'], zh: '百骑劫曹营', en: 'A hundred riders raid Cao Cao', fx: 0.2 },
+  { a: ['jiaxu'], b: ['caocao', 'dianwei'], zh: '宛城之战', en: 'Wancheng', fx: 0.25 },
+  { a: ['lvbu'], b: ['dongzhuo'], zh: '凤仪亭', en: 'Phoenix Pavilion', fx: 0.3 },
+  { a: ['yuanshao'], b: ['gongsunzan'], zh: '界桥之战', en: 'Jieqiao', fx: 0.25 },
+  { a: ['liubei', 'sunjian'], b: ['zhangjiao'], zh: '讨伐黄巾', en: 'Against the Yellow Turbans', fx: 0.2 },
+  { a: ['hanxin', 'liubang', 'pengyue'], b: ['xiangyu', 'longju', 'zhonglimo'], zh: '垓下 · 潍水', en: 'Gaixia and the Wei River', fx: 0.25 },
+  { a: ['wangjian'], b: ['limu'], zh: '秦灭赵', en: 'Qin takes Zhao', fx: 0.25 },
+  { a: ['baiqi'], b: ['lianpo'], zh: '长平之战', en: 'Changping', fx: 0.25 },
+  { a: ['tiandan'], b: ['yueyi'], zh: '火牛阵复齐', en: 'The fire oxen win Qi back', fx: 0.25 },
+  { a: ['sunwu', 'wuzixu'], b: ['fuhao'], zh: '吴师入郢', en: 'Wu enters Ying', fx: 0.1 },
+  { a: ['yuefei', 'hanshizhong', 'lianghongyu', 'zongze'], b: ['jinwuzhu'], zh: '郾城 · 黄天荡', en: 'Yancheng and Huangtiandang', fx: 0.3 },
+  { a: ['yuanchonghuan'], b: ['jinwuzhu'], zh: '宁远大捷', en: 'Ningyuan', fx: 0.2 },
+  { a: ['chengjisihan', 'muhuali'], b: ['jinwuzhu'], zh: '蒙古灭金', en: 'The Mongols end the Jin', fx: 0.25 },
+  { a: ['weiqing', 'huoqubing', 'liguang', 'lijing'], b: ['chengjisihan', 'muhuali', 'subutai', 'boyan'], zh: '北击草原骑兵', en: 'Masters of the steppe wars', fx: 0.15 },
+  { a: ['xuda', 'changyuchun'], b: ['boyan', 'muhuali', 'subutai'], zh: '明军北伐', en: 'The Ming drive north', fx: 0.25 },
+  { a: ['yuqian'], b: ['chengjisihan', 'muhuali', 'subutai', 'boyan'], zh: '北京保卫战', en: 'The defence of Beijing', fx: 0.2, def: true },
+  { a: ['zhaohui'], b: ['chengjisihan', 'muhuali', 'subutai', 'boyan'], zh: '平定准噶尔', en: 'The Dzungar wars', fx: 0.15 },
+  { a: ['shilang'], b: ['zhengchenggong'], zh: '澎湖海战', en: 'Penghu', fx: 0.2 },
+  { a: ['sunbin'], b: ['wuqi'], zh: '马陵之战（魏军）', en: 'Maling (against Wei)', fx: 0.15 },
+  { a: ['lishimin'], b: ['dongzhuo', 'yuanshao'], zh: '虎牢破窦', en: 'Hulao', fx: 0.1 },
+];
+
+// TIMELY: some officers are at their best in certain weather (rain, a dry autumn or winter for fire, snow)
+export const TIMELY = [
+  { m: ['guanyu'], when: 'rain', zh: '水淹七军', en: 'Drowning the seven armies', fx: 0.3 },
+  { m: ['zhouyu', 'luxun', 'huanggai', 'zhugeliang', 'tiandan', 'pangtong'], when: 'dry', zh: '火攻', en: 'Fire attack', fx: 0.2 },
+  { m: ['chengjisihan', 'muhuali', 'subutai', 'boyan', 'huoqubing', 'weiqing', 'jinwuzhu', 'lijing', 'zhaohui'], when: 'snow', zh: '北地骑兵', en: 'Northern riders', fx: 0.1, snowproof: true },
+  { m: ['zhouyu', 'lusu', 'ganning', 'sunquan', 'hanshizhong', 'zhengchenggong', 'shilang'], when: 'river', zh: '水军', en: 'River fleet', fx: 0.15 },
+];
+
+// ---------------------------------------------------------------- v1.4 (D-115): buildings in a city
+// Each up to level 3. Level 2 needs 开发 40, level 3 needs 开发 65. A landmark city counts one level more in its
+// specialty (it must be built first): a mall's market, Costgo's farm, the factory's barracks...
+export const BUILDINGS = {
+  market: { zh: '市集', en: 'Market', icon: '🏮', fxZh: '金收入 +{n}%', fxEn: 'gold +{n}%' },
+  farm: { zh: '屯田', en: 'Farms', icon: '🌾', fxZh: '粮收入 +{n}%', fxEn: 'food +{n}%' },
+  barracks: { zh: '兵营', en: 'Barracks', icon: '⛺', fxZh: '兵上限 +{c}，征兵 +{n}%', fxEn: 'troop cap +{c}, drafting +{n}%' },
+  walls: { zh: '城墙', en: 'Walls', icon: '🧱', fxZh: '城防上限 +{c}', fxEn: 'max defence +{c}' },
+  academy: { zh: '书院', en: 'Academy', icon: '📜', fxZh: '搜索 +{n}%，内政 +{m}%', fxEn: 'search +{n}%, development +{m}%' },
+  beacon: { zh: '烽火台', en: 'Beacon', icon: '🔥', fxZh: '守城战斗力 +{n}%', fxEn: 'defenders fight +{n}%' },
+};
+export const BLD_IDS = Object.keys(BUILDINGS);
+export const PASS_BLD = ['walls', 'beacon'];
+// city kind (js/sg_art.js) -> its specialty building
+export const SPECIALTY = { boba: 'market', bag: 'market', plaza: 'market', pagoda: 'market', towers: 'market', bigbox: 'farm', homes: 'farm', factory: 'barracks', dome: 'barracks', civic: 'academy', heritage: 'academy', centre: 'academy', airport: 'beacon', station: 'beacon', castle: 'walls' };

@@ -15,13 +15,18 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { ITEMS, ITEM_IDS, GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
+import { COUNTERS, TIMELY, BUILDINGS, PASS_BLD, SPECIALTY, ITEMS, ITEM_IDS, GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
 import { SITES, PARKS, PAIRS } from './sg_sites.js';
+import { cityKind } from './sg_art.js';
 
 export const SAVE_V = 6; // v1.1: treasures, truces, poaching
 const K = () => CFG.sg;
-export const capOf = (city) => (city.pass ? K().passCap : Math.min(K().maxTroops, Math.round(K().capBase + city.dev * K().capPerDev)));
-export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax);
+// v1.4 (D-115): buildings. bldLv counts the specialty bonus (one level more, once built)
+export const bldRaw = (city, b) => (city && city.bld && city.bld[b]) || 0;
+export const isSpecialty = (city, b) => !!city && SPECIALTY[cityKind(city.id)] === b;
+export const bldLv = (city, b) => { const L = bldRaw(city, b); return L && isSpecialty(city, b) ? L + 1 : L; };
+export const capOf = (city) => (city.pass ? K().passCap + bldLv(city, 'barracks') * K().bldCap : Math.min(K().maxTroops + bldLv(city, 'barracks') * K().bldCap, Math.round(K().capBase + city.dev * K().capPerDev) + bldLv(city, 'barracks') * K().bldCap));
+export const defMaxOf = (city) => (city.pass ? K().passDefMax : K().defMax) + bldLv(city, 'walls') * K().bldWall;
 
 // ---------------------------------------------------------------- random (mulberry32 in the state)
 export function rnd(s) {
@@ -193,6 +198,33 @@ export function terrain(from, to) {
 // seasons: December to February is snowy Markham winter (attacking is harder), September is harvest
 export const isWinter = (s) => [12, 1, 2].includes(dateOf(s).month);
 export const seasonOf = (s) => { const m = dateOf(s).month; return m <= 2 || m === 12 ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn'; };
+// the month's weather (was only on screen; v1.4 lets it matter for TIMELY officers)
+export function weatherKey(s) {
+  const m = dateOf(s).month, r = (s.turn * 7 + (s.seed || 0)) % 3;
+  return isWinter(s) ? 'snow' : m === 9 ? 'harvest' : m <= 5 ? ['sun', 'rain', 'cloud'][r] : m <= 8 ? ['sun', 'hot', 'sun'][r] : ['sun', 'wind', 'cloud'][r];
+}
+// v1.4 (D-114): historical counters and the right weather. countersOf: pairs where one of `ids` beat one of `foes`
+export function countersOf(ids, foes, defending = false) {
+  const out = [];
+  for (const c of COUNTERS) {
+    if (c.def && !defending) continue;
+    const a = ids.find((x) => c.a.includes(x)), b = a && foes.find((x) => c.b.includes(x));
+    if (a && b) out.push({ c, a, b });
+  }
+  return out;
+}
+export function timelyOf(s, ids, river = false) {
+  const w = weatherKey(s), dry = (seasonOf(s) === 'autumn' || seasonOf(s) === 'winter') && w !== 'rain', out = [];
+  for (const t of TIMELY) {
+    const id = ids.find((x) => t.m.includes(x));
+    if (!id) continue;
+    if (t.when === 'rain' ? w === 'rain' : t.when === 'dry' ? dry : t.when === 'snow' ? w === 'snow' : t.when === 'river' ? river : false) out.push({ t, id });
+  }
+  return out;
+}
+export const snowproof = (ids) => ids.some((x) => TIMELY.some((t) => t.snowproof && t.m.includes(x)));
+const snowPenOf = (s, ids) => (isWinter(s) && !snowproof(ids) ? K().snowPen : 0);
+const crossesRiver = (army) => { const r = army && army.route; if (!r || r.length < 2) return false; const l = linkOf(r[r.length - 2], r[r.length - 1]); return !!(l && l.river); };
 export const wallMul = (city) => (1 + city.def / K().defDiv) * (city.pass ? K().passMul : 1);
 
 // bonds active for a set of generals (army) of faction f
@@ -301,7 +333,7 @@ export const hiddenIn = (s, c) => Object.values(s.gens).filter((g) => g.hidden &
 // one order per officer: orders = { [general id]: { cmd, to, n } }
 // cmd: 'dev' | 'draft' | 'search' | 'fort' | 'move' | 'march'   (n = troops taken along)
 //      'plot' (计略) with kind 'rumor' (流言: troops desert) or 'fire' (火计: walls burn) against a neighbour
-export const COST = { dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost', envoy: 'envoyCost', poach: 'poachCost' };
+export const COST = { build: 'bldCost', dev: 'devCost', draft: 'draftCost', fort: 'fortCost', plot: 'plotCost', envoy: 'envoyCost', poach: 'poachCost' };
 // ---- truces (v1.1, D-98): an envoy buys a few months of peace with one lord
 const tKey = (f, g) => (f < g ? f + '-' + g : g + '-' + f);
 export const truceLeft = (s, f, g) => (f < 0 || g < 0 || f === g || !s.truce ? 0 : Math.max(0, (s.truce[tKey(f, g)] || 0) - s.turn));
@@ -353,9 +385,9 @@ export const costOf = (cmd, id) => (COST[cmd] ? Math.round(K()[COST[cmd]] * (id 
 export const orderCost = (o, id) => (o && COST[o.cmd] ? costOf(o.cmd, id) : 0);
 // what an officer would achieve (the numbers the order buttons show, and what runOrder does).
 // v1.2 (D-102): the curves are squares of the stat, so a 文官 and a 武将 are far apart at each other's work
-export function devAmt(s, f, id) { const k = K(); return Math.round((k.devBase + k.devMax * (gen(id).pol / 100) ** k.effExp) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev'))); }
-export function draftAmt(id) { const k = K(); return Math.round((k.draftBase + k.draftMax * (gen(id).lead / 100) ** k.effExp) * (1 + fx(id, 'draft'))); }
-export function searchChance(s, f, id) { const k = K(); return Math.min(0.95, k.searchBase + k.searchMax * (gen(id).int / 100) ** k.searchExp + fx(id, 'search') + bondFx(s, f, [id], 'search')); }
+export function devAmt(s, f, id, city = null) { const k = K(); return Math.round((k.devBase + k.devMax * (gen(id).pol / 100) ** k.effExp) * (1 + fx(id, 'dev') + bondFx(s, f, [id], 'dev') + bldLv(city, 'academy') * k.bldAcadDev)); }
+export function draftAmt(id, city = null) { const k = K(); return Math.round((k.draftBase + k.draftMax * (gen(id).lead / 100) ** k.effExp) * (1 + fx(id, 'draft') + bldLv(city, 'barracks') * k.bldDraft)); }
+export function searchChance(s, f, id, city = null) { const k = K(); return Math.min(0.95, k.searchBase + k.searchMax * (gen(id).int / 100) ** k.searchExp + fx(id, 'search') + bondFx(s, f, [id], 'search') + bldLv(city, 'academy') * k.bldAcadSearch); }
 export function fortAmt(id) { const k = K(), G = gen(id); return Math.round(k.fortBase + k.fortMax * (Math.max(G.lead, G.pol) / 100) ** k.effExp + (fx(id, 'def') > 0 ? 4 : 0)); }
 // v0.9.6 (D-83, the 总决策's rule): an army fights in proportion to its 武力 (the best one at its head),
 // so with the same troops the side with the higher 武力 always wins; 统率 decides how many troops an
@@ -382,6 +414,7 @@ export function validOrder(s, f, id, o) {
     case 'draft': return !city.pass && fa.gold >= costOf('draft', id) && city.troops < capOf(city);
     case 'search': return !city.pass;
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
+    case 'build': return canBuild(city, o.b) && fa.gold >= costOf('build', id);
     case 'move': return moveTargets(s, f, c).includes(o.to);
     case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch;
     case 'envoy': return o.f !== f && !!s.factions[o.f] && s.factions[o.f].alive && !truceLeft(s, f, o.f) && fa.gold >= costOf('envoy', id);
@@ -392,21 +425,27 @@ export function validOrder(s, f, id, o) {
   }
 }
 
+// can building b go up a level in this city now? (level 2 needs 开发 40, level 3 needs 65; passes: walls and beacon only)
+export function canBuild(city, b) {
+  if (!BUILDINGS[b] || (city.pass && !PASS_BLD.includes(b))) return false;
+  const L = bldRaw(city, b), k = K();
+  return L < 3 && (city.pass || city.dev >= k.bldDev[L]);
+}
 function runOrder(s, f, id, o) {
   const k = K(), fa = s.factions[f];
   if (!validOrder(s, f, id, o)) { if (s.gens[id] && s.gens[id].f === f) ev(s, { k: 'skip', f, g: id, cmd: o && o.cmd }); return; }
   const c = s.gens[id].c, city = s.cities[c], G = gen(id);
   if (o.cmd === 'dev') {
-    const amt = devAmt(s, f, id);
+    const amt = devAmt(s, f, id, city);
     fa.gold -= costOf('dev', id); city.dev = Math.min(100, city.dev + amt);
     ev(s, { k: 'dev', f, c, g: id, n: amt });
   } else if (o.cmd === 'draft') {
-    const amt = Math.min(capOf(city) - city.troops, Math.round(draftAmt(id) * (f !== PLAYER ? D(s).draft : 1)));
+    const amt = Math.min(capOf(city) - city.troops, Math.round(draftAmt(id, city) * (f !== PLAYER ? D(s).draft : 1)));
     fa.gold -= costOf('draft', id); city.troops += amt;
     ev(s, { k: 'draft', f, c, g: id, n: amt });
   } else if (o.cmd === 'search') {
     const hid = hiddenIn(s, c);
-    const p = searchChance(s, f, id);
+    const p = searchChance(s, f, id, city);
     if (hid.length && rnd(s) < p) {
       const nid = pick(s, hid);
       Object.assign(s.gens[nid], { f, c, hidden: false, rumor: false, loyal: 75 + fx(nid, 'loyal') });
@@ -422,6 +461,12 @@ function runOrder(s, f, id, o) {
         if (to) ev(s, { k: 'item', f, c, g: id, to, item }); else { s.items.push(item); ev(s, { k: 'nothing', f, c, g: id, left: hid.length }); }
       } else ev(s, { k: 'nothing', f, c, g: id, left: hid.length });
     }
+  } else if (o.cmd === 'build') {
+    fa.gold -= costOf('build', id);
+    city.bld = city.bld || {};
+    city.bld[o.b] = bldRaw(city, o.b) + 1;
+    if (o.b === 'walls') city.def = Math.min(defMaxOf(city), city.def + 5);
+    ev(s, { k: 'build', f, c, g: id, b: o.b, lv: city.bld[o.b] });
   } else if (o.cmd === 'fort') {
     const amt = fortAmt(id);
     fa.gold -= costOf('fort', id); city.def = Math.min(defMaxOf(city), city.def + amt);
@@ -559,6 +604,11 @@ export function aiOrders(s, f, opts = {}) {
         if (tg && poachChance(s, f, g0, tg) >= k.aiPoachMin && rnd(s) < k.aiPoach) { out[take('int')] = { cmd: 'poach', g: tg }; gold -= k.poachCost; poached = true; continue; }
       }
       if (front && gold >= k.fortCost && C.def < (C.pass ? defMaxOf(C) : 60) && (C.pass || threat > C.troops * 0.6)) { out[take('pol')] = { cmd: 'fort' }; gold -= k.fortCost; continue; }
+      // v1.4: a lord with gold to spare builds: walls and beacons on the front, markets and farms behind it
+      if (gold >= k.bldCost + k.aiBuildSpare && rnd(s) < k.aiBuild) {
+        const want = (front ? ['walls', 'beacon', 'barracks', 'market'] : ['market', 'farm', 'academy', 'barracks']).find((b) => canBuild(C, b));
+        if (want) { out[take('pol')] = { cmd: 'build', b: want }; gold -= k.bldCost; continue; }
+      }
       if (!C.pass && C.dev < 90 && gold >= k.devCost) { out[take('pol')] = { cmd: 'dev' }; gold -= k.devCost; continue; }
       // a spare officer goes where there is nobody, so every city can act
       if (gs.length >= 2 || !front) {
@@ -740,7 +790,8 @@ export function duelRound(s, d, mv = null) {
   mv = mv || aiAnswer(s, d);
   if (mv === 'skill' && !canSkill(d, R)) mv = 'atk';
   const moves = { [R]: mv, [O]: d.next }, dmg = { a: 0, d: 0 }, sp = { a: 0, d: 0 };
-  const bonus = (x) => 1 + fx(side(d, x).g, 'duel') + bondFx(s, side(d, x).f, [side(d, x).g], 'duel');
+  const other = (x) => side(d, x === 'a' ? 'd' : 'a').g;
+  const bonus = (x) => 1 + fx(side(d, x).g, 'duel') + bondFx(s, side(d, x).f, [side(d, x).g], 'duel') + countersOf([side(d, x).g], [other(x)], true).reduce((a, y) => a + y.c.fx, 0);
   const war = (x) => gen(side(d, x).g).war;
   const hit = (w, l, kind) => {
     if (kind !== 'tie' && kind !== 'chip' && war(w) - war(l) >= k.duelKoGap) return d[side(d, l).hp]; // 武力悬殊: one blow
@@ -775,9 +826,21 @@ export function duelRound(s, d, mv = null) {
 }
 export function autoDuel(s, d) { while (!d.done) duelRound(s, d); return d.win; }
 
-function sidePower(s, f, ids, troops, { attacking, outnumbered }) {
+// what the battle screen shows (v1.4): each side's counters and weather buffs, [side, zh, en, fx]
+export function edgeOf(s, aIds, bIds, river = false, siege = false) {
+  const out = [];
+  for (const [si, ids, foes, att] of [[0, aIds, bIds, true], [1, bIds, aIds, !siege]]) {
+    for (const x of countersOf(ids, foes, !att)) out.push([si, x.c.zh, x.c.en, x.c.fx, x.a, x.b]);
+    for (const x of timelyOf(s, ids, si === 0 && river)) out.push([si, x.t.zh, x.t.en, x.t.fx, x.id]);
+    if (isWinter(s) && snowproof(ids)) out.push([si, '不惧风雪', 'Snow-hardy', 0]);
+  }
+  return out;
+}
+function sidePower(s, f, ids, troops, { attacking, outnumbered, foes = [], river = false }) {
   const g = ids.length ? best(ids, 'lead') : null;
   let m = 1;
+  m += Math.min(K().counterMax, countersOf(ids, foes, !attacking).reduce((a, x) => a + x.c.fx, 0));
+  m += timelyOf(s, ids, river).reduce((a, x) => a + x.t.fx, 0);
   for (const id of ids) m += (fx(id, 'atk') + (attacking ? fx(id, 'raid') : 0) + (outnumbered ? fx(id, 'few') : 0)) * (id === g ? 1 : 0.5) + (attacking ? 0 : fx(id, 'def') * (id === g ? 1 : 0.5));
   if (f >= 0) m += bondFx(s, f, ids, 'atk') + (attacking ? 0 : bondFx(s, f, ids, 'def'));
   return troops * statMul(ids) * m;
@@ -788,7 +851,7 @@ function homeFrom(s, a, troops) { retreat(s, { ...a, home: null }, troops); }
 // a field battle (v0.9.6): no walls, the same rule as everywhere: troops x 武力, fought to the end
 function resolveField(s, m, duelWin, duel) {
   const k = K(), { a, b } = m;
-  let aMul = isWinter(s) ? 1 - k.snowPen : 1, bMul = aMul;
+  let aMul = 1 - snowPenOf(s, a.gens), bMul = 1 - snowPenOf(s, b.gens);
   if (duel) {
     ev(s, { k: 'duel', f: a.f, fd: b.f, c: m.to, a: duel.a, d: duel.d, win: duelWin, rival: duel.rival, field: true });
     if (duelWin === 'a') { b.troops = Math.round(b.troops * (1 - k.duelLoss)); aMul += k.duelWinAtk; }
@@ -796,9 +859,10 @@ function resolveField(s, m, duelWin, duel) {
   }
   let A = a.troops, B = b.troops;
   m.rounds = [[A, B]]; m.sideGens = [[...a.gens], [...b.gens]]; // the battle screen plays these back
+  m.edge = edgeOf(s, a.gens, b.gens, false, false);
   for (let r = 0; r < k.fieldRounds && A > 0 && B > 0; r++) {
-    const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B }) * aMul;
-    const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A }) * bMul;
+    const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B, foes: b.gens }) * aMul;
+    const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A, foes: a.gens }) * bMul;
     A = Math.max(0, Math.round(A - pb * k.roundLoss)); B = Math.max(0, Math.round(B - pa * k.roundLoss));
     m.rounds.push([A, B]);
     if (A > 0 && B > 0 && (A < a.troops * k.rout || B < b.troops * k.rout)) break; // one side breaks and runs
@@ -816,7 +880,7 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   loadMap(s);
   if (m.field) { resolveField(s, m, duelWin, duel); return; }
   const k = K(), T = s.cities[m.to], o = T.owner, dGens = defenders(s, m.to);
-  let aMul = (m.terr ?? 1) * (isWinter(s) ? 1 - k.snowPen : 1), dMul = 1;
+  let aMul = (m.terr ?? 1) * (1 - snowPenOf(s, m.gens)), dMul = 1;
   if (duel) {
     const loser = duelWin === 'a' ? duel.d : duelWin === 'd' ? duel.a : null;
     ev(s, { k: 'duel', f: m.f, c: m.to, a: duel.a, d: duel.d, win: duelWin, fd: o, rival: duel.rival });
@@ -832,11 +896,12 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   let A = m.troops, D = T.troops;
   const walls = wallMul(T);
   m.rounds = [[A, D]]; m.sideGens = [[...m.gens], [...dGens]]; // the battle screen plays these back
+  m.edge = edgeOf(s, m.gens, dGens, crossesRiver(m), true);
   // v0.9.6: no dice in the fighting itself (troops x 武力 x walls decide); the siege goes on until one
   // side breaks, so the stronger side always carries the day
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {
-    const pa = sidePower(s, m.f, m.gens, A, { attacking: true, outnumbered: A < D }) * aMul;
-    const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A }) * dMul * walls;
+    const pa = sidePower(s, m.f, m.gens, A, { attacking: true, outnumbered: A < D, foes: dGens, river: crossesRiver(m) }) * aMul;
+    const pd = sidePower(s, o, dGens, D, { attacking: false, outnumbered: D < A, foes: m.gens }) * dMul * walls * (1 + bldLv(T, 'beacon') * k.bldBeacon);
     A = Math.max(0, Math.round(A - pd * k.roundLoss));
     D = Math.max(0, Math.round(D - pa * k.roundLoss));
     m.rounds.push([A, D]);
@@ -847,7 +912,8 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   const won = D <= 0 && A > 0;
   ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A, pass: !!T.pass });
   if (won) {
-    T.owner = m.f; T.troops = Math.min(k.maxTroops, A); T.def = Math.max(20, T.def - k.siegeDef);
+    T.owner = m.f; T.troops = Math.min(capOf(T), A); T.def = Math.max(20, T.def - k.siegeDef);
+    if (T.bld) for (const b of Object.keys(T.bld)) T.bld[b] = Math.max(0, T.bld[b] - 1); // sacked: every building loses a level
     for (const id of m.gens) s.gens[id].c = m.to;
     for (const id of dGens) {
       const home = o >= 0 ? ADJ[m.to].find(({ c }) => s.cities[c].owner === o) : null;
@@ -864,7 +930,7 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
 
 function enterCity(s, m) {
   const T = s.cities[m.to];
-  T.troops = Math.min(K().maxTroops, T.troops + m.troops);
+  T.troops = Math.min(Math.max(K().maxTroops, capOf(T)), T.troops + m.troops);
   for (const id of m.gens) s.gens[id].c = m.to;
 }
 function retreat(s, m, troops) {
@@ -872,7 +938,7 @@ function retreat(s, m, troops) {
   const back = (c) => (c && s.cities[c].owner === m.f ? c : null);
   const fallback = back(m.from) || ownedBy(s, m.f).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0] || null;
   if (!fallback) { for (const id of m.gens) hide(s, id, pick(s, CITY_IDS)); return; }
-  s.cities[fallback].troops = Math.min(K().maxTroops, s.cities[fallback].troops + troops);
+  s.cities[fallback].troops = Math.min(Math.max(K().maxTroops, capOf(s.cities[fallback])), s.cities[fallback].troops + troops);
   for (const id of m.gens) s.gens[id].c = back(m.home && m.home[id]) || fallback;
 }
 function hide(s, id, c) { Object.assign(s.gens[id], { f: -1, c: CITIES[c] && !CITIES[c].pass ? c : CITY_IDS[0], hidden: true, guard: false, rumor: false }); }
@@ -949,8 +1015,8 @@ export function endTurn(s) {
       C.def = Math.min(defMaxOf(C), C.def + (C.pass ? k.passDefRegen : k.defRegen));
       if (!sup.has(c)) { C.troops = Math.round(C.troops * (1 - k.cutLoss)); ev(s, { k: 'cut', f: fa.id, c }); }
       else if (!C.pass) {
-        fa.gold += Math.round((k.goldBase + C.dev * k.goldPerDev) * (fa.id !== PLAYER ? D(s).gold : 1));
-        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)) * (fa.id !== PLAYER ? D(s).food : 1));
+        fa.gold += Math.round((k.goldBase + C.dev * k.goldPerDev) * (fa.id !== PLAYER ? D(s).gold : 1) * (1 + bldLv(C, 'market') * k.bldMarket));
+        const food = Math.round((k.foodBase + C.dev * k.foodPerDev) * (1 + (CITIES[c].valley ? k.valleyFood : 0) + (CITIES[c].depot ? k.depotFood : 0)) * (fa.id !== PLAYER ? D(s).food : 1) * (1 + bldLv(C, 'farm') * k.bldFarm));
         fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
       }
       troops += C.troops;
