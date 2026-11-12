@@ -18,8 +18,10 @@ function shade(hex, f) {
   return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
 }
 
-export function drawCity(c, x, y, kind, col, cap, ch, ts = 1, dev = 50) {
-  const k = 1.15 * (cap ? 1.15 : 1) * ts * (dev < 40 ? 0.88 : dev >= 70 ? 1.1 : 1);
+// fx (v1.3, D-112): { troops, threat, t } - a big garrison flies extra pennants, a rich city hangs lanterns,
+// a city with an enemy army on the way smokes
+export function drawCity(c, x, y, kind, col, cap, ch, ts = 1, dev = 50, fx = {}) {
+  const k = 1.3 * (cap ? 1.15 : 1) * ts * (dev < 40 ? 0.88 : dev >= 70 ? 1.1 : 1);
   const dark = shade(col, 0.8);
   c.save(); c.translate(x, y); c.scale(k, k);
   const poly = (pts, f) => { c.fillStyle = f; c.beginPath(); pts.forEach(([a, b], i) => (i ? c.lineTo(a, b) : c.moveTo(a, b))); c.closePath(); c.fill(); };
@@ -37,6 +39,8 @@ export function drawCity(c, x, y, kind, col, cap, ch, ts = 1, dev = 50) {
   c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 9, 31, 10, 0, 0, 7); c.fill();
   poly([[-25, 0], [-13, 8], [13, 8], [25, 0], [25, 6], [13, 14], [-13, 14], [-25, 6]], '#b5a285');
   poly([[-25, 0], [-13, -8], [13, -8], [25, 0], [13, 8], [-13, 8]], kind === 'homes' || kind === 'heritage' ? '#b9d98a' : '#e8decd');
+  // a few trees and shrubs at the foot of the base
+  for (const [tx, ty, r] of [[-27, 3, 3.6], [24, 6, 3.2], [-20, 10, 2.6], [27, -2, 2.4]]) { circ(tx, ty - 1, r + 0.8, 'rgba(43,33,26,.55)'); circ(tx, ty - 1, r, '#5fa35a'); circ(tx - r * 0.3, ty - r * 0.4 - 1, r * 0.45, '#86c46a'); }
   let pole = 20; // where the flag pole stands
   const big = dev >= 70;
 
@@ -123,6 +127,22 @@ export function drawCity(c, x, y, kind, col, cap, ch, ts = 1, dev = 50) {
     poly([[-11, 2], [11, 2], [11, -16], [-11, -16]], '#f6eee1'); poly([[11, 2], [16, -2], [16, -20], [11, -16]], '#d9cbb4');
     poly([[-3, -6], [3, -6], [3, 2], [-3, 2]], '#6b4a2e'); poly([[-17, -15], [20, -15], [12, -25], [-9, -25]], col);
     poly([[-6, -25], [8, -25], [8, -32], [-6, -32]], '#f6eee1'); poly([[-11, -31], [13, -31], [7, -39], [-5, -39]], dark);
+  }
+  // a rich city hangs red lanterns along its front
+  if (dev >= 70) {
+    c.strokeStyle = '#5a4632'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-20, -6); c.quadraticCurveTo(-4, -1, 12, -6); c.stroke();
+    for (const lx of [-16, -8, 0, 8]) { const ly = -6 + 3.2 * Math.sin((lx + 20) / 32 * Math.PI) ; c.strokeStyle = '#5a4632'; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx, ly + 1.5); c.stroke(); c.fillStyle = '#e0412f'; c.beginPath(); c.ellipse(lx, ly + 3.6, 2.1, 2.6, 0, 0, 7); c.fill(); c.fillStyle = '#ffd36a'; c.fillRect(lx - 1.4, ly + 1.1, 2.8, 0.8); c.fillRect(lx - 1.4, ly + 5.4, 2.8, 0.8); }
+  }
+  // a big garrison: a row of small pennants on the wall
+  if ((fx.troops || 0) >= 5000) for (const [px, h] of [[-23, 16], [-15, 18], [9, 17]]) {
+    c.strokeStyle = '#5a4632'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(px, 4); c.lineTo(px, 4 - h); c.stroke();
+    const wv = Math.sin((fx.t || 0) * 4 + px) * 1.2;
+    poly([[px, 4 - h], [px + 8, 4 - h + 2 + wv], [px, 4 - h + 5]], col); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.6; c.stroke();
+  }
+  // an enemy army on the road here: smoke from the walls
+  if (fx.threat) for (let i = 0; i < 4; i++) {
+    const ph = ((fx.t || 0) * 0.45 + i / 4) % 1, sx2 = -8 + i * 5 + Math.sin(ph * 6 + i) * 3, sy2 = -18 - ph * 30, r = 3 + ph * 7;
+    c.fillStyle = `rgba(${90 - ph * 30},${80 - ph * 30},${74 - ph * 30},${0.55 * (1 - ph)})`; c.beginPath(); c.arc(sx2, sy2, r, 0, 7); c.fill();
   }
   // the owner's flag (a capital flies a bigger one with a gold top)
   c.strokeStyle = '#5a4632'; c.lineWidth = 2; c.beginPath(); c.moveTo(pole, 2); c.lineTo(pole, -52); c.stroke();

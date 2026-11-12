@@ -7,10 +7,11 @@ import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import * as sfx from './audio.js';
-import { ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR, elevAt } from './sg_data.js';
-import { ELEV } from './sg_elev.js';
+import { ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
 import { drawCity, cityKind } from './sg_art.js';
 import { BIOS } from './sg_bios.js';
+import { portraitURL } from './sg_portrait.js';
+import { bakePaper, woodTile } from './sg_paper.js';
 
 extend({
   sgStart: '⚔ 万锦群英传', sgTitle: '万锦群英传', sgDateMix: '群英{y}年 {m}月', sgEnd: '结束本月', sgDate: '建安{y}年 {m}月', sgGold: '金', sgFood: '粮', sgTroops: '兵', sgCities: '城',
@@ -145,7 +146,7 @@ export const tierOf = (id) => E.tierOf(id); // rarity lives in the engine now (i
 const grade = (v) => (v >= 90 ? 'S' : v >= 80 ? 'A' : v >= 65 ? 'B' : v >= 45 ? 'C' : 'D');
 function portrait(id, size = 46) {
   const g = GENERALS[id], tr = tierOf(id);
-  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px">${esc(g.glyph)}${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}${itemPip(id)}</span>`;
+  return `<span class="sgP t${tr}" style="width:${size}px;height:${size}px;background:${KCOL[g.k]};font-size:${Math.round(size * 0.56)}px"><i class="sgPf"><img src="${portraitURL(id)}" alt="${esc(g.glyph)}"></i>${size >= 40 ? `<i class="sgTier">${tr}</i>` : ''}${itemPip(id)}</span>`;
 }
 function statBars(id) {
   const g = E.gen(id), row = (l, v, c) => `<div class="sgSt"><span>${l}</span><i><b style="width:${v}%;background:${c}"></b></i><em>${v}</em><u class="g${grade(v)}">${grade(v)}</u></div>`;
@@ -170,7 +171,7 @@ function tallCard(id, opts = {}) {
   const bar = opts.troops !== undefined ? `<i class="sgCbar"><b style="width:${Math.max(0, Math.min(100, opts.pct ?? 100))}%"></b></i><em class="sgCtroops">${kNum(opts.troops)}</em>` : '';
   return `<div class="sgCardT t${tr} k${g.k}${opts.big ? ' big' : ''}${opts.cls ? ' ' + opts.cls : ''}" ${opts.data || ''}>
     <i class="sgCtag${zh() ? '' : ' v'}">${g.tag[zh() ? 0 : 1]}</i><i class="sgCstar">${'★'.repeat(STARS[tr])}</i>
-    <b class="sgCglyph">${esc(g.glyph)}</b><i class="sgCtier">${tr}</i>
+    <b class="sgCglyph"><img class="sgCimg" src="${portraitURL(id)}" alt="${esc(g.glyph)}"></b><i class="sgCtier">${tr}</i>
     <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${itemPip(id)}${bar}</div>`;
 }
 function genCard(id, opts = {}) {
@@ -308,56 +309,64 @@ export class Sanguo {
     if (this.panelHidden) { this.togglePanel(false); return; }
     this.render();
   }
-  // real ground height (js/sg_elev.js) as a terraced, hill-shaded relief laid over the minimap
-  relief() {
-    if (this.reliefCv) return this.reliefCv;
-    const R = 12, w = (ELEV.nx - 1) * R, h = (ELEV.nz - 1) * R, cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const c = cv.getContext('2d'), img = c.createImageData(w, h), span = ELEV.hi - ELEV.lo;
-    const at = (x, y) => elevAt(ELEV.x0 + (x / R) * ELEV.step, ELEV.z0 + (y / R) * ELEV.step);
-    const LO = [86, 150, 92], MID = [196, 196, 120], HI = [214, 170, 112];
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const e = at(x, y), t = Math.floor((e - ELEV.lo) / 3) * 3 / span; // 3 m terraces
-      const sh = Math.max(-1, Math.min(1, (at(x - 2, y - 2) - at(x + 2, y + 2)) * 0.9)); // light from the north-west
-      const col = t < 0.5 ? LO.map((v, i) => v + (MID[i] - v) * t * 2) : MID.map((v, i) => v + (HI[i] - v) * (t - 0.5) * 2);
-      const o = (y * w + x) * 4;
-      for (let i = 0; i < 3; i++) img.data[o + i] = Math.max(0, Math.min(255, col[i] * (1 + 0.22 * sh)));
-      img.data[o + 3] = 255;
+  // v1.3 (D-111): the month shows on the map. Snow falls and settles in winter, rain streaks in a wet month,
+  // the paper warms to gold in autumn and greens a little in spring. All drawn live, cheap (a few hundred strokes).
+  season(c, x0, y0, mw, mh) {
+    const st = this.s, se = E.seasonOf(st), [wname] = weatherOf(st), t = performance.now() / 1000;
+    if (se === 'autumn') { c.fillStyle = 'rgba(214,140,40,.12)'; c.fillRect(x0, y0, mw, mh); }
+    else if (se === 'spring') { c.fillStyle = 'rgba(120,170,80,.07)'; c.fillRect(x0, y0, mw, mh); }
+    const W = this.W, H = this.H;
+    if (wname === '雪') {
+      c.fillStyle = 'rgba(255,255,255,.16)'; c.fillRect(x0, y0, mw, mh);
+      c.fillStyle = 'rgba(255,255,255,.85)';
+      for (let i = 0; i < 140; i++) {
+        const sp = 18 + (i % 7) * 4, x = ((i * 97.3 + Math.sin(t * 0.8 + i) * 18 + t * 6) % (W + 20)) - 10, y = ((i * 53.7 + t * sp) % (H + 20)) - 10;
+        c.beginPath(); c.arc(x, y, 1.2 + (i % 3) * 0.7, 0, 7); c.fill();
+      }
+    } else if (wname === '雨') {
+      c.fillStyle = 'rgba(60,80,100,.08)'; c.fillRect(x0, y0, mw, mh);
+      c.strokeStyle = 'rgba(200,215,230,.55)'; c.lineWidth = 1.1; c.beginPath();
+      for (let i = 0; i < 120; i++) { const x = ((i * 89.1 + t * 60) % (W + 40)) - 20, y = ((i * 61.3 + t * 420) % (H + 40)) - 20; c.moveTo(x, y); c.lineTo(x - 4, y + 13); }
+      c.stroke();
+    } else if (wname === '秋风' || wname === '秋收') {
+      for (let i = 0; i < 28; i++) {
+        const x = ((i * 131.7 + t * 40) % (W + 40)) - 20, y = ((i * 71.9 + t * 18 + Math.sin(t + i) * 20) % (H + 40)) - 20;
+        c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = i % 3 ? 'rgba(200,110,40,.8)' : 'rgba(170,60,30,.8)'; c.beginPath(); c.ellipse(0, 0, 4, 2, 0, 0, 7); c.fill(); c.restore();
+      }
     }
-    c.putImageData(img, 0, 0);
-    this.reliefCv = cv;
-    return cv;
   }
   draw() {
-    const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, S = CFG.minimap.pxPerM, st = this.s;
+    const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, st = this.s;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    c.fillStyle = '#241b14'; c.fillRect(0, 0, W, H); // the table the map lies on
+    if (!this.wood) this.wood = c.createPattern(woodTile(), 'repeat');
+    c.fillStyle = this.wood || '#241b14'; c.fillRect(0, 0, W, H); // the table the map lies on (v1.3: walnut)
     if (this.shake > 0.3) c.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     const [x0, y0] = this.toScreen(-HW, -HH), mw = HW * 2 * s, mh = HH * 2 * s;
     c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 24; c.fillStyle = '#9fd067'; c.fillRect(x0, y0, mw, mh); c.restore();
     c.save(); c.beginPath(); c.rect(x0, y0, mw, mh); c.clip();
-    c.drawImage(w.minimap, x0, y0, HW * 2 * S * (s / S), HH * 2 * S * (s / S));
-    // relief on top (the town map shows through faintly)
-    const [rx, ry] = this.toScreen(ELEV.x0, ELEV.z0);
-    c.globalAlpha = 0.72; c.drawImage(this.relief(), rx, ry, (ELEV.nx - 1) * ELEV.step * s, (ELEV.nz - 1) * ELEV.step * s); c.globalAlpha = 1;
-    c.fillStyle = 'rgba(70,45,20,.12)'; c.fillRect(x0, y0, mw, mh); // a warm, old-map wash
-    const line = (pts, col, wd) => { c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = this.toScreen(x, z); if (i) c.lineTo(a, b); else c.moveTo(a, b); }); c.stroke(); };
-    c.lineCap = 'round'; c.lineJoin = 'round';
-    // the Rouge River and its streams
-    for (const [big, pts] of w.map.rivers) line(pts, big ? 'rgba(46,110,214,.9)' : 'rgba(60,120,210,.45)', big ? Math.max(3, 16 * s) : 1.5);
-    // Hwy 407: just a highway (landmark), the passes are parks
-    for (const pts of w.map.overpass) line(pts, 'rgba(90,90,96,.55)', Math.max(3, 12 * s));
-    if (E.isWinter(st)) { c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(x0, y0, mw, mh); } // snow
+    // v1.3 (D-110): the board is an old ink map of Markham on rice paper (js/sg_paper.js), baked once
+    if (!this.paper) this.paper = bakePaper(w.map);
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(this.paper, x0, y0, mw, mh);
+    this.season(c, x0, y0, mw, mh);
     c.restore();
-    c.strokeStyle = '#8a6a3a'; c.lineWidth = 3; c.strokeRect(x0 - 1.5, y0 - 1.5, mw + 3, mh + 3);
+    // a mounted scroll: dark border, a gold line, corner pieces
+    c.strokeStyle = '#5a3a1e'; c.lineWidth = 7; c.strokeRect(x0 - 3.5, y0 - 3.5, mw + 7, mh + 7);
+    c.strokeStyle = '#c9a24e'; c.lineWidth = 1.5; c.strokeRect(x0 - 8.5, y0 - 8.5, mw + 17, mh + 17);
+    c.fillStyle = '#c9a24e';
+    for (const [cx, cy] of [[x0, y0], [x0 + mw, y0], [x0, y0 + mh], [x0 + mw, y0 + mh]]) { c.save(); c.translate(cx, cy); c.rotate(Math.PI / 4); c.fillRect(-7, -7, 14, 14); c.fillStyle = '#5a3a1e'; c.fillRect(-3.5, -3.5, 7, 7); c.restore(); c.fillStyle = '#c9a24e'; }
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
     for (const [a, b, road, river, station] of LINKS) {
       const [ax, ay] = this.toScreen(CITIES[a].x, CITIES[a].z), [bx, by] = this.toScreen(CITIES[b].x, CITIES[b].z);
       const oa = st.cities[a].owner, ob = st.cities[b].owner;
-      c.setLineDash(oa === ob && oa >= 0 ? [] : [10, 8]);
-      c.strokeStyle = 'rgba(43,33,26,.55)'; c.lineWidth = 9; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
-      c.strokeStyle = oa === ob && oa >= 0 ? this.fColor(oa) : '#f5ebdd'; c.lineWidth = 5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      // v1.3: a packed-earth road with ink edges; a road between two cities of one lord carries his colour
+      const own = oa === ob && oa >= 0;
+      c.lineCap = 'round';
+      c.strokeStyle = 'rgba(70,48,28,.7)'; c.lineWidth = 11; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.strokeStyle = '#d8bf8e'; c.lineWidth = 7.5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.setLineDash(own ? [] : [3, 7]);
+      c.strokeStyle = own ? this.fColor(oa) : 'rgba(110,80,50,.7)'; c.lineWidth = own ? 3.6 : 2; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
       c.setLineDash([]);
       const mx = (ax + bx) / 2, my = (ay + by) / 2;
       const br = this.k < this.s0 * 1.3 ? 7 : 9; // little terrain marks, bigger when zoomed in
@@ -398,7 +407,10 @@ export class Sanguo {
       const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
-      else drawCity(c, x, y, cityKind(id), col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].glyph : '', ts, C.dev);
+      else {
+        const threat = (st.armies || []).some((A) => A.to === id && A.kind === 'march' && A.f !== C.owner && !(C.owner >= 0 && E.isAlly(st, A.f, C.owner)));
+        drawCity(c, x, y, cityKind(id), col, C.owner >= 0 && st.factions[C.owner].cap === id, C.owner === E.PLAYER ? '君' : C.owner > 0 ? GENERALS[st.factions[C.owner].lord].glyph : '', ts, C.dev, { troops: C.troops, threat, t: this.pulse });
+      }
     }
     // labels: the most important first (selected, yours, cities, then passes), each in the first free spot
     // around its castle (below, above, right, left); when nothing is free a city shows just its troops

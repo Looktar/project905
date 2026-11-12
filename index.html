@@ -358,6 +358,28 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 /* v1.2: marching together, officer biographies, difficulty */
 .sgWith button.on{background:#f2c14e;color:#2b211a;border-color:#f2c14e}.sgWith button.on small{color:#5a4632}
 .sgBio{margin:6px 0 0;font-size:13px;line-height:1.55;color:#4a3826;text-align:left}.sgReveal .sgBio{color:#e9dcc6;font-size:12.5px;margin-top:4px}
+/* v1.3 (D-109): portraits instead of a single character */
+.sgPf{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:block}.sgPf img{position:absolute;left:-14%;top:-10%;width:128%;height:128%;display:block}
+.sgCglyph{pointer-events:none}.sgCimg{display:block;width:1.95em;height:1.95em;margin:-.52em auto 0;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+/* v1.3 (D-113): lacquer, walnut and gold instead of flat brown boxes */
+#sg{--lq1:#2d211a;--lq2:#1f1712;--gold:#d9b25a;--gold2:#a8823a;--ver:#b8352a;--serif:'Kaiti SC','STKaiti','KaiTi','Songti SC','STSong','Noto Serif CJK SC','Source Han Serif SC',serif}
+#sgTop{background:repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 2px,transparent 2px 7px),linear-gradient(180deg,#4a3324,#2e2018 60%,#261a13);border-bottom:none;box-shadow:inset 0 -1px 0 var(--gold2),inset 0 -4px 0 #1a120d,inset 0 -5px 0 rgba(217,178,90,.55),0 3px 10px rgba(0,0,0,.45)}
+#sgTop h1,#sgTop .sgTitle{font-family:var(--serif)!important;letter-spacing:1px}
+#sgPanel{background:radial-gradient(120% 60% at 50% 0,rgba(255,220,160,.07),transparent 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 5px),linear-gradient(180deg,var(--lq1),var(--lq2));border:1px solid var(--gold2);box-shadow:inset 0 0 0 3px #1a120d,inset 0 0 0 4px rgba(217,178,90,.35),0 6px 18px rgba(0,0,0,.5)}
+#sgPanel h4,.sgCard h2{font-family:var(--serif);letter-spacing:.5px}
+.sgO{background:linear-gradient(180deg,#3a2b20,#2c2018);border:1px solid #6a5034;box-shadow:inset 0 1px 0 rgba(255,230,180,.08),0 1px 0 rgba(0,0,0,.35)}
+.sgCmd{background:linear-gradient(180deg,#46352a,#33261c);border:1px solid #8a6a3a;box-shadow:inset 0 1px 0 rgba(255,230,180,.12),0 1px 0 rgba(0,0,0,.4);transition:transform .08s}
+.sgCmd:active{transform:translateY(1px)}
+.sgCmd.on{background:linear-gradient(180deg,#d14a33,var(--ver));color:#fff7e6;border-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(255,220,160,.35),0 1px 0 rgba(0,0,0,.4)}
+.sgO .sgCmd.on small,.sgCmd.on small{color:#ffe2a8}
+.sgCmd:disabled{background:#241a14;box-shadow:none}
+.sgBig{background:linear-gradient(180deg,#f0cd72,#d9a83c);color:#2b1d12;border:1px solid #8a6a3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(120,80,20,.35),0 2px 0 rgba(0,0,0,.35);font-family:var(--serif)!important;letter-spacing:1px}
+.sgBig.alt{background:linear-gradient(180deg,#46352a,#33261c);color:#f5ebdd;border:1px solid #8a6a3a;box-shadow:inset 0 1px 0 rgba(255,230,180,.12),0 2px 0 rgba(0,0,0,.35)}
+#sgTop #sgEnd{background:linear-gradient(180deg,#d14a33,var(--ver));color:#fff7e6;border:1.5px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(255,220,160,.3),0 2px 0 rgba(0,0,0,.4);font-family:var(--serif);letter-spacing:1px}
+.sgCard{background:radial-gradient(120% 50% at 50% 0,rgba(255,220,160,.08),transparent 60%),linear-gradient(180deg,#2d211a,#1d1510);border:1px solid var(--gold2);box-shadow:inset 0 0 0 3px #150f0b,inset 0 0 0 4px rgba(217,178,90,.45),0 18px 40px rgba(0,0,0,.6)}
+.sgSeg button,.sgChips button{background:linear-gradient(180deg,#46352a,#33261c);border-color:#6a5034;box-shadow:inset 0 1px 0 rgba(255,230,180,.1)}
+.sgChips button.on,.sgSeg button.on{box-shadow:none}
+.sgCardT{border-radius:9px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 3px 0 rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.35)}
 </style>
 </head>
 <body>
@@ -450,8 +472,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=02c4eb84ee","./js/bigmap.js":"./js/bigmap.js?v=02c4eb84ee","./js/config.js":"./js/config.js?v=02c4eb84ee","./js/fire.js":"./js/fire.js?v=02c4eb84ee","./js/game.js":"./js/game.js?v=02c4eb84ee","./js/geo.js":"./js/geo.js?v=02c4eb84ee","./js/glb.js":"./js/glb.js?v=02c4eb84ee","./js/hud.js":"./js/hud.js?v=02c4eb84ee","./js/i18n.js":"./js/i18n.js?v=02c4eb84ee","./js/input.js":"./js/input.js?v=02c4eb84ee","./js/main.js":"./js/main.js?v=02c4eb84ee","./js/math.js":"./js/math.js?v=02c4eb84ee","./js/missions.js":"./js/missions.js?v=02c4eb84ee","./js/models.js":"./js/models.js?v=02c4eb84ee","./js/nav.js":"./js/nav.js?v=02c4eb84ee","./js/orient.js":"./js/orient.js?v=02c4eb84ee","./js/poi.js":"./js/poi.js?v=02c4eb84ee","./js/pranks.js":"./js/pranks.js?v=02c4eb84ee","./js/props.js":"./js/props.js?v=02c4eb84ee","./js/renderer.js":"./js/renderer.js?v=02c4eb84ee","./js/sg_art.js":"./js/sg_art.js?v=02c4eb84ee","./js/sg_bios.js":"./js/sg_bios.js?v=02c4eb84ee","./js/sg_data.js":"./js/sg_data.js?v=02c4eb84ee","./js/sg_elev.js":"./js/sg_elev.js?v=02c4eb84ee","./js/sg_engine.js":"./js/sg_engine.js?v=02c4eb84ee","./js/sg_sites.js":"./js/sg_sites.js?v=02c4eb84ee","./js/sg_ui.js":"./js/sg_ui.js?v=02c4eb84ee","./js/signals.js":"./js/signals.js?v=02c4eb84ee","./js/world.js":"./js/world.js?v=02c4eb84ee"}}</script>
-<script type="module" src="js/main.js?v=02c4eb84ee"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=89a92f3401","./js/bigmap.js":"./js/bigmap.js?v=89a92f3401","./js/config.js":"./js/config.js?v=89a92f3401","./js/fire.js":"./js/fire.js?v=89a92f3401","./js/game.js":"./js/game.js?v=89a92f3401","./js/geo.js":"./js/geo.js?v=89a92f3401","./js/glb.js":"./js/glb.js?v=89a92f3401","./js/hud.js":"./js/hud.js?v=89a92f3401","./js/i18n.js":"./js/i18n.js?v=89a92f3401","./js/input.js":"./js/input.js?v=89a92f3401","./js/main.js":"./js/main.js?v=89a92f3401","./js/math.js":"./js/math.js?v=89a92f3401","./js/missions.js":"./js/missions.js?v=89a92f3401","./js/models.js":"./js/models.js?v=89a92f3401","./js/nav.js":"./js/nav.js?v=89a92f3401","./js/orient.js":"./js/orient.js?v=89a92f3401","./js/poi.js":"./js/poi.js?v=89a92f3401","./js/pranks.js":"./js/pranks.js?v=89a92f3401","./js/props.js":"./js/props.js?v=89a92f3401","./js/renderer.js":"./js/renderer.js?v=89a92f3401","./js/sg_art.js":"./js/sg_art.js?v=89a92f3401","./js/sg_bios.js":"./js/sg_bios.js?v=89a92f3401","./js/sg_data.js":"./js/sg_data.js?v=89a92f3401","./js/sg_elev.js":"./js/sg_elev.js?v=89a92f3401","./js/sg_engine.js":"./js/sg_engine.js?v=89a92f3401","./js/sg_paper.js":"./js/sg_paper.js?v=89a92f3401","./js/sg_portrait.js":"./js/sg_portrait.js?v=89a92f3401","./js/sg_sites.js":"./js/sg_sites.js?v=89a92f3401","./js/sg_ui.js":"./js/sg_ui.js?v=89a92f3401","./js/signals.js":"./js/signals.js?v=89a92f3401","./js/world.js":"./js/world.js?v=89a92f3401"}}</script>
+<script type="module" src="js/main.js?v=89a92f3401"></script>
 <!-- stamp:end -->
 </body>
 </html>
