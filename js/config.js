@@ -118,10 +118,18 @@ export const CFG = {
     // power ratio it wants before marching, gold / food / draft = how much better than you it runs its lands
     diffDefault: 'hard',
     diff: {
-      normal: { grace: 6, attack: 1.25, gold: 1, food: 1, draft: 1, start: 1, coalition: 6 },   // as it was up to v1.1
-      hard: { grace: 4, attack: 1.1, gold: 1.3, food: 1.2, draft: 1.3, start: 1.25, coalition: 5 },
-      hell: { grace: 3, attack: 1.0, gold: 1.6, food: 1.4, draft: 1.6, start: 1.5, coalition: 4 },
+      // v1.6 (D-121): all three harder; hunt = how much keener the computer is to attack you while you lead
+      normal: { grace: 5, attack: 1.15, gold: 1.15, food: 1.1, draft: 1.15, start: 1.15, coalition: 6, hunt: 0.05, merc: 0.1 },
+      hard: { grace: 3, attack: 1.0, gold: 1.5, food: 1.3, draft: 1.5, start: 1.4, coalition: 5, hunt: 0.15, merc: 0.25 },
+      hell: { grace: 2, attack: 0.95, gold: 1.8, food: 1.5, draft: 1.7, start: 1.6, coalition: 4, hunt: 0.25, merc: 0.4 },
     },
+    // v1.6 (D-122): 军饷 a month: payTroop gold a soldier, payGen an officer; unpaid, a lord loses up to desert of his
+    // soldiers (in proportion to the shortfall) and his officers lose unpaidLoyal loyalty
+    // (the first payFree soldiers of every city farm for their keep)
+    payTroop: 1 / 45, payGen: 10, payFree: 1000, desert: 0.12, unpaidLoyal: 4,
+    // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,
+    // mercCost gold per 100 soldiers (v1.6, D-121; drafting costs about 18 per 100, so this is the dear way)
+    aiReserve: 700, mercCost: 30,
     goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
     searchBase: 0.05, treasure: [0.25, 80, 150], marchFrac: 0.8,
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
@@ -139,7 +147,7 @@ export const CFG = {
     stationAtk: 0.1, depotFood: 0.3,
     // v0.9 (D-77): random boards
     cityCount: 12, siteSpacing: 500, passCount: 5, passClear: 230,
-    rosterSize: 32, rosterBonds: 3, rosterUR: 4, // v1.0 (D-87): officers per game, bonds dealt complete, UR at most
+    rosterSize: 32, rosterBonds: 5, rosterUR: 4, // v1.0 (D-87): officers per game, bonds dealt complete, UR at most
     // v0.9.3: armies on the road: game metres a month, and how much quicker a 驿站 road is
     marchSpeed: 650, relaySpeed: 1.6, maxMarch: 4, // months: the farthest an order may send an army (v0.9.8)
     // duel damage follows (武力 ratio) ^ duelExp

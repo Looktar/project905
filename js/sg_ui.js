@@ -37,6 +37,11 @@ extend({
   sgTargets: '目标（也可以点地图）', sgOfficersBtn: '武将', sgGarrisonCard: '守军', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
+  sgBookHint: '亮着的是你手下的；灰色的写着他现在在哪里。凑齐人数就激活。', sgBondPage: '羁绊图鉴', sgBondsOn: '已激活 {n} 个', sgBondArmy: '同军出征时生效', sgBondFac: '全势力生效', sgBondNeed: '还差 {n} 人', sgBondReadyArmy: '可激活：让他们一起出征',
+  sgWMine: '在你手下', sgWWild: '在野 · {c}（去搜索）', sgWGuard: '镇守 {c}（打下来可招降）', sgWLord: '在 {f} 手下（挖角 / 俘虏）', sgWOut: '本局没出场',
+  sgBondOnTitle: '羁绊激活！', sgBondLostT: '羁绊失效', sgLeadT: '开局传闻', sgLead: '{g} 就藏在 {c}，找到他就能激活「{b}」', sgWithBond: '一起出征：{b}', sgBondHint: '凑齐羁绊里的武将就能激活加成，点“羁绊图鉴”看看还缺谁、在哪里。',
+  evBond: '羁绊激活：{b}', evBondLost: '羁绊失效：{b}（有人离开了）', evUnpaid: '发不出军饷！{n}% 的欠饷让士兵逃散，武将忠诚下降', sgMoney: '每月：城池 +{a} 金 · 军饷 −{p} 金 = {n}',
+  fxAtk: '攻击', fxDef: '守城', fxDuel: '单挑', fxSearch: '搜索', fxDev: '治理',
   sgPerM: '/月', sgIncome: '每月 +{g} 金 +{f} 粮', sgGov: '{g} 坐镇（政 {p}）', sgNoGov: '没人坐镇，发展很慢', evGrow: '{c} 日渐繁荣，开发到 {n}，可以建更高级的建筑了',
   evDev: '{c}：{g} 内政，开发 +{n}', evDraft: '{c}：{g} 征兵 +{n}', evFort: '{c}：{g} 修筑城防 +{n}', evSkip: '{g} 的命令没能执行（钱、兵不够或情况变了）', evTakePass: '{f} 攻破了 {c}！',
   evRumorOk: '{g} 在 {to} 散布流言：{n} 名守兵逃走了', evRumorNo: '{g} 在 {to} 的流言被识破了', evFireOk: '{g} 火烧 {to}：城防 −{n}', evFireNo: '{g} 对 {to} 的火计没烧起来',
@@ -72,6 +77,11 @@ extend({
   sgTargets: 'Targets (or tap the map)', sgOfficersBtn: 'Officers', sgGarrisonCard: 'Garrison', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
+  sgBookHint: 'Lit faces are yours; grey ones say where that officer is now. Gather enough of them to switch the bond on.', sgBondPage: 'Bond book', sgBondsOn: '{n} active', sgBondArmy: 'when they march together', sgBondFac: 'for your whole side', sgBondNeed: '{n} more needed', sgBondReadyArmy: 'ready: send them out together',
+  sgWMine: 'yours', sgWWild: 'at large in {c} (search there)', sgWGuard: 'holding {c} (take it to win him over)', sgWLord: 'serving {f} (poach or capture)', sgWOut: 'not in this game',
+  sgBondOnTitle: 'Bond active!', sgBondLostT: 'Bond lost', sgLeadT: 'A rumour to start with', sgLead: '{g} is hiding in {c}: find him to switch on {b}', sgWithBond: 'together: {b}', sgBondHint: 'Gather the officers of a bond to switch on its bonus; the bond book shows who is missing and where they are.',
+  evBond: 'Bond active: {b}', evBondLost: 'Bond lost: {b} (somebody left)', evUnpaid: 'No money for pay! {n}% unpaid: soldiers desert and officers grow less loyal', sgMoney: 'A month: cities +{a} gold · pay −{p} gold = {n}',
+  fxAtk: 'attack', fxDef: 'defence', fxDuel: 'duels', fxSearch: 'search', fxDev: 'governing',
   sgPerM: '/mo', sgIncome: '+{g} gold +{f} food a month', sgGov: 'governed by {g} (POL {p})', sgNoGov: 'nobody governs it: slow growth', evGrow: '{c} is thriving: development {n}, better buildings unlocked',
   evDev: '{c}: {g} developed +{n}', evDraft: '{c}: {g} drafted +{n}', evFort: '{c}: {g} fortified +{n}', evSkip: "{g}'s order could not be carried out (gold, troops or things changed)", evTakePass: '{f} broke through {c}!',
   evRumorOk: '{g} spread rumours in {to}: {n} defenders deserted', evRumorNo: "{g}'s rumours in {to} fooled nobody", evFireOk: '{g} set {to} on fire: walls −{n}', evFireNo: "{g}'s fire attack on {to} fizzled",
@@ -163,6 +173,11 @@ function traitTag(id) { const tr = TRAITS[GENERALS[id].trait]; return `<span cla
 // a tall officer card (v0.9.7, after the App Store game's cards; drawn by code, no artwork): kingdom tag,
 // rarity stars, a big ink-brush character, name and best stat. opts.troops draws a troop bar under it.
 const STARS = { UR: 5, SSR: 4, SR: 3, R: 2 };
+// v1.6 (D-120): bonds, shown where you can see them
+const BFX = { atk: 'fxAtk', def: 'fxDef', duel: 'fxDuel', search: 'fxSearch', dev: 'fxDev' };
+const bondName = (b) => (zh() ? b.zh : b.en);
+const bondFxText = (b) => Object.entries(b.fx).map(([k, v]) => `${t(BFX[k] || k)} +${Math.round(v * 100)}%`).join(' · ');
+function miniFace(id, on) { return `<span class="sgMf${on ? ' on' : ''}" title="${esc(gName(id))}"><img src="${portraitURL(id)}" alt=""></span>`; }
 const bName = (b) => (zh() ? BUILDINGS[b].zh : BUILDINGS[b].en);
 // a building's effect for one level, numbers from config
 function bFx(b) {
@@ -622,9 +637,38 @@ export class Sanguo {
     const mineA = (st.armies || []).filter((a) => a.f === E.PLAYER), foeA = (st.armies || []).filter((a) => a.f !== E.PLAYER && st.cities[a.to].owner === E.PLAYER);
     const armyRow = (a) => `<div class="sgArmy"><span class="sgDot" style="background:${this.fColor(a.f)}"></span>${esc(F('sgArmyTo', { g: a.gens.map(gName).join('、') || this.fName(a.f), n: kNum(a.troops), to: cName(a.to), eta: this.eta(a) }))}</div>`;
     const armies = (foeA.length ? `<h4 class="sgRed">⚠ ${t('sgIncoming')}</h4>${foeA.map(armyRow).join('')}` : '') + (mineA.length ? `<h4>🚩 ${t('sgOnRoad')}</h4>${mineA.map(armyRow).join('')}` : '');
-    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>
-      ${bonds.length ? `<h4>${t('sgBonds')}</h4>${bonds.map((b) => `<div class="sgBond">${esc(zh() ? b.zh : b.en)} · ${t('sgBondOn')}</div>`).join('')}` : ''}
-      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}</div>`).join('')}`;
+    void bonds;
+    const inc = E.citiesOf(st, E.PLAYER).reduce((a, c) => a + E.cityIncome(st, c)[0], 0), pay = E.payOf(st, E.PLAYER), net = inc - pay;
+    const money = `<p class="sgHint sgInc">💰 ${F('sgMoney', { a: inc, p: pay, n: (net >= 0 ? '+' : '') + net })}</p>`;
+    const bv = E.bondView(st, E.PLAYER), shown = bv.filter((x) => x.ready || x.have.length).slice(0, 4);
+    const lead = st.lead && !bv.find((x) => x.b.id === st.lead.b && x.ready) && st.gens[st.lead.g] && st.gens[st.lead.g].hidden ? `<p class="sgHint sgLeadH">🔎 ${esc(F('sgLead', { g: gName(st.lead.g), c: cName(st.gens[st.lead.g].c), b: bondName(BONDS.find((b) => b.id === st.lead.b)) }))}</p>` : '';
+    const bondsH = `<h4>♥ ${t('sgBonds')} <small>${F('sgBondsOn', { n: bv.filter((x) => x.ready).length })}</small><button class="sgMini" data-a="bonds">${t('sgBondPage')}</button></h4>${lead}${shown.length ? shown.map((x) => this.bondRow(x, true)).join('') : `<p class="sgHint">${t('sgBondHint')}</p>`}`;
+    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>${money}
+      ${bondsH}
+      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}${bv.filter((x) => x.b.m.includes(g)).map((x) => ` <span class="sgBchip${x.ready ? ' on' : ''}">♥${esc(bondName(x.b))} ${x.have.length}/${x.need}</span>`).join('')}</div>`).join('')}`;
+  }
+  // one bond: its members (lit when yours, with where the others are), progress and what it gives
+  bondRow(x, compact = false) {
+    const st = this.s, b = x.b;
+    const where = (m) => { const w = x.where[m]; return w.k === 'mine' ? t('sgWMine') : w.k === 'wild' ? F('sgWWild', { c: cName(w.c) }) : w.k === 'guard' ? F('sgWGuard', { c: cName(w.c) }) : w.k === 'lord' ? F('sgWLord', { f: this.fName(w.f) }) : t('sgWOut'); };
+    const status = x.ready ? (b.scope === 'army' ? t('sgBondReadyArmy') : t('sgBondOn')) : F('sgBondNeed', { n: x.need - x.have.length });
+    const faces = b.m.map((m) => `<div class="sgBm${x.where[m].k === 'mine' ? ' on' : ''}${x.where[m].k === 'out' ? ' out' : ''}">${miniFace(m, x.where[m].k === 'mine')}<b>${esc(GENERALS[m] ? gName(m) : m)}</b>${compact && x.where[m].k === 'mine' ? '' : `<small>${esc(where(m))}</small>`}</div>`).join('');
+    void st;
+    return `<div class="sgBondR${x.ready ? ' on' : ''}"><div class="sgBh"><b>♥ ${esc(bondName(b))}</b><i>${x.have.length}/${x.need}</i><em>${esc(status)}</em></div>
+      <div class="sgBms">${faces}</div><div class="sgBfx">${esc(bondFxText(b))} · ${t(b.scope === 'army' ? 'sgBondArmy' : 'sgBondFac')}</div></div>`;
+  }
+  bondBook() {
+    const bv = E.bondView(this.s, E.PLAYER).filter((x) => x.possible || x.have.length);
+    return this.layer(`<h2>♥ ${t('sgBondPage')}</h2><p class="sgHint">${t('sgBookHint')}</p><div class="sgBook">${bv.map((x) => this.bondRow(x)).join('')}</div><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'wide');
+  }
+  bondCard(e, lost = false) {
+    const b = BONDS.find((x) => x.id === e.b);
+    if (!b) return Promise.resolve();
+    if (!lost) { sfx.sparkle(); setTimeout(() => sfx.fanfare(true), 300); }
+    const mine = new Set(E.factionGens(this.s, E.PLAYER));
+    return this.layer(`<h2 class="sgCenter">${t(lost ? 'sgBondLostT' : 'sgBondOnTitle')}</h2><div class="sgBondBig${lost ? ' lost' : ''}"><div class="sgBigName">♥ ${esc(bondName(b))}</div>
+      <div class="sgBfaces">${b.m.filter((m) => this.s.gens[m]).map((m) => `<div class="${mine.has(m) ? 'on' : ''}">${portrait(m, 64)}<b>${esc(gName(m))}</b></div>`).join('')}</div>
+      <div class="sgTrw"><span class="sgTr">${esc(bondFxText(b))}</span><small>${t(b.scope === 'army' ? 'sgBondArmy' : 'sgBondFac')}</small></div></div><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip rSSR');
   }
   terrTags(from, to) {
     const tr = E.terrain(from, to), d = CITIES[to].elev - CITIES[from].elev, k = CFG.sg, out = [];
@@ -729,7 +773,11 @@ export class Sanguo {
       } else if (m) {
         // v1.2 (D-104): take other officers of this city along; they get the same order and leave as one army
         const mates = gs.filter((x) => x !== id);
-        if (mates.length && (m.cmd === 'march' || m.cmd === 'move')) h += `<p class="sgPick">${t(m.cmd === 'march' ? 'sgWith' : 'sgWithMove')}</p><div class="sgChips sgWith">${mates.map((x) => `<button data-g="${id}" data-with="${x}" class="${(m.with || []).includes(x) ? 'on' : ''}">${(m.with || []).includes(x) ? '✓ ' : ''}${esc(gName(x))} <small>${zh() ? '统' : 'L'}${E.gen(x).lead} ${zh() ? '武' : 'W'}${E.gen(x).war}</small></button>`).join('')}</div>`;
+        // v1.6 (D-120): a companion who would switch on a bond for this army says so
+        const grp = [id, ...(m.with || [])], armyB = (ids) => E.activeBonds(st, E.PLAYER, ids).filter((b) => b.scope === 'army').map((b) => b.id);
+        const now = armyB(grp), adds = (x) => BONDS.filter((b) => armyB([...grp.filter((y) => y !== x), x]).includes(b.id) && !armyB(grp.filter((y) => y !== x)).includes(b.id));
+        if (mates.length && (m.cmd === 'march' || m.cmd === 'move')) h += `<p class="sgPick">${t(m.cmd === 'march' ? 'sgWith' : 'sgWithMove')}</p><div class="sgChips sgWith">${mates.map((x) => { const nb = m.cmd === 'march' ? adds(x) : []; return `<button data-g="${id}" data-with="${x}" class="${(m.with || []).includes(x) ? 'on' : ''}${nb.length ? ' bond' : ''}">${(m.with || []).includes(x) ? '✓ ' : ''}${esc(gName(x))} <small>${zh() ? '统' : 'L'}${E.gen(x).lead} ${zh() ? '武' : 'W'}${E.gen(x).war}${nb.length ? ' · ♥' + esc(nb.map(bondName).join('、')) : ''}</small></button>`; }).join('')}</div>`;
+        if (m.cmd === 'march' && now.length) h += `<p class="sgHint sgBondOnH">♥ ${esc(F('sgWithBond', { b: BONDS.filter((b) => now.includes(b.id)).map((b) => `${bondName(b)} ${bondFxText(b)}`).join('；') }))}</p>`;
         h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? this.terrTags(this.lastHop(c, n), n) : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
         const av = Math.min(E.commandOf(id), this.avail(c, id)), opts = o.cmd === 'move' ? [0, 0.5, 1] : [0.5, 0.8, 1]; // 统率 caps the troops
@@ -753,6 +801,7 @@ export class Sanguo {
     if (!b) return;
     if (b.dataset.a === 'close') { this.sel = null; this.mode = null; this.render(); return; }
     if (b.dataset.a === 'hide') { this.togglePanel(true); return; }
+    if (b.dataset.a === 'bonds') { this.ui(() => this.bondBook()); return; }
     if (b.dataset.a === 'cancel') { this.mode = null; this.render(); return; }
     const id = b.dataset.g;
     if (!c || !id || !st.gens[id]) return;
@@ -865,6 +914,7 @@ export class Sanguo {
       st.orders = {};
       for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.ui(() => this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) })));
       for (const e of evs) if (e.k === 'item' && e.f === E.PLAYER) await this.ui(() => this.itemReveal(e));
+      for (const e of evs) if (e.k === 'bond' && e.f === E.PLAYER) await this.ui(() => this.bondCard(e));
       this.render();
       await this.ui(() => this.report(evs));
       try { sfx.setBgmMood('calm'); } catch (e) { /* ignore */ }
@@ -1028,6 +1078,8 @@ export class Sanguo {
     switch (e.k) {
       case 'dev': return e.f === P ? F('evDev', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'grow': return e.f === P ? F('evGrow', { c: cName(e.c), n: e.n }) : null;
+      case 'bond': case 'bondLost': { const b = BONDS.find((x) => x.id === e.b); return e.f === P && b ? F(e.k === 'bond' ? 'evBond' : 'evBondLost', { b: bondName(b) }) : null; }
+      case 'unpaid': return e.f === P ? F('evUnpaid', { n: e.n }) : null;
       case 'draft': return e.f === P ? F('evDraft', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'build': return e.f === P ? F('evBuild', { c: cName(e.c), g: gName(e.g), b: bName(e.b), lv: e.lv }) : ADJ[e.c].some((x) => this.s.cities[x.c].owner === P) ? F('evBuildAi', { f: this.fName(e.f), c: cName(e.c), b: bName(e.b), lv: e.lv }) : null;
       case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
@@ -1107,6 +1159,10 @@ export class Sanguo {
     const [a, b, c] = [1, 2, 3].map((f) => this.fName(f));
     await this.layer(`<h2>${t('sgRivals')}</h2><div class="sgRivals">${[1, 2, 3].map((f) => `<div>${portrait(st.factions[f].lord, 56)}<b style="color:${st.factions[f].color}">${esc(this.fName(f))}</b><small>📍 ${esc(cName(st.factions[f].cap))}</small></div>`).join('')}</div>
       <p>${esc(F('sgIntro', { a, b, c, p: cName(PASS_IDS.find((x) => CITIES[x].big) || PASS_IDS[0]) }))}</p><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
+    if (st.lead && BONDS.find((b) => b.id === st.lead.b)) { // v1.6 (D-120): a bond to chase from the first month
+      const b = BONDS.find((x) => x.id === st.lead.b), x = E.bondView(st, E.PLAYER).find((y) => y.b.id === b.id);
+      await this.layer(`<h2>🔎 ${t('sgLeadT')}</h2><p>${esc(F('sgLead', { g: gName(st.lead.g), c: cName(st.lead.c), b: bondName(b) }))}</p>${x ? this.bondRow(x) : ''}<button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
+    }
     this.sel = st.factions[E.PLAYER].cap; this.focus(this.sel); this.render();
     this.tutorial(false);
   }
