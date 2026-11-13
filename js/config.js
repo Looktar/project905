@@ -130,7 +130,14 @@ export const CFG = {
     // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,
     // mercCost gold per 100 soldiers (v1.6, D-121; drafting costs about 18 per 100, so this is the dear way)
     aiReserve: 700, mercCost: 30,
-    goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 40, hungerLoss: 0.05, cutLoss: 0.08,
+    // v1.7 (D-123): 军粮. A city's food base (foodBase + 开发 x foodPerDev) comes in at foodTrickle of it a month, plus
+    // harvestMonths of it in September; a soldier at home eats foodPerTroop a month; an army takes marchFood times that
+    // for every month on the road plus one; hungry: lose hungerLoss of the soldiers, hungerLoyal loyalty, hungryPen in
+    // battle. Rice: ricePrice gold per 100 food (x riceCheap Sep-Nov, x riceDear Apr-Aug), selling at sellRate of it, at
+    // most tradeMax a month; the computer keeps aiFoodMonths of food. 烧粮 burns grainBase + 智 x grainPerInt.
+    foodTrickle: 0.3, harvestMonths: 7, marchFood: 1.5, hungerLoyal: 3, hungryPen: 0.2,
+    ricePrice: 30, riceCheap: 0.6, riceDear: 1.5, sellRate: 0.5, tradeMax: 3000, aiFoodMonths: 4, grainBase: 150, grainPerInt: 6,
+    goldBase: 20, goldPerDev: 1.4, foodBase: 30, foodPerDev: 2.2, foodPerTroop: 1 / 25, hungerLoss: 0.1, cutLoss: 0.08,
     searchBase: 0.05, treasure: [0.25, 80, 150], marchFrac: 0.8,
     duelChance: 0.5, duelRival: 0.85, duelBig: 0.15, duelHit: 20, duelTie: 7, duelRounds: 5, duelLoss: 0.18, duelWinAtk: 0.1, duelCapture: 0.25,
     rounds: 30, roundLoss: 0.1, siegeDef: 15, defDiv: 150, neutralStat: 45,
@@ -141,7 +148,7 @@ export const CFG = {
     passTroops: [1400, 2000], passBigTroops: 2600, passDef: 80, passBigDef: 100, passDefMax: 120, passDefRegen: 2, passCap: 6000, passMul: 1.15,
     hillPerM: 0.012, hillMax: 0.24, riverPen: 0.15, valleyFood: 0.4,
     // v0.8.1 (D-75): seasons, stratagems (计略) and random events
-    snowPen: 0.1, harvest: 3, plotCost: 80, plotBase: 0.45, plotInt: 1 / 70, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
+    snowPen: 0.1, plotCost: 80, plotBase: 0.45, plotInt: 1 / 70, plotMax: 0.92, rumorBase: 0.05, rumorPerInt: 1 / 1000, fireBase: 8, firePerInt: 1 / 6,
     eventChance: 0.55, cnyGold: 40,
     // v0.8.2 (D-76): 驿站 relay roads (gas stations) and 补给站 supply depots (malls)
     stationAtk: 0.1, depotFood: 0.3,

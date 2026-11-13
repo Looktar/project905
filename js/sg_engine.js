@@ -413,7 +413,7 @@ export function passItem(s, from, to) {
   if (!A.item) delete A.item;
   return true;
 }
-export const PLOTS = ['rumor', 'fire'];
+export const PLOTS = ['rumor', 'fire', 'grain'];
 // chance that a stratagem by officer id works against node c
 export function plotChance(s, id, c) {
   const k = K(), d = defenders(s, c), dInt = d.length ? Math.max(...d.map((x) => gen(x).int)) : k.neutralStat;
@@ -431,7 +431,30 @@ export function devAmt(s, f, id, city = null) {
   const k = K(), base = id ? k.growBase + k.growMax * (gen(id).pol / 100) ** k.effExp : k.growBase * k.growAlone;
   return Math.round(base * (1 + (id ? fx(id, 'dev') + bondFx(s, f, [id], 'dev') : 0) + bldLv(city, 'academy') * k.bldAcadDev) * 10) / 10;
 }
-// a city's gold and food a month for its owner (before the September harvest)
+// v1.7 (D-123): 军粮. Food comes mostly with the September harvest (a trickle the rest of the year), every soldier at
+// home eats every month, and an army takes its rations with it when it sets off.
+export const foodIn = (s, base) => Math.round(base * (dateOf(s).month === 9 ? K().foodTrickle + K().harvestMonths : K().foodTrickle));
+// rations for n soldiers on a road of so many months (and the month of fighting at the end)
+export const rationsOf = (n, months) => Math.round(n * (months + 1) * K().foodPerTroop * K().marchFood);
+// the most soldiers lord f could feed on such a road now
+export const feedable = (s, f, months) => Math.floor(s.factions[f].food / ((months + 1) * K().foodPerTroop * K().marchFood));
+// what lord f's soldiers at home eat in a month, and how many months his granary lasts at that rate
+export function foodUse(s, f) { return Math.round(ownedBy(s, f).reduce((a, c) => a + s.cities[c].troops, 0) * K().foodPerTroop); }
+export function foodMonths(s, f) { const u = foodUse(s, f); return u ? Math.floor(s.factions[f].food / u) : 99; }
+// rice prices (gold per 100 food): cheap after the harvest, dear before it; selling fetches sellRate of that
+export function ricePrice(s) { const m = dateOf(s).month, k = K(); return Math.round(k.ricePrice * (m >= 9 && m <= 11 ? k.riceCheap : m >= 4 && m <= 8 ? k.riceDear : 1)); }
+export const riceSell = (s) => Math.round(ricePrice(s) * K().sellRate);
+// buy (n > 0) or sell (n < 0) food at the market, at once; at most tradeMax a month each way
+export function trade(s, f, n) {
+  const fa = s.factions[f], k = K(), done = (s.traded = s.traded || {})[f] || 0;
+  n = Math.round(n / 100) * 100;
+  if (!n || Math.abs(done + n) > k.tradeMax) return false;
+  if (n > 0) { const cost = n / 100 * ricePrice(s); if (fa.gold < cost) return false; fa.gold -= cost; fa.food += n; }
+  else { if (fa.food < -n) return false; fa.food += n; fa.gold += -n / 100 * riceSell(s); }
+  s.traded[f] = done + n;
+  return true;
+}
+// a city's gold and food a month for its owner (food: the base the harvest and the trickle are made of)
 export function cityIncome(s, c) {
   const k = K(), C = s.cities[c], ai = C.owner >= 0 && C.owner !== PLAYER;
   if (C.pass || C.owner < 0) return [0, 0];
@@ -469,10 +492,10 @@ export function validOrder(s, f, id, o) {
     case 'fort': return fa.gold >= costOf('fort', id) && city.def < defMaxOf(city);
     case 'build': return canBuild(city, o.b) && fa.gold >= costOf('build', id);
     case 'move': return moveTargets(s, f, c).includes(o.to);
-    case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch;
+    case 'march': return s.cities[o.to] && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && marchTargets(s, f, c).includes(o.to) && supplied(s, f).has(c) && city.troops >= k.minMarch && feedable(s, f, travelMonths(routeOf(s, f, c, o.to))) >= k.minMarch;
     case 'envoy': return o.f !== f && !!s.factions[o.f] && s.factions[o.f].alive && !truceLeft(s, f, o.f) && fa.gold >= costOf('envoy', id);
     case 'poach': return !city.pass && !!s.gens[o.g] && poachTargets(s, f, c).includes(o.g) && fa.gold >= costOf('poach', id);
-    case 'intercept': return interceptTargets(s, f, c).some((a) => a.id === o.army) && city.troops >= k.minMarch;
+    case 'intercept': return interceptTargets(s, f, c).some((a) => a.id === o.army) && city.troops >= k.minMarch && feedable(s, f, 0) >= k.minMarch;
     case 'plot': return PLOTS.includes(o.kind) && adjacent(c, o.to) && s.cities[o.to].owner !== f && !truceLeft(s, f, s.cities[o.to].owner) && fa.gold >= costOf('plot', id);
     default: return false;
   }
@@ -526,6 +549,7 @@ function runOrder(s, f, id, o) {
     fa.gold -= costOf('plot', id);
     let n = 0;
     if (ok && o.kind === 'rumor') { n = Math.round(T.troops * (k.rumorBase + G.int * k.rumorPerInt)); T.troops -= n; }
+    if (ok && o.kind === 'grain') { const of = s.cities[o.to].owner; n = of >= 0 ? Math.min(s.factions[of].food, Math.round(k.grainBase + G.int * k.grainPerInt)) : 0; if (of >= 0) s.factions[of].food -= n; } // v1.7: 烧粮
     if (ok && o.kind === 'fire') { n = Math.min(T.def - 10, Math.round(k.fireBase + G.int * k.firePerInt)); T.def -= Math.max(0, n); T.troops = Math.round(T.troops * 0.97); }
     ev(s, { k: 'plot', f, c, to: o.to, g: id, kind: o.kind, ok, n, fd: T.owner });
   } else if (o.cmd === 'envoy') {
@@ -541,10 +565,12 @@ function runOrder(s, f, id, o) {
     ev(s, { k: 'poach', f, c, g: id, who: o.g, from, ok }); // not `t`: ev() stamps the turn there (that slip froze the month-end report in v1.1)
   } else if (o.cmd === 'move' || o.cmd === 'march') {
     // the officer sets off with his troops; a short road takes one month (he arrives this month)
-    const march = o.cmd === 'march';
-    const n = Math.min(commandOf(id), march ? Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac)) : Math.max(0, Math.min(city.troops, Math.floor(o.n || 0))));
-    if (march && n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march' }); return; }
-    const route = routeOf(s, f, c, o.to), months = travelMonths(route);
+    const march = o.cmd === 'march', route = routeOf(s, f, c, o.to), months = travelMonths(route);
+    let n = Math.min(commandOf(id), march ? Math.min(city.troops, Math.floor(o.n ?? city.troops * k.marchFrac)) : Math.max(0, Math.min(city.troops, Math.floor(o.n || 0))));
+    // v1.7 (D-123): an attack takes its rations along; short of food, only as many go as can be fed
+    if (march && n > feedable(s, f, months)) { n = feedable(s, f, months); if (n >= k.minMarch) ev(s, { k: 'rations', f, g: id, n }); }
+    if (march && n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'march', why: 'food' }); return; }
+    if (march) fa.food -= rationsOf(n, months);
     s.gens[id].c = null; // on the road
     city.troops -= n;
     // officers leaving the same city for the same place this month go as one army
@@ -554,9 +580,9 @@ function runOrder(s, f, id, o) {
     ev(s, { k: o.cmd, f, c, to: o.to, n, gens: [id], months });
   } else if (o.cmd === 'intercept') {
     // sally out against an enemy army on a road through this city: a field battle this month, then home
-    const A = s.armies.find((a) => a.id === o.army), n = Math.min(commandOf(id), city.troops, Math.floor(o.n ?? city.troops * k.marchFrac));
+    const A = s.armies.find((a) => a.id === o.army), n = Math.min(commandOf(id), city.troops, Math.floor(o.n ?? city.troops * k.marchFrac), feedable(s, f, 0));
     if (!A || n < k.minMarch) { ev(s, { k: 'skip', f, g: id, cmd: 'intercept' }); return; }
-    s.gens[id].c = null; city.troops -= n;
+    s.gens[id].c = null; city.troops -= n; fa.food -= rationsOf(n, 0);
     const j = s.fields.find((x) => x.b === A && x.a.kind === 'intercept' && x.a.f === f && x.a.from === c);
     if (j) { j.a.gens.push(id); j.a.troops += n; }
     else s.fields.push({ a: { id: 0, f, kind: 'intercept', from: c, to: c, route: [c], gens: [id], troops: n }, b: A });
@@ -883,6 +909,7 @@ export function edgeOf(s, aIds, bIds, river = false, siege = false, fa = -1, fb 
   for (const [si, ids, foes, att, f] of [[0, aIds, bIds, true, fa], [1, bIds, aIds, !siege, fb]]) {
     // v1.6 (D-120): bonds show on the battle screen too, with their attack (and, defending a city, defence) bonus
     for (const b of activeBonds(s, f, ids)) { const v = (b.fx.atk || 0) + (att ? 0 : b.fx.def || 0); if (v) out.push([si, '♥ ' + b.zh, '♥ ' + b.en, v]); }
+    if (f >= 0 && s.factions[f] && s.factions[f].hungry) out.push([si, '断粮', 'Hungry', -K().hungryPen]);
     for (const x of countersOf(ids, foes, !att)) out.push([si, x.c.zh, x.c.en, x.c.fx, x.a, x.b]);
     for (const x of timelyOf(s, ids, si === 0 && river)) out.push([si, x.t.zh, x.t.en, x.t.fx, x.id]);
     if (isWinter(s) && snowproof(ids)) out.push([si, '不惧风雪', 'Snow-hardy', 0]);
@@ -896,6 +923,7 @@ function sidePower(s, f, ids, troops, { attacking, outnumbered, foes = [], river
   m += timelyOf(s, ids, river).reduce((a, x) => a + x.t.fx, 0);
   for (const id of ids) m += (fx(id, 'atk') + (attacking ? fx(id, 'raid') : 0) + (outnumbered ? fx(id, 'few') : 0)) * (id === g ? 1 : 0.5) + (attacking ? 0 : fx(id, 'def') * (id === g ? 1 : 0.5));
   if (f >= 0) m += bondFx(s, f, ids, 'atk') + (attacking ? 0 : bondFx(s, f, ids, 'def'));
+  if (f >= 0 && s.factions[f].hungry) m -= K().hungryPen; // v1.7: hungry soldiers fight badly
   return troops * statMul(ids) * m;
 }
 
@@ -1080,12 +1108,12 @@ export function endTurn(s) {
         if (up > 0) { const was = C.dev; C.dev = Math.min(100, C.dev + up); if (fa.id === PLAYER && ((was < 40 && C.dev >= 40) || (was < 65 && C.dev >= 65))) ev(s, { k: 'grow', f: fa.id, c, n: C.dev }); }
         const [gold, food] = cityIncome(s, c);
         fa.gold += gold;
-        fa.food += dateOf(s).month === 9 ? food * (1 + k.harvest) : food; // 秋收
+        fa.food += foodIn(s, food); // v1.7 (D-123): a trickle all year, the harvest in September
       }
       troops += C.troops;
     }
-    for (const a of s.armies) if (a.f === fa.id) troops += a.troops; // armies on the road eat too
-    fa.food -= Math.round(troops * k.foodPerTroop);
+    fa.food -= Math.round(troops * k.foodPerTroop); // v1.7: armies on the road eat the rations they took
+    for (const a of s.armies) if (a.f === fa.id) troops += a.troops; // (but they are paid)
     // v1.6 (D-122): 军饷. Soldiers and officers are paid every month; a lord who cannot pay loses soldiers
     // (in proportion to what he owes) and his officers grow less loyal
     const pay = payOf(s, fa.id, troops);
@@ -1108,10 +1136,24 @@ export function endTurn(s) {
         C.troops += n; const cost = n / 100 * k.mercCost; fa.gold -= cost; spend -= cost;
       }
     }
-    if (fa.food < 0) { fa.food = 0; for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.hungerLoss)); ev(s, { k: 'hunger', f: fa.id }); }
+    // v1.7 (D-123): an empty granary costs soldiers, loyalty and fighting spirit (hungry: -hungryPen in battle next month)
+    fa.hungry = fa.food < 0;
+    if (fa.food < 0) {
+      fa.food = 0;
+      for (const c of ownedBy(s, fa.id)) s.cities[c].troops = Math.round(s.cities[c].troops * (1 - k.hungerLoss));
+      for (const id of factionGens(s, fa.id)) if (id !== fa.lord) s.gens[id].loyal = Math.max(0, (s.gens[id].loyal ?? 80) - k.hungerLoyal);
+      ev(s, { k: 'hunger', f: fa.id });
+    }
+    // a computer lord keeps a few months of food in hand, buying with spare gold (and selling a glut when broke)
+    if (fa.id !== PLAYER) {
+      const want = foodUse(s, fa.id) * k.aiFoodMonths;
+      if (fa.food < want && fa.gold > k.aiReserve * 0.5) trade(s, fa.id, Math.min(want - fa.food, Math.floor((fa.gold - k.aiReserve * 0.5) / ricePrice(s)) * 100, k.tradeMax));
+      else if (fa.food > want * 3 && fa.gold < 200) trade(s, fa.id, -Math.min(fa.food - want * 2, k.tradeMax));
+    }
     fixLord(s, fa.id);
   }
   checkBonds(s);
+  s.traded = {};
   for (const c of NODE_IDS) {
     const C = s.cities[c], max = C.pass ? (CITIES[c].big ? k.passBigTroops : k.passTroops[1]) : k.neutralMax;
     if (C.owner === -1 && C.troops < max) C.troops = Math.min(max, C.troops + k.neutralRegen);

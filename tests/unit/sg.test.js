@@ -1020,3 +1020,76 @@ describe('v1.6: bonds you can see, troop pay, harder lords (D-120 to D-122)', ()
     expect(d.normal.hunt).toBeLessThan(d.hell.hunt); expect(d.hard.grace).toBeLessThan(d.normal.grace);
   });
 });
+
+describe('v1.7: food is 军粮 (D-123)', () => {
+  it('most food comes with the September harvest', () => {
+    const s = newGame(3), k = CFG.sg;
+    expect(E.foodIn(s, 100)).toBe(Math.round(100 * k.foodTrickle));
+    let sep = null; for (let i = 0; i < 24 && sep === null; i++) { s.turn = i; if (E.dateOf(s).month === 9) sep = i; }
+    s.turn = sep; expect(E.foodIn(s, 100)).toBe(Math.round(100 * (k.foodTrickle + k.harvestMonths)));
+    expect(k.harvestMonths).toBeGreaterThan(k.foodTrickle * 11); // the harvest is more than the rest of the year together
+  });
+  it('an attack takes its rations; short of food fewer go, or none', () => {
+    const s = newGame(3), P = 0, cap = s.factions[P].cap, [a] = factionGens(s, P), C = s.cities[cap];
+    C.troops = 8000;
+    const to = E.marchTargets(s, P, cap).find((n) => E.validOrder(s, P, a, { cmd: 'march', to: n }));
+    const months = E.travelMonths(E.routeOf(s, P, cap, to));
+    s.factions[P].food = 5000;
+    const n = Math.min(E.commandOf(a), 3000), f0 = s.factions[P].food;
+    E.beginTurn(s, { [a]: { cmd: 'march', to, n } });
+    const A = s.armies.find((x) => x.f === P);
+    expect(A.troops).toBe(n);
+    expect(f0 - s.factions[P].food).toBe(E.rationsOf(n, months));
+    // a nearly empty granary: the order is refused
+    const s2 = newGame(3), [b] = factionGens(s2, P); s2.cities[cap].troops = 8000; s2.factions[P].food = 10;
+    expect(E.validOrder(s2, P, b, { cmd: 'march', to })).toBe(false);
+    // half the food: only as many go as can be fed
+    const s3 = newGame(3), [g] = factionGens(s3, P); s3.cities[cap].troops = 8000;
+    s3.factions[P].food = E.rationsOf(1500, months);
+    E.beginTurn(s3, { [g]: { cmd: 'march', to, n: 3000 } });
+    const A3 = s3.armies.find((x) => x.f === P);
+    expect(A3.troops).toBeLessThanOrEqual(1500);
+    expect(s3.events.some((e) => e.k === 'rations')).toBe(true);
+  });
+  it('hunger costs soldiers and fighting spirit', () => {
+    const s = newGame(3), P = 0, cap = s.factions[P].cap;
+    for (const f of s.factions.slice(1)) f.alive = false;
+    s.cities[cap].troops = 9000; s.factions[P].food = 0;
+    const evs = runTurn(s, {});
+    expect(evs.some((e) => e.k === 'hunger' && e.f === P)).toBe(true);
+    expect(s.factions[P].hungry).toBe(true);
+    expect(E.edgeOf(s, factionGens(s, P), [], false, false, P, 1).some((x) => x[0] === 0 && x[1] === '断粮')).toBe(true);
+  });
+  it('the rice market: cheap after the harvest, dear before it, capped each month', () => {
+    const s = newGame(3), P = 0, k = CFG.sg, at = (m) => { for (let i = 0; i < 24; i++) { s.turn = i; if (E.dateOf(s).month === m) return; } };
+    at(10); const cheap = E.ricePrice(s); at(6); const dear = E.ricePrice(s);
+    expect(cheap).toBeLessThan(dear);
+    s.factions[P].gold = 100000; s.factions[P].food = 0; s.traded = {};
+    const g0 = s.factions[P].gold;
+    expect(E.trade(s, P, 1000)).toBe(true);
+    expect(s.factions[P].food).toBe(1000); expect(g0 - s.factions[P].gold).toBe(10 * dear);
+    expect(E.trade(s, P, k.tradeMax)).toBe(false); // over the monthly cap
+    expect(E.trade(s, P, -500)).toBe(true); expect(s.factions[P].food).toBe(500);
+    expect(E.riceSell(s)).toBeLessThan(E.ricePrice(s));
+  });
+  it('the grain plot burns food, and computer lords keep their granaries stocked', () => {
+    expect(E.PLOTS).toContain('grain');
+    let burned = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed), P = 0, [a] = factionGens(s, P), cap = s.factions[P].cap;
+      const to = ADJ[cap].map((x) => x.c).find((n) => s.cities[n].owner > 0) || ADJ[cap].map((x) => x.c).find((n) => E.validOrder(s, P, a, { cmd: 'plot', kind: 'grain', to: n }));
+      if (!to || !E.validOrder(s, P, a, { cmd: 'plot', kind: 'grain', to })) continue;
+      const o = s.cities[to].owner, f0 = o >= 0 ? s.factions[o].food : 0;
+      E.beginTurn(s, { [a]: { cmd: 'plot', kind: 'grain', to } });
+      const e = s.events.find((x) => x.k === 'plot' && x.kind === 'grain');
+      if (e && e.ok && o >= 0) { burned++; expect(s.factions[o].food).toBe(f0 - e.n); }
+    }
+    let hungry = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const s = newGame(seed);
+      for (let i = 0; i < 48 && !s.over; i++) { runTurn(s, autoPlayer(s)); hungry += s.events.filter((e) => e.k === 'hunger' && e.f !== 0).length; check(s); }
+    }
+    expect(hungry).toBeLessThan(8);
+    expect(burned).toBeGreaterThanOrEqual(0);
+  });
+});
