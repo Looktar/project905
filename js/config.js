@@ -126,6 +126,8 @@ export const CFG = {
     // v1.6 (D-122): 军饷 a month: payTroop gold a soldier, payGen an officer; unpaid, a lord loses up to desert of his
     // soldiers (in proportion to the shortfall) and his officers lose unpaidLoyal loyalty
     // (the first payFree soldiers of every city farm for their keep)
+    // v1.8: 委任 attacks only where your side is at least autoThr times as strong (about "有利" or better)
+    autoThr: 1.3, foodKeep: 2, // (and, like the computer, keeps foodKeep months of food at home when it plans attacks)
     payTroop: 1 / 45, payGen: 10, payFree: 1000, desert: 0.12, unpaidLoyal: 4,
     // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,
     // mercCost gold per 100 soldiers (v1.6, D-121; drafting costs about 18 per 100, so this is the dear way)

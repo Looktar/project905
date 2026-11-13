@@ -11,6 +11,7 @@ import { BUILDINGS, BLD_IDS, COUNTERS, TIMELY, ITEMS, GENERALS, ERAS, TRAITS, CI
 import { drawCity, cityKind } from './sg_art.js';
 import { BIOS } from './sg_bios.js';
 import { roadPath, routePath, along, slice, bakeTerritory, territoryKey, bakeDecor, boardKey, boatSpots, drawBoat, cloudShadows, birds, drawSquad } from './sg_map.js';
+import { Table } from './sg_table.js';
 import { portraitURL } from './sg_portrait.js';
 import { bakePaper, woodTile } from './sg_paper.js';
 
@@ -31,13 +32,14 @@ extend({
   sgRoundWon: '读对了！', sgRoundLost: '吃亏了…', sgRoundTie: '势均力敌', sgFeint: '（佯攻！）',
   sgDuelWin: '{g} 赢了单挑！', sgDuelDraw: '不分胜负！', sgRound: '第 {n} 回合', sgMoves: '你：{a} · 对方：{d}', sgHit: '{g} 受到 {n} 伤害', sgRival: '宿敌相见：{r}',
   sgWin: '统一万锦！', sgWinS: '用了 {n} 个月，万锦尽归你手。', sgLose: '势力覆灭…', sgLoseS: '你在万锦撑了 {n} 个月。再来一局，换一批盲盒！', sgAgain: '再来一局',
-  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排（内政、征兵、搜索、筑城，不出征）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
+  sgRivals: '对手', sgIntro: '{a}、{b}、{c} 也在争夺万锦。开局各占一城，8 座空城等人去拿。这一局的地图是随机抽的真实地点，{p}有猛将把守。', sgOrders: '本月命令：{n}/{m} 位武将', sgAuto: '委任', sgAutoT: '空闲武将自动安排：征兵、搜索、筑城、建设；胜算明显时也会出征（会算好军粮）', sgAutoDone: '已给 {n} 位空闲武将安排了工作', sgAutoNone: '没有空闲武将了',
   sgPass: '关隘', sgPassNote: '隘口是真实的公园（河谷、树林），卡在两座城之间的路上。没有百姓：不会发展，不能征兵、搜索，但城防极高。调兵进来驻守，就能挡住这条路。', sgBigPass: '万锦虎牢：这一局最坚固的隘口',
   sgTerrStation: '驿站 +{n}%', sgStation: '{n}', sgDepot: '补给站（{n}）：本身就是粮源，连得上它的城都不断粮；粮 +{f}%', sgGuard: '守关猛将', sgElev: '海拔', sgValley: '胭脂河沃野：粮 +40%', sgWalls: '城防加成', sgTerrRiver: '渡河 −{n}%', sgTerrUp: '仰攻 −{n}%', sgTerrDown: '居高临下 +{n}%',
   sgTargets: '目标（也可以点地图）', sgOfficersBtn: '武将', sgGarrisonCard: '守军', sgCmdIntercept: '截击', sgFxField: '野战大胜！', sgFxFieldLost: '野战败退…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}兵', sgPickArmy: '选要截击的敌军（经过本城的路上）', evField: '{w} 在 {c} 附近野战击败 {l}：{lw} 损失 {a}，{ll} 损失 {b}', evIntercept: '{g} 从 {c} 出城截击 {f}', sgOddsA: '大胜', sgOddsB: '有利', sgOddsC: '五五开', sgOddsD: '不利', sgFxTake: '攻下！', sgFxLost: '失守！', sgFxHeld: '守住了！', sgFxRepelled: '没打下来…', sgMonths: '{n} 个月', sgOnRoad: '行军中', sgEta: '{n} 个月后到', sgEtaNow: '本月到', sgIncoming: '敌军来袭', sgArmyTo: '{g} · {n} 兵 → {to} · {eta}', sgMarching: '行军中 → {to}（{eta}）', sgOfficers: '武将命令', sgMoveTroops: '带兵', sgGoldLeft: '还剩 {n} 金', sgIdleN: '{n} 位待命',
   sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
   sgHelpFood: '粮食（v1.7）：粮主要靠九月秋收，平时每月只有一点；城里的兵每月都要吃。出征要先带够军粮（兵越多、路越远带得越多），粮不够就只能少带兵或者出不了征。断粮会逃兵、武将不满，下个月打仗 −20%。米价秋后便宜、春夏贵，可以在势力面板买卖；计略“烧粮”能烧掉敌人的粮仓。',
+  sgAutoAtk: '出征 → {c}', sgSlow3D: '这台设备画 3D 沙盘太卡，已切换到 2D 地图（右边的 3D 按钮可以切回）', sgNo3D: '这台设备不支持 3D 沙盘',
   sgFoodLine: '粮：每月 +{a}（九月秋收 +{h}）· 养兵 −{u}/月 · 够吃 {m} 个月', sgRice: '米价 {p} 金/百石（{w}）', sgRiceCheap: '秋后便宜', sgRiceDear: '青黄不接，贵', sgRiceMid: '平价',
   sgBuy: '买粮 {n}', sgSell: '卖粮 {n}', sgRations: '军粮 {n}', sgNoRations: '粮不够出征', sgFeedOnly: '粮只够 {n} 兵', sgFoodLeft: '粮还剩 {n}', sgMonthsS: '够{n}月',
   sgGrain: '烧粮', sgGrainS: '烧敌方粮仓', evGrainOk: '{g} 烧了 {to} 的粮仓：{n} 石粮化为灰烬', evGrainNo: '{g} 对 {to} 的烧粮被发现了', evRations: '{g} 的军粮只够带 {n} 兵出征', evSkipFood: '{g} 没有出征：粮不够带兵',
@@ -75,13 +77,14 @@ extend({
   sgRoundWon: 'Read it right!', sgRoundLost: 'Caught out…', sgRoundTie: 'An even exchange', sgFeint: '(a feint!)',
   sgDuelWin: '{g} wins the duel!', sgDuelDraw: 'A draw!', sgRound: 'Round {n}', sgMoves: 'You: {a} · Them: {d}', sgHit: '{g} takes {n}', sgRival: 'Rivals meet: {r}',
   sgWin: 'Markham united!', sgWinS: 'All of Markham is yours after {n} months.', sgLose: 'Your forces are gone…', sgLoseS: 'You lasted {n} months. Try again with new blind boxes!', sgAgain: 'Play again',
-  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job (develop, draft, search, fortify; no attacks)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
+  sgRivals: 'Rivals', sgIntro: '{a}, {b} and {c} want Markham too. Everyone starts with one city; 8 cities are up for grabs. This game\'s map is a fresh draw of real places; a mighty officer holds {p}.', sgOrders: 'Orders: {n}/{m} officers', sgAuto: 'Auto', sgAutoT: 'Give idle officers a job: draft, search, walls, build; attacks too where the odds are clearly good (rations counted)', sgAutoDone: '{n} idle officers got a job', sgAutoNone: 'Nobody is idle',
   sgPass: 'Pass', sgPassNote: 'A pass is a real park (river valley, woods) across the road between two cities. No people: no growth, drafting or searching, but huge walls. Move troops in and it holds the road.', sgBigPass: "Markham's Tiger Pass: the strongest pass this game",
   sgTerrStation: 'Relay +{n}%', sgStation: '{n}', sgDepot: 'Supply depot ({n}): a food source of its own, so cities linked to it are never cut off; food +{f}%', sgGuard: 'Guarded by', sgElev: 'Height', sgValley: 'Rouge River farmland: food +40%', sgWalls: 'Wall bonus', sgTerrRiver: 'River crossing −{n}%', sgTerrUp: 'Uphill −{n}%', sgTerrDown: 'Downhill +{n}%',
   sgTargets: 'Targets (or tap the map)', sgOfficersBtn: 'Officers', sgGarrisonCard: 'Garrison', sgCmdIntercept: 'Intercept', sgFxField: 'Field victory!', sgFxFieldLost: 'Beaten in the field…', sgArmyChip: '{f} {n} → {to}', sgMaxLead: '≤{n}', sgPickArmy: 'Pick an enemy army on a road through this city', evField: '{w} beat {l} in the field near {c}: {lw} lost {a}, {ll} lost {b}', evIntercept: '{g} sallies out of {c} against {f}', sgOddsA: 'Easy', sgOddsB: 'Good', sgOddsC: 'Even', sgOddsD: 'Risky', sgFxTake: 'Taken!', sgFxLost: 'Lost!', sgFxHeld: 'Held!', sgFxRepelled: 'Beaten back…', sgMonths: '{n} mo', sgOnRoad: 'On the road', sgEta: 'in {n} mo', sgEtaNow: 'this month', sgIncoming: 'Enemies coming', sgArmyTo: '{g} · {n} troops → {to} · {eta}', sgMarching: 'on the road → {to} ({eta})', sgOfficers: 'Officer orders', sgMoveTroops: 'Troops', sgGoldLeft: '{n} gold left', sgIdleN: '{n} idle',
   sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
   sgHelpFood: 'Food (v1.7): food comes mostly with the September harvest, with only a trickle the rest of the year, and soldiers at home eat every month. An attack takes its rations along (more soldiers, longer road, more food); short of food you send fewer or cannot march. An empty granary costs soldiers and loyalty, and the next month you fight 20% worse. Rice is cheap after the harvest and dear in spring and summer: buy and sell it in your side panel. The Burn grain plot sets an enemy granary alight.',
+  sgAutoAtk: 'attacking {c}', sgSlow3D: 'The 3D sandtable is too slow on this device; switched to the flat map (the 3D button on the right brings it back)', sgNo3D: 'This device cannot show the 3D sandtable',
   sgFoodLine: 'Food: +{a} a month (+{h} at the September harvest) · soldiers eat −{u}/mo · lasts {m} months', sgRice: 'Rice {p} gold per 100 ({w})', sgRiceCheap: 'cheap after the harvest', sgRiceDear: 'dear before the harvest', sgRiceMid: 'fair price',
   sgBuy: 'Buy {n}', sgSell: 'Sell {n}', sgRations: 'rations {n}', sgNoRations: 'not enough food to march', sgFeedOnly: 'food for {n} only', sgFoodLeft: '{n} food left', sgMonthsS: '{n} mo',
   sgGrain: 'Burn grain', sgGrainS: 'burn their granary', evGrainOk: "{g} burned {to}'s granary: {n} food gone", evGrainNo: "{g}'s raid on {to}'s granary was caught", evRations: "{g} only had rations for {n} soldiers", evSkipFood: '{g} could not march: not enough food',
@@ -234,6 +237,9 @@ function genCard(id, opts = {}) {
 export class Sanguo {
   constructor(onClose) {
     this.onClose = onClose; this.cv = $('sgMap'); this.ctx = this.cv.getContext('2d'); this.ptrs = new Map();
+    // v1.8 (D-124): the sandtable (WebGL, behind the 2D canvas); 2D stays as the fallback and as a choice
+    this.tv = $('sgTable'); this.table = null; this.yaw = 0; this.pitch = 0.88;
+    try { this.view3d = localStorage.getItem('p905sg3d') !== '0'; } catch (e) { this.view3d = true; }
     this.sel = null; this.mode = null; this.busy = false; this.pulse = 0; this.fx = []; this.shake = 0; this.tween = null; this.skipFx = false;
     $('sgEnd').addEventListener('click', () => this.endMonth());
     $('sgAuto').addEventListener('click', () => this.autoAssign());
@@ -241,32 +247,37 @@ export class Sanguo {
     // zoom buttons for those who find pinching fiddly: in, out, back to your capital
     $('sgZIn').addEventListener('click', () => this.zoomAt(1.5, this.ox, this.oy));
     $('sgZOut').addEventListener('click', () => this.zoomAt(1 / 1.5, this.ox, this.oy));
-    $('sgZHome').addEventListener('click', () => { this.k = this.s0; this.focus(this.s.factions[E.PLAYER].cap); });
+    $('sgZHome').addEventListener('click', () => { this.k = this.s0; this.yaw = 0; this.pitch = 0.88; this.focus(this.s.factions[E.PLAYER].cap); });
+    $('sg3D').addEventListener('click', () => { this.tooSlow = false; this.view3d = !this.view3d; try { localStorage.setItem('p905sg3d', this.view3d ? '1' : '0'); } catch (e) { /* ignore */ } if (this.view3d && !this.is3D()) this.toast(t('sgNo3D')); this.render(); });
     $('sgMenuBtn').addEventListener('click', () => this.menu());
     $('sgLogBtn').addEventListener('click', () => this.showLog());
     $('sgGenBtn').addEventListener('click', () => this.openGenerals());
     $('sgPanel').addEventListener('click', (e) => this.panelClick(e));
     dragScroll($('sg'), '#sgPanel, .sgCard');
     const cv = this.cv;
-    cv.addEventListener('pointerdown', (e) => { if (this.busy) this.skipFx = true; if (e.isPrimary) this.ptrs.clear(); /* a lost pointerup (iOS) must not leave a ghost finger */ cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y }); this.moved = this.ptrs.size > 1; });
+    cv.addEventListener('pointerdown', (e) => { if (this.busy) this.skipFx = true; if (e.isPrimary) this.ptrs.clear(); /* a lost pointerup (iOS) must not leave a ghost finger */ cv.setPointerCapture(e.pointerId); const [x, y] = toGamePoint(e.clientX, e.clientY); this.ptrs.set(e.pointerId, { x, y, sx: x, sy: y, rot: e.button === 2 }); this.moved = this.ptrs.size > 1; });
     cv.addEventListener('pointermove', (e) => {
       const p = this.ptrs.get(e.pointerId);
       if (!p) return;
       const [x, y] = toGamePoint(e.clientX, e.clientY);
-      if (this.ptrs.size === 1) { this.cx -= (x - p.x) / this.k; this.cz -= (y - p.y) / this.k; this.clamp(); if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true; }
+      if (this.ptrs.size === 1 && this.is3D() && (p.rot || e.shiftKey)) { // turn and tilt the sandtable
+        this.yaw = Math.max(-0.7, Math.min(0.7, this.yaw - (x - p.x) * 0.003)); this.pitch = Math.max(0.35, Math.min(1.1, this.pitch + (y - p.y) * 0.003)); this.moved = true;
+      } else if (this.ptrs.size === 1) { const [ax, az] = this.toWorld(p.x, p.y), [bx, bz] = this.toWorld(x, y); this.cx += ax - bx; this.cz += az - bz; this.clamp(); if (Math.hypot(x - p.sx, y - p.sy) > 8) this.moved = true; }
       else {
         // two fingers: zoom about them and move with them
-        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y), m0x = (a.x + b.x) / 2, m0y = (a.y + b.y) / 2;
+        const [a, b] = [...this.ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y), m0x = (a.x + b.x) / 2, m0y = (a.y + b.y) / 2, ang0 = Math.atan2(b.y - a.y, b.x - a.x);
         p.x = x; p.y = y;
-        const d1 = Math.hypot(a.x - b.x, a.y - b.y), m1x = (a.x + b.x) / 2, m1y = (a.y + b.y) / 2;
+        const d1 = Math.hypot(a.x - b.x, a.y - b.y), m1x = (a.x + b.x) / 2, m1y = (a.y + b.y) / 2, ang1 = Math.atan2(b.y - a.y, b.x - a.x);
         if (d0 > 10) this.zoomAt(d1 / d0, m1x, m1y);
-        this.cx -= (m1x - m0x) / this.k; this.cz -= (m1y - m0y) / this.k;
+        if (this.is3D() && d0 > 40) { const da = Math.atan2(Math.sin(ang1 - ang0), Math.cos(ang1 - ang0)); if (Math.abs(da) < 0.3) this.yaw = Math.max(-0.7, Math.min(0.7, this.yaw - da)); } // a twist turns the table
+        { const [ax, az] = this.toWorld(m0x, m0y), [bx, bz] = this.toWorld(m1x, m1y); this.cx += ax - bx; this.cz += az - bz; }
       }
       p.x = x; p.y = y;
     });
     const up = (e) => { const p = this.ptrs.get(e.pointerId); this.ptrs.delete(e.pointerId); if (p && !this.moved && !this.ptrs.size) this.tap(p.x, p.y); };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', (e) => this.ptrs.delete(e.pointerId));
     document.addEventListener('touchend', (e) => { if (!e.touches.length) this.ptrs.clear(); });
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
     cv.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = toGamePoint(e.clientX, e.clientY); this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y); }, { passive: false });
   }
 
@@ -294,6 +305,7 @@ export class Sanguo {
     this.W = W; this.H = H;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.cv.width = Math.round(W * dpr); this.cv.height = Math.round(H * dpr); this.dpr = dpr;
+    this.tv.width = this.cv.width; this.tv.height = this.cv.height;
     const small = H < 520; // phones in landscape
     this.small = small; $('sg').classList.toggle('small', small);
     // the panel floats on the left (it can be tucked away); the map uses the rest, below the top bar
@@ -332,15 +344,39 @@ export class Sanguo {
       if (p >= 1) { this.tween = null; this.clamp(); }
     }
     this.shake *= 0.88;
+    // v1.8: if the sandtable makes this device crawl (under ~12 fps for 3 seconds), fall back to the flat map
+    if (this.t3 && !this.tooSlow && !this.busy && !this.table.forced) {
+      const now = performance.now(), f = (this.fps = this.fps || { t: now, n: 0, last: now });
+      if (now - f.last > 500 || document.hidden) { f.t = now; f.n = 0; } // away from the tab, or a one-off stall: start over
+      f.last = now; f.n++;
+      if (now - f.t > 3000) { if (f.n / ((now - f.t) / 1000) < 12) { this.tooSlow = true; this.toast(t('sgSlow3D')); } this.fps = { t: now, n: 0 }; }
+    } else this.fps = null;
     try { this.draw(); } catch (err) { if (!this.drawErr) { this.drawErr = true; console.error('sg draw:', err); } }
     requestAnimationFrame(() => this.loop()); // one bad frame must not stop the map (and every wait that counts on it)
   }
   zoomAt(f, x = this.ox, y = this.oy) {
     const s = Math.min(this.sMax, Math.max(this.sMin, this.k * f));
-    const wx = this.cx + (x - this.ox) / this.k, wz = this.cz + (y - this.oy) / this.k;
-    this.k = s; this.cx = wx - (x - this.ox) / s; this.cz = wz - (y - this.oy) / s; this.clamp();
+    const [wx, wz] = this.toWorld(x, y);
+    this.k = s;
+    const [ax, az] = this.toWorld(x, y); // keep the point under the fingers where it is
+    this.cx += wx - ax; this.cz += wz - az; this.clamp();
   }
-  toScreen(x, z) { return [this.ox + (x - this.cx) * this.k, this.oy + (z - this.cz) * this.k]; }
+  // v1.8 (D-124): with the sandtable on, screen points come from its camera (on the ground, at its height)
+  is3D() {
+    if (!this.view3d) return false;
+    if (!this.table) { this.table = new Table(this.tv); if (!this.table.ok) console.warn('sandtable: no WebGL2 (or no GPU), staying flat'); }
+    return this.table.ok && !this.tooSlow;
+  }
+  cam() { if (this.table && this.table.ok) this.table.camera({ cx: this.cx, cz: this.cz, k: this.k, yaw: this.yaw, pitch: this.pitch, ox: this.ox, oy: this.oy, W: this.W, H: this.H }); }
+  toScreen(x, z) {
+    if (this.t3) { const p = this.table.project(x, this.table.height(x, z), z); return [p[0], p[1]]; }
+    return [this.ox + (x - this.cx) * this.k, this.oy + (z - this.cz) * this.k];
+  }
+  depthAt(x, z) { return this.t3 ? Math.max(0.5, Math.min(1.5, this.table.project(x, this.table.height(x, z), z)[2])) : 1; } // how much nearer than the centre
+  toWorld(sx, sy) {
+    if (this.is3D() && this.table.h) { this.cam(); return this.table.unproject(sx, sy); }
+    return [this.cx + (sx - this.ox) / this.k, this.cz + (sy - this.oy) / this.k];
+  }
 
   // ---------------------------------------------------------------- names
   fName(f) {
@@ -362,16 +398,40 @@ export class Sanguo {
     if (this.panelHidden) { this.togglePanel(false); return; }
     this.render();
   }
-  // v1.5 (D-117): every lord's territory as a
-  // watercolour wash (baked when a city changes hands, cross-fading from the old map over a second)
-  dress(c, x0, y0, mw, mh) {
-    const st = this.s, w = this.w, key = this.paperKey;
-    const tk = territoryKey(st), now = performance.now();
+  // v1.8 (D-124): the sandtable: paper and territory as textures (re-uploaded when they change), tint and clouds
+  drawTable() {
+    const T = this.table, w = this.w, st = this.s;
+    const bk = boardKey();
+    if (!this.paper || this.paperKey !== bk) { this.paper = bakePaper(w.map); this.paperKey = bk; this.paper.getContext('2d').drawImage(bakeDecor(w.map), 0, 0); this.boats = boatSpots(w.map); }
+    if (T.builtFor !== bk) { T.build(w.map); T.texture('paper', this.paper); T.builtFor = bk; T.terrKey = null; }
+    this.terrUpdate();
+    if (T.terrKey !== this.terr.key) { if (this.terrOld) T.texture('terrOld', this.terrOld.cv); T.texture('terr', this.terr.cv); T.terrKey = this.terr.key; }
+    const now = performance.now(), mix = this.terrOld ? Math.min(1, (now - this.terrOld.t0) / 1200) : 1;
+    if (mix >= 1) this.terrOld = null;
+    const se = E.seasonOf(st), [wname] = weatherOf(st);
+    const tint = wname === '雪' ? [1, 1, 1, 0.2] : wname === '雨' ? [0.24, 0.31, 0.39, 0.08] : se === 'autumn' ? [0.84, 0.55, 0.16, 0.12] : se === 'spring' ? [0.47, 0.67, 0.31, 0.07] : [0, 0, 0, 0];
+    this.cam();
+    // only redraw the table when the view, the territory or the weather changed; drifting cloud shadows need
+    // no more than a few frames a second (saves battery on phones)
+    const key = [this.cx, this.cz, this.k, this.yaw, this.pitch, this.W, this.H, this.ox, this.oy, T.terrKey, tint.join()].join('|');
+    if (key !== this.tableKey || mix < 1 || now - (this.tableAt || 0) > 150) {
+      this.tableKey = key; this.tableAt = now;
+      T.render({ mix, tint, clouds: cloudShadows(now / 1000, this.w.half) });
+    }
+  }
+  terrUpdate() {
+    const st = this.s, w = this.w, key = this.paperKey, tk = territoryKey(st), now = performance.now();
     if (!this.terr || this.terr.key !== tk) {
       const owners = Object.fromEntries(NODE_IDS.map((id) => [id, st.cities[id].owner])), colors = Object.fromEntries(st.factions.map((f) => [f.id, f.color]));
       this.terrOld = this.terr && this.terr.boardKey === key ? { cv: this.terr.cv, t0: now } : null;
       this.terr = { key: tk, boardKey: key, cv: bakeTerritory(w.map, owners, colors) };
     }
+  }
+  // v1.5 (D-117): every lord's territory as a
+  // watercolour wash (baked when a city changes hands, cross-fading from the old map over a second)
+  dress(c, x0, y0, mw, mh) {
+    const now = performance.now();
+    this.terrUpdate();
     c.save(); c.imageSmoothingEnabled = true;
     const p = this.terrOld ? Math.min(1, (now - this.terrOld.t0) / 1200) : 1;
     if (this.terrOld && p < 1) { c.globalAlpha = 1 - p; c.drawImage(this.terrOld.cv, x0, y0, mw, mh); } else this.terrOld = null;
@@ -386,6 +446,10 @@ export class Sanguo {
       g.addColorStop(0, 'rgba(50,40,30,.09)'); g.addColorStop(1, 'rgba(50,40,30,0)');
       c.fillStyle = g; c.beginPath(); c.ellipse(sx, sy, R * 1.5, R, 0, 0, 7); c.fill();
     }
+    this.boatsOn(c);
+  }
+  boatsOn(c) {
+    const t = performance.now() / 1000;
     for (const b of this.boats || []) {
       const u = (Math.sin(t * b.sp + b.ph) + 1) / 2, dirn = Math.cos(t * b.sp + b.ph) >= 0 ? 0 : Math.PI;
       const [wx, wz, ang] = along(b.path, b.t0 + (b.t1 - b.t0) * u), [sx, sy] = this.toScreen(wx, wz);
@@ -397,7 +461,7 @@ export class Sanguo {
   season(c, x0, y0, mw, mh) {
     const st = this.s, se = E.seasonOf(st), [wname] = weatherOf(st), t = performance.now() / 1000;
     if (se === 'autumn') { c.fillStyle = 'rgba(214,140,40,.12)'; c.fillRect(x0, y0, mw, mh); }
-    else if (se === 'spring') { c.fillStyle = 'rgba(120,170,80,.07)'; c.fillRect(x0, y0, mw, mh); }
+    else if (se === 'spring') { c.fillStyle = 'rgba(120,170,80,.07)'; c.fillRect(x0, y0, mw, mh); } // (mw = 0 on the sandtable: its shader tints)
     const W = this.W, H = this.H;
     if (wname === '雪') {
       c.fillStyle = 'rgba(255,255,255,.16)'; c.fillRect(x0, y0, mw, mh);
@@ -422,9 +486,16 @@ export class Sanguo {
     const c = this.ctx, W = this.W, H = this.H, s = this.k, w = this.w, [HW, HH] = w.half, st = this.s;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     if (!this.wood) this.wood = c.createPattern(woodTile(), 'repeat');
-    c.fillStyle = this.wood || '#241b14'; c.fillRect(0, 0, W, H); // the table the map lies on (v1.3: walnut)
+    const t3 = this.is3D();
+    $('sg').classList.toggle('t3d', t3); $('sg3D').textContent = t3 ? '2D' : '3D'; $('sg3D').classList.toggle('off', !t3 && this.table && !this.table.ok);
+    if (t3 && !this.woodCss) { this.woodCss = true; $('sg').style.backgroundImage = `url(${woodTile().toDataURL()})`; }
+    if (t3) this.drawTable(); // the sandtable on its own canvas behind this one
+    this.t3 = t3;
+    if (t3) c.clearRect(0, 0, W, H);
+    else { c.fillStyle = this.wood || '#241b14'; c.fillRect(0, 0, W, H); } // the table the map lies on (v1.3: walnut)
     if (this.shake > 0.3) c.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     const [x0, y0] = this.toScreen(-HW, -HH), mw = HW * 2 * s, mh = HH * 2 * s;
+    if (!t3) {
     c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 24; c.fillStyle = '#9fd067'; c.fillRect(x0, y0, mw, mh); c.restore();
     c.save(); c.beginPath(); c.rect(x0, y0, mw, mh); c.clip();
     // v1.3 (D-110): the board is an old ink map of Markham on rice paper (js/sg_paper.js), baked once
@@ -447,6 +518,10 @@ export class Sanguo {
     c.strokeStyle = '#c9a24e'; c.lineWidth = 1.5; c.strokeRect(x0 - 8.5, y0 - 8.5, mw + 17, mh + 17);
     c.fillStyle = '#c9a24e';
     for (const [cx, cy] of [[x0, y0], [x0 + mw, y0], [x0, y0 + mh], [x0 + mw, y0 + mh]]) { c.save(); c.translate(cx, cy); c.rotate(Math.PI / 4); c.fillRect(-7, -7, 14, 14); c.fillStyle = '#5a3a1e'; c.fillRect(-3.5, -3.5, 7, 7); c.restore(); c.fillStyle = '#c9a24e'; }
+    } else { // on the sandtable only the weather and the boats are drawn here
+      this.season(c, 0, 0, 0, 0);
+      this.boatsOn(c);
+    }
     const sup = E.supplied(st, E.PLAYER);
     // supply roads
     const armyAt = (st.armies || []).map((A) => this.toScreen(...along(routePath(A.route), Math.min(0.85, Math.max(0.15, (A.total - A.left) / A.total)))));
@@ -500,9 +575,9 @@ export class Sanguo {
       c.strokeStyle = '#f2c14e'; c.lineWidth = 4; c.beginPath(); c.ellipse(x, y, r, r * 0.45, 0, 0, 7); c.stroke();
     }
     // cities and passes first, labels on top (so a name is never hidden behind a neighbour's castle)
-    const ts = Math.min(1, Math.max(0.55, this.k / 0.22)), fs = Math.round(Math.max(10.5, 12 * ts));
-    for (const id of NODE_IDS) {
-      const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner);
+    const ts = Math.min(1, Math.max(0.55, this.k / 0.22)), ts0 = ts, fs = Math.round(Math.max(10.5, 12 * ts));
+    for (const id of [...NODE_IDS].sort((a, b) => this.toScreen(CITIES[a].x, CITIES[a].z)[1] - this.toScreen(CITIES[b].x, CITIES[b].z)[1])) { // far first
+      const C = st.cities[id], [x, y] = this.toScreen(CITIES[id].x, CITIES[id].z), col = this.fColor(C.owner), ts = ts0 * this.depthAt(CITIES[id].x, CITIES[id].z);
       if (id === this.sel) { c.strokeStyle = '#f2c14e'; c.lineWidth = 3.5; c.beginPath(); c.ellipse(x, y + 3, 38 * ts, 15 * ts, 0, 0, 7); c.stroke(); }
       if (CITIES[id].pass) gate(c, x, y, col, CITIES[id].big, ts);
       else {
@@ -615,8 +690,10 @@ export class Sanguo {
     // compass, bottom left of the map area (the corners on the right hold the buttons)
     const nx = this.panelW + (this.panelHidden ? 70 : 32), ny = H - 30;
     c.fillStyle = 'rgba(38,29,22,.85)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.arc(nx, ny, 15, 0, 7); c.fill(); c.stroke();
-    c.fillStyle = '#f2c14e'; c.beginPath(); c.moveTo(nx, ny - 11); c.lineTo(nx + 5, ny + 2); c.lineTo(nx - 5, ny + 2); c.closePath(); c.fill();
-    c.fillStyle = '#f5ebdd'; c.font = '900 9px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', nx, ny + 8);
+    c.save(); c.translate(nx, ny); if (this.t3) c.rotate(this.yaw); // turns with the sandtable
+    c.fillStyle = '#f2c14e'; c.beginPath(); c.moveTo(0, -11); c.lineTo(5, 2); c.lineTo(-5, 2); c.closePath(); c.fill();
+    c.fillStyle = '#f5ebdd'; c.font = '900 9px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', 0, 8);
+    c.restore();
   }
 
   // ---------------------------------------------------------------- side panel
@@ -628,6 +705,9 @@ export class Sanguo {
     const fm = E.foodMonths(st, E.PLAYER); // v1.7: how long the granary lasts
     $('sgRes').innerHTML = [['金', 'sgGold', me.gold, '#f2c14e'], ['粮', 'sgFood', `${kNum(me.food)}<small class="${fm < 3 ? 'warn' : ''}">${F('sgMonthsS', { n: fm > 24 ? '24+' : fm })}</small>`, '#e9d8a6'], ['兵', 'sgTroops', troops, '#f08a6e'], ['城', 'sgCities', E.citiesOf(st, E.PLAYER).length + '/12', '#7fb2f0']]
       .map(([ch, k, v, col]) => `<span title="${esc(t(k))}"><i style="background:${col}">${zh() ? ch : t(k)[0]}</i>${typeof v === 'number' ? kNum(v) : v}</span>`).join('');
+    // v1.8: never let gold be cut off on a narrow phone: drop the extras (months of food, then the city count) first
+    const res = $('sgRes'); res.className = '';
+    for (const cls of ['tight', 'tighter']) if (res.scrollWidth > res.clientWidth + 1) res.className = cls;
     $('sgEnd').textContent = t('sgEnd');
     const idle = E.factionGens(st, E.PLAYER).filter((g) => st.gens[g].c && !st.orders[g]).length;
     $('sgAuto').innerHTML = `${t('sgAuto')}${idle ? `<i>${idle}</i>` : ''}`; $('sgAuto').title = t('sgAutoT');
@@ -882,11 +962,12 @@ export class Sanguo {
   }
   autoAssign() {
     if (this.busy) return;
-    const st = this.s, before = Object.keys(st.orders).length;
+    const st = this.s, before = Object.keys(st.orders).length, prev = { ...st.orders };
     st.orders = E.autoAssign(st, st.orders);
     const n = Object.keys(st.orders).length - before;
     this.mode = null; this.render();
-    this.toast(n ? F('sgAutoDone', { n }) : t('sgAutoNone'));
+    const atk = [...new Set(Object.entries(st.orders).filter(([g, o]) => o.cmd === 'march' && !prev[g]).map(([, o]) => o.to))];
+    this.toast(n ? F('sgAutoDone', { n }) + (atk.length ? ' · ' + F('sgAutoAtk', { c: atk.map(cName).join('、') }) : '') : t('sgAutoNone'));
   }
   toast(msg) {
     const el = $('sgToast');

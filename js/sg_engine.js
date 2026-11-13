@@ -618,7 +618,8 @@ export function aiOrders(s, f, opts = {}) {
   // attacks: every neighbouring node of ours may join in (armies merge), up to two targets a month
   const used = new Set();
   // a rich lord, or one of the last two, gets bolder (no endless stand-offs between full cities)
-  const thr = D(s).attack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
+  const thr = opts.thr ?? D(s).attack - Math.min(k.aiBoldGold[1], gold / k.aiBoldGold[0]) - (s.factions.filter((x) => x.alive).length <= 2 ? k.aiBoldLast : 0);
+  let food = (opts.food ?? s.factions[f].food) - foodUse(s, f) * k.foodKeep; // v1.8: attacks are planned within the granary (军粮, D-123), keeping foodKeep months for home
   const playerLeads = f !== PLAYER && citiesOf(s, PLAYER).length >= Math.max(...s.factions.filter((x) => x.alive && x.id !== PLAYER).map((x) => citiesOf(s, x.id).length));
   for (let n = 0; war && n < 2; n++) {
     let pick1 = null;
@@ -632,18 +633,21 @@ export function aiOrders(s, f, opts = {}) {
       const ids = from.flatMap((c) => free(c).slice(0, 3));
       let troops = 0, tw = 0;
       for (const c of from) { const x = Math.min(s.cities[c].troops * k.marchFrac, commandOfAll(free(c).slice(0, 3))); troops += x; tw += x * terrain(c, t).m; }
+      const months = Math.max(...from.map((c) => travelMonths(routeOf(s, f, c, t)))), feed = Math.floor(food / ((months + 1) * k.foodPerTroop * k.marchFood));
+      if (troops > feed) { tw *= feed / troops; troops = feed; }
       if (troops < k.minMarch) continue;
       let sc = armyPower(troops, ids) * (tw / troops) * (isWinter(s) ? 1 - k.snowPen : 1) / Math.max(1, armyPower(T.troops, defenders(s, t)) * wallMul(T));
       if (T.owner === -1) sc += 0.1;
       if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
       if (T.owner === PLAYER && playerLeads) sc += D(s).hunt; // v1.6 (D-121): the computer lords gang up on a leading player
-      if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc };
+      if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc, troops, months };
     }
     if (!pick1) break;
+    let fed = Math.floor(pick1.troops);
     for (const c of pick1.from) {
       const ld = free(c).slice(0, 3);
-      let left = Math.floor(s.cities[c].troops * k.marchFrac);
-      for (const g of ld) { const x = Math.min(commandOf(g), left); left -= x; out[g] = { cmd: 'march', to: pick1.t, n: x }; }
+      let left = Math.min(fed, Math.floor(s.cities[c].troops * k.marchFrac));
+      for (const g of ld) { const x = Math.min(commandOf(g), left); if (x < k.minMarch && left < k.minMarch) break; left -= x; fed -= x; out[g] = { cmd: 'march', to: pick1.t, n: x }; food -= rationsOf(x, pick1.months); }
       used.add(c);
     }
   }
@@ -1185,10 +1189,15 @@ export function runTurn(s, orders = {}) {
 
 // a computer plays the player's side too (tests / balance)
 export function autoPlayer(s) { return aiOrders(s, PLAYER); }
-// 委任: give every officer without an order a peaceful job (draft, search, fortify, build, spread out)
+// 委任: give every officer without an order a job: drafting, searching, walls, building, and (v1.8) attacks too, but
+// only where your side would be clearly stronger (power ratio autoThr) and within the food left after your own orders
 export function autoAssign(s, orders = {}) {
   const spent = Object.entries(orders).reduce((a, [id, o]) => a + orderCost(o, id), 0);
-  return { ...aiOrders(s, PLAYER, { war: false, skip: new Set(Object.keys(orders)), gold: s.factions[PLAYER].gold - spent }), ...orders };
+  const rations = Object.entries(orders).reduce((a, [id, o]) => a + (o.cmd === 'march' && s.gens[id] && s.gens[id].c ? rationsOf(o.n || 0, travelMonths(routeOf(s, PLAYER, s.gens[id].c, o.to))) : o.cmd === 'intercept' ? rationsOf(o.n || 0, 0) : 0), 0);
+  const busy = new Set(Object.entries(orders).filter(([, o]) => o.cmd === 'march').map(([, o]) => o.to));
+  const auto = aiOrders(s, PLAYER, { skip: new Set(Object.keys(orders)), gold: s.factions[PLAYER].gold - spent, food: s.factions[PLAYER].food - rations, thr: K().autoThr });
+  for (const [id, o] of Object.entries(auto)) if (o.cmd === 'march' && busy.has(o.to)) delete auto[id]; // you already sent someone there
+  return { ...auto, ...orders };
 }
 export function factionName(s, f, zh = true) {
   if (f < 0) return zh ? '空城' : 'Unclaimed';

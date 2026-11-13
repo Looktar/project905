@@ -10,6 +10,7 @@ import { GENERALS, GEN_IDS, SANGUO_IDS, ERAS, RIVALS, CITY_IDS, PASS_IDS, NODE_I
 import { ELEV } from '../../js/sg_elev.js';
 import * as E from '../../js/sg_engine.js';
 import * as M from '../../js/sg_map.js';
+import { Table } from '../../js/sg_table.js';
 import { SITES, PARKS } from '../../js/sg_sites.js';
 import { readFileSync } from 'node:fs';
 import { CFG } from '../../js/config.js';
@@ -439,14 +440,14 @@ describe('orders (one per officer, v0.8)', () => {
     expect(validOrder(s, 0, a, { cmd: 'draft' })).toBe(true);
     check(s);
   });
-  it('auto-assign gives every idle officer a peaceful job and keeps the given orders', () => {
+  it('auto-assign gives every idle officer a job and keeps the given orders', () => {
     const s = newGame(5), [a, b] = factionGens(s, 0), cap = s.factions[0].cap;
     const t = ADJ[cap].find((x) => s.cities[x.c].owner === -1).c;
     const mine = { [a]: { cmd: 'march', to: t, n: 1000 } };
     const all = autoAssign(s, mine);
     expect(all[a]).toEqual(mine[a]);
     expect(all[b]).toBeTruthy();
-    expect(all[b].cmd).not.toBe('march');
+    if (all[b].cmd === 'march') expect(all[b].to).not.toBe(t); // v1.8: may attack, but not where you already sent someone
     expect(orderCost({ cmd: 'dev' })).toBe(CFG.sg.devCost);
     // the computer gives orders per officer too
     for (const [id, o] of Object.entries(aiOrders(s, 1))) { expect(s.gens[id].f).toBe(1); expect(validOrder(s, 1, id, o)).toBe(true); }
@@ -1091,5 +1092,54 @@ describe('v1.7: food is 军粮 (D-123)', () => {
     }
     expect(hungry).toBeLessThan(8);
     expect(burned).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('v1.8: 委任 attacks too (only with good odds and food)', () => {
+  it('sends a strong city against a weak neighbour, within the granary', () => {
+    let attacked = 0;
+    for (let seed = 1; seed <= 10; seed++) {
+      const s = newGame(seed), P = 0, cap = s.factions[P].cap;
+      s.cities[cap].troops = 9000; s.factions[P].food = 20000;
+      const weak = ADJ[cap].map((x) => x.c).find((n) => s.cities[n].owner === -1);
+      if (!weak) continue;
+      s.cities[weak].troops = 300;
+      const o = autoAssign(s, {});
+      const m = Object.entries(o).filter(([, x]) => x.cmd === 'march');
+      if (m.length) attacked++;
+      for (const [id, x] of m) expect(validOrder(s, P, id, x)).toBe(true);
+      // no food, no attack
+      s.factions[P].food = 0;
+      expect(Object.values(autoAssign(s, {})).some((x) => x.cmd === 'march')).toBe(false);
+    }
+    expect(attacked).toBeGreaterThanOrEqual(7);
+  });
+  it('does not attack when the odds are poor', () => {
+    const s = newGame(2), P = 0, cap = s.factions[P].cap;
+    s.cities[cap].troops = 1200; s.factions[P].food = 20000;
+    for (const { c } of ADJ[cap]) if (s.cities[c].owner !== P) s.cities[c].troops = 9000;
+    expect(Object.values(autoAssign(s, {})).some((x) => x.cmd === 'march')).toBe(false);
+  });
+});
+
+describe('v1.8: the sandtable camera (D-124)', () => {
+  const cam = (v) => { const T = Object.create(Table.prototype); T.h = null; T.camera(v); return T; };
+  it('the target lands on (ox, oy), at k pixels per metre, and screen points map back to the ground', () => {
+    for (const [yaw, pitch] of [[0, 0.88], [0.4, 0.6], [-0.6, 1.05], [0, 0.01]]) {
+      const v = { cx: 120, cz: -340, k: 0.3, yaw, pitch, ox: 700, oy: 380, W: 1280, H: 720 }, T = cam(v);
+      const [x, y, sc] = T.project(v.cx, 0, v.cz);
+      expect(x).toBeCloseTo(v.ox, 3); expect(y).toBeCloseTo(v.oy, 3); expect(sc).toBeCloseTo(1, 3);
+      const [x2] = T.project(v.cx + 10 * Math.cos(yaw), 0, v.cz - 10 * Math.sin(yaw)); // 10 m to the screen's right
+      expect(x2 - x).toBeCloseTo(3, 1);
+      for (const [sx, sy] of [[300, 200], [1100, 650], [700, 380]]) {
+        const [wx, wz] = T.unproject(sx, sy), [px, py] = T.project(wx, 0, wz);
+        expect(px).toBeCloseTo(sx, 2); expect(py).toBeCloseTo(sy, 2);
+      }
+    }
+  });
+  it('yaw 0 keeps north up the screen; nearer things look bigger when tilted', () => {
+    const T = cam({ cx: 0, cz: 0, k: 0.3, yaw: 0, pitch: 0.9, ox: 640, oy: 360, W: 1280, H: 720 });
+    expect(T.project(0, 0, -500)[1]).toBeLessThan(T.project(0, 0, 500)[1]);
+    expect(T.project(0, 0, 500)[2]).toBeGreaterThan(T.project(0, 0, -500)[2]);
   });
 });
