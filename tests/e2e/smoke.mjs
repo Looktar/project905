@@ -199,7 +199,7 @@ async function runViewport(browser, base, vp) {
 }
 
 // ---------------------------------------------------------------- main
-const watchdog = setTimeout(() => { console.error('smoke: timed out after 6 minutes'); process.exit(1); }, 6 * 60 * 1000);
+const watchdog = setTimeout(() => { console.error('smoke: timed out after 10 minutes'); process.exit(1); }, 10 * 60 * 1000); // v1.8: 委任 now fights a battle in the test month
 mkdirSync(SHOT_DIR, { recursive: true });
 const server = process.env.BASE_URL ? null : await serve(ROOT);
 const base = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/?$/, '/') : `http://127.0.0.1:${server.address().port}/`;
