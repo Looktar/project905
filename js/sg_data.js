@@ -491,3 +491,47 @@ export const BLD_IDS = Object.keys(BUILDINGS);
 export const PASS_BLD = ['walls', 'beacon'];
 // city kind (js/sg_art.js) -> its specialty building
 export const SPECIALTY = { boba: 'market', bag: 'market', plaza: 'market', pagoda: 'market', towers: 'market', bigbox: 'farm', homes: 'farm', factory: 'barracks', dome: 'barracks', civic: 'academy', heritage: 'academy', centre: 'academy', airport: 'beacon', station: 'beacon', castle: 'walls' };
+
+// ---------------------------------------------------------------- v2.1 (D-127): 剧本
+// Short games on the classic map with their own sides, a goal and a time limit. Each side: cities (the first is
+// the capital), officers (the first of a computer side is its lord), troops per city, gold and food. start: the
+// month the game opens on (turn number). goal: hold (keep this city for `months`), take (a city, within
+// `months`), beat (destroy this side, within `months` if given). Winning early: beat ends the game at once.
+export const SCENARIOS = [
+  {
+    id: 'chibi', zh: '万锦赤壁', en: 'Red Cliffs of Markham', start: 10,
+    blurb: ['曹操率大军南下，号称八十万。孙刘联军守住 Downtown Markham 一年就算赢；能打垮曹军更好。冬天干燥，周瑜、诸葛亮的火攻正当时。', 'Cao Cao marches south with a vast army. The Sun–Liu alliance wins by holding Downtown Markham for a year, or by breaking Cao outright. Winter is dry: the season for Zhou Yu and Zhuge Liang\'s fire.'],
+    name: ['孙刘联军', 'Sun–Liu alliance'],
+    sides: [
+      { cities: ['dtm', 'hag'], gens: ['zhouyu', 'zhugeliang', 'liubei', 'guanyu', 'zhangfei', 'huanggai', 'lusu'], troops: [5500, 3000], gold: 900, food: 3200 },
+      { cities: ['civ', 'btv', 'wdb', 'esn', 'unv'], gens: ['caocao', 'xiahoudun', 'xiahouyuan', 'zhangliao', 'xuchu', 'caoren', 'guojia', 'xunyu'], troops: [11000, 5000, 6000, 6500, 6500], gold: 4000, food: 10000 },
+      { cities: ['ray'], gens: ['machao', 'pangtong'], troops: [3500], gold: 600, food: 2500 },
+      { cities: ['arm'], gens: ['zhangjiao'], troops: [3000], gold: 600, food: 2500 },
+    ],
+    goal: { hold: 'dtm', months: 12, beat: 1 },
+  },
+  {
+    id: 'wuzhang', zh: '五丈原', en: 'Wuzhang Plains', start: 1,
+    blurb: ['诸葛亮最后一次北伐。两年之内拿下司马懿的本城 Unionville；粮草是最大的敌人，算好秋收再打。', 'Zhuge Liang\'s last northern campaign: take Sima Yi\'s seat, Unionville, within two years. Food is the real enemy: plan around the harvest.'],
+    name: ['蜀汉', 'Shu Han'],
+    sides: [
+      { cities: ['hag', 'pac', 'mil'], gens: ['zhugeliang', 'jiangwei', 'weiyan', 'zhaoyun', 'huangzhong', 'machao', 'fazheng'], troops: [5000, 4000, 4000], gold: 800, food: 2200 },
+      { cities: ['unv', 'dtm', 'civ', 'mkv'], gens: ['simayi', 'zhanghe', 'xuhuang', 'caoren', 'jiaxu'], troops: [7000, 5500, 4500, 4500], gold: 2500, food: 9000 },
+      { cities: ['arm', 'ray'], gens: ['sunquan', 'luxun', 'lvmeng'], troops: [4500, 3500], gold: 1500, food: 5000 },
+      { cities: ['btv'], gens: ['gongsunzan'], troops: [3000], gold: 600, food: 2500 },
+    ],
+    goal: { take: 'unv', months: 24 },
+  },
+  {
+    id: 'chuhan', zh: '楚汉争霸', en: 'Chu–Han Contention', start: 7,
+    blurb: ['项羽势大，刘邦只有两座城。三年之内消灭西楚霸王：韩信用兵、张良出谋、萧何守着粮仓。', 'Xiang Yu is mighty and Liu Bang holds two cities. Destroy the Hegemon-King of Western Chu within three years, with Han Xin\'s generalship, Zhang Liang\'s plans and Xiao He\'s granaries.'],
+    name: ['汉', 'Han'],
+    sides: [
+      { cities: ['wdb', 'btv'], gens: ['liubang', 'hanxin', 'zhangliang', 'xiaohe', 'fankuai', 'pengyue'], troops: [6500, 4500], gold: 1200, food: 5000 },
+      { cities: ['mkv', 'unv', 'ray', 'mil', 'arm'], gens: ['xiangyu', 'fanzeng', 'yingbu', 'longju', 'zhonglimo'], troops: [8500, 5000, 4500, 4500, 4000], gold: 2500, food: 8000 },
+      { cities: ['esn'], gens: ['tiandan'], troops: [3000], gold: 600, food: 2500 },
+      { cities: ['pac'], gens: ['limu'], troops: [3500], gold: 600, food: 2500 },
+    ],
+    goal: { beat: 1, months: 36 },
+  },
+];

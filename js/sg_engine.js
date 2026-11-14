@@ -15,7 +15,7 @@
 //           endTurn(s)                  -> income, upkeep, supply, coalition, victory, next month
 // runTurn() does all of it with computer duels (tests, simulations).
 import { CFG } from './config.js';
-import { COUNTERS, TIMELY, BUILDINGS, PASS_BLD, SPECIALTY, ITEMS, ITEM_IDS, GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
+import { SCENARIOS, COUNTERS, TIMELY, BUILDINGS, PASS_BLD, SPECIALTY, ITEMS, ITEM_IDS, GENERALS, GEN_IDS, SANGUO_IDS, TRAIT_FX, BONDS, RIVALS, CITY_IDS, PASS_IDS, NODE_IDS, CITIES, ADJ, FACTION_COLORS, CLASSIC, useMap, currentMapKey } from './sg_data.js';
 import { SITES, PARKS, PAIRS } from './sg_sites.js';
 import { cityKind } from './sg_art.js';
 
@@ -300,6 +300,27 @@ export function drawRoster(s, mode) {
   for (const id of shuffle(s, pool.filter((x) => !picked.has(x) && tierOf(x) !== 'UR'))) { if (picked.size >= n) break; picked.add(id); }
   return [...picked].slice(0, n);
 }
+// v2.1 (D-127): lay out a 剧本 on a fresh classic game: everybody back into hiding, then each side as written
+function setScenario(s, id) {
+  const sc = SCENARIOS.find((x) => x.id === id);
+  if (!sc) return;
+  const listed = new Set(sc.sides.flatMap((x) => x.gens));
+  for (const g of Object.values(s.gens)) if (!listed.has(g.id)) Object.assign(g, { f: -1, hidden: true, guard: false, c: CITY_IDS[Math.floor(rnd(s) * CITY_IDS.length)] });
+  for (const c of CITY_IDS) Object.assign(s.cities[c], { owner: -1 });
+  sc.sides.forEach((side, f) => {
+    const fa = s.factions[f];
+    Object.assign(fa, { cap: side.cities[0], alive: true, gold: side.gold, food: Math.round(side.food * (f !== PLAYER ? D(s).food : 1)), lord: f === PLAYER ? null : side.gens[0] });
+    if (f === PLAYER) fa.name = sc.name[0];
+    side.cities.forEach((c, i) => { const C = Object.assign(s.cities[c], { owner: f, dev: i ? 50 : 65, def: i ? 50 : 70 }); C.troops = Math.min(Math.max(K().maxTroops, capOf(C)), Math.round(side.troops[i] * (f !== PLAYER ? D(s).start : 1))); });
+    for (const g of side.gens) s.gens[g] = { id: g, f, c: side.cities[0], hidden: false, guard: false, loyal: 90 + fx(g, 'loyal') };
+  });
+  // the officers who belong to nobody's side stay hidden; the big pass keeps the strongest of them as its guard
+  const big = PASS_IDS.find((c) => CITIES[c].big), free = Object.values(s.gens).filter((g) => g.f === -1);
+  const guard = free.reduce((m, g) => (m && gen(m.id).war >= gen(g.id).war ? m : g), null);
+  if (big && guard) Object.assign(guard, { c: big, hidden: false, guard: true });
+  delete s.lead;
+  s.scen = id; s.goal = { ...sc.goal }; s.turn = sc.start; s.turn0 = sc.start;
+}
 export function newGame(seed = Date.now(), opts = {}) {
   const k = K(), names = opts.names || {};
   const map = opts.map === 'random' ? genMap(seed) : CLASSIC;
@@ -353,6 +374,8 @@ export function newGame(seed = Date.now(), opts = {}) {
       s.lead = { b: b.id, g: m2, c: s.gens[m2].c };
     }
   }
+  if (opts.scenario) setScenario(s, opts.scenario);
+  if (opts.daily) { s.daily = opts.daily; s.goal = { months: K().dailyMonths, daily: true }; s.turn0 = 0; }
   s.bondsOn = bondView(s, PLAYER).filter((x) => x.ready).map((x) => x.b.id);
   // v1.1 (D-97): this game's treasures, drawn with a generator of their own so older seeds play as before
   let r2 = (s.seed ^ 0x9e3779b9) >>> 0;
@@ -640,6 +663,7 @@ export function aiOrders(s, f, opts = {}) {
       if (T.owner === -1) sc += 0.1;
       if (s.coalition !== null && T.owner === s.coalition) sc += 0.3;
       if (T.owner === PLAYER && playerLeads) sc += D(s).hunt; // v1.6 (D-121): the computer lords gang up on a leading player
+      if (s.goal && T.owner === PLAYER && (t === s.goal.hold || t === s.goal.take || (s.goal.take && ADJ[s.goal.take].some((x) => x.c === t)))) sc += K().scenFocus; // v2.1: the story's key city draws the attack
       if (sc >= thr && (!pick1 || sc > pick1.sc)) pick1 = { t, from, sc, troops, months };
     }
     if (!pick1) break;
@@ -1223,7 +1247,7 @@ export function endTurn(s) {
   // the coalition: when one lord holds half of Markham, the others stop fighting each other
   const alive = s.factions.filter((f) => f.alive);
   const lead = alive.find((f) => citiesOf(s, f.id).length >= (f.id === PLAYER ? D(s).coalition : k.coalitionAt));
-  const L = lead && alive.length >= 3 ? lead.id : null;
+  const L = lead && alive.length >= 3 && !s.scen ? lead.id : null; // (no coalitions in a 剧本: the story sets the sides)
   if (L !== s.coalition) { ev(s, { k: L === null ? 'coalitionEnd' : 'coalition', f: L === null ? s.coalition : L }); s.coalition = L; }
   // armies still on the road: one month nearer (the armies of a fallen lord have broken up)
   s.armies = s.armies.filter((a) => s.factions[a.f].alive);
@@ -1233,11 +1257,28 @@ export function endTurn(s) {
   const mine = citiesOf(s, PLAYER).length;
   if (mine === CITY_IDS.length) s.over = 'win';
   else if (!mine) s.over = 'lose';
+  else if (s.goal) { // v2.1 (D-127): a 剧本's goal, or the daily challenge's time limit
+    const g = s.goal, used = s.turn + 1 - (s.turn0 || 0);
+    if (g.hold && s.cities[g.hold].owner !== PLAYER) s.over = 'lose';
+    else if (g.beat !== undefined && (!s.factions[g.beat].alive || !ownedBy(s, g.beat).length)) s.over = 'win';
+    else if (g.take && s.cities[g.take].owner === PLAYER) s.over = 'win';
+    else if (g.hold && used >= g.months) s.over = 'win';
+    else if (g.months && used >= g.months) s.over = g.daily ? 'time' : 'lose';
+  }
   if (s.over) ev(s, { k: s.over });
   s.turn++; s.phase = 'orders';
   return s.events;
 }
 
+// v2.1: the score of a finished game (or of one in progress): a win counts most, sooner is better, every city
+// held and every 1,000 soldiers count too, and so does a harder computer
+export function scoreOf(s) {
+  const cities = citiesOf(s, PLAYER).length, troops = ownedBy(s, PLAYER).reduce((a, c) => a + s.cities[c].troops, 0);
+  const used = s.turn - (s.turn0 || 0), limit = s.goal && s.goal.months ? s.goal.months : 120;
+  const base = s.over === 'win' ? 1000 + Math.max(0, limit - used) * 25 : 0;
+  return Math.round((base + cities * 60 + Math.floor(troops / 1000) * 5) * ({ normal: 1, hard: 1.3, hell: 1.7 }[s.diff] || 1));
+}
+export const monthsLeft = (s) => (s.goal && s.goal.months ? Math.max(0, s.goal.months - (s.turn - (s.turn0 || 0))) : null);
 // one whole month with computer duels; returns the month's events
 export function runTurn(s, orders = {}) {
   beginTurn(s, orders);

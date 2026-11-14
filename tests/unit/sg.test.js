@@ -1231,3 +1231,50 @@ describe('v2.0: 战法 (D-126)', () => {
     expect(seen).toBeGreaterThan(5);
   });
 });
+
+describe('v2.1: 剧本, the daily challenge, scores (D-127)', () => {
+  it('every scenario sets up its sides as written', async () => {
+    const { SCENARIOS } = await import('../../js/sg_data.js');
+    for (const sc of SCENARIOS) {
+      const s = E.newGame(7, { scenario: sc.id, roster: 'mix', diff: 'hard' });
+      expect(s.scen).toBe(sc.id); expect(s.turn).toBe(sc.start); expect(s.goal).toEqual(sc.goal); expect(s.lead).toBeUndefined();
+      sc.sides.forEach((side, f) => {
+        expect(s.factions[f].cap).toBe(side.cities[0]);
+        expect(E.citiesOf(s, f).sort()).toEqual([...side.cities].sort());
+        for (const g of side.gens) { expect(s.gens[g].f).toBe(f); expect(s.gens[g].hidden).toBe(false); }
+        if (f) expect(s.factions[f].lord).toBe(side.gens[0]);
+      });
+      for (const g of Object.values(s.gens)) if (!sc.sides.some((x) => x.gens.includes(g.id))) expect(g.f).toBe(-1);
+      check(s);
+      for (let i = 0; i < 60 && !s.over; i++) { runTurn(s, autoPlayer(s)); check(s); }
+      expect(s.over).toBeTruthy(); // every scenario ends within its time limit
+      expect(s.coalition).toBe(null);
+    }
+  });
+  it('goals: hold for the months, take the city, beat the side, or run out of time', () => {
+    const hold = E.newGame(3, { scenario: 'chibi', roster: 'mix' });
+    hold.turn = hold.turn0 + hold.goal.months - 1; for (const f of hold.factions.slice(1)) f.alive = false;
+    runTurn(hold, {}); expect(hold.over).toBe('win');
+    const lost = E.newGame(3, { scenario: 'chibi', roster: 'mix' });
+    lost.cities.dtm.owner = 1; runTurn(lost, {}); expect(lost.over).toBe('lose');
+    const take = E.newGame(3, { scenario: 'wuzhang', roster: 'mix' });
+    take.cities.unv.owner = 0; runTurn(take, {}); expect(take.over).toBe('win');
+    const late = E.newGame(3, { scenario: 'wuzhang', roster: 'mix' });
+    late.turn = late.turn0 + late.goal.months - 1; for (const f of late.factions.slice(1)) f.alive = false; late.factions[1].alive = true;
+    runTurn(late, {}); expect(late.over).toBe('lose');
+    const beat = E.newGame(3, { scenario: 'chuhan', roster: 'mix' });
+    for (const c of E.ownedBy(beat, 1)) beat.cities[c].owner = 0;
+    runTurn(beat, {}); expect(beat.over).toBe('win');
+  });
+  it('the daily challenge: the same board for the same day, time runs out, and a score', () => {
+    const a = E.newGame(12345, { map: 'random', roster: 'mix', diff: 'hard', daily: '2026-11-13' }), b = E.newGame(12345, { map: 'random', roster: 'mix', diff: 'hard', daily: '2026-11-13' });
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    expect(a.goal).toMatchObject({ daily: true, months: CFG.sg.dailyMonths });
+    a.turn = CFG.sg.dailyMonths - 1; for (const f of a.factions.slice(1)) f.alive = false;
+    runTurn(a, {});
+    expect(a.over).toBe('time');
+    expect(E.scoreOf(a)).toBeGreaterThan(0);
+    const w = JSON.parse(JSON.stringify(a)); w.over = 'win';
+    expect(E.scoreOf(w)).toBeGreaterThan(E.scoreOf(a) + 900);
+  });
+});
