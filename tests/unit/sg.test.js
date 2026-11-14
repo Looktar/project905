@@ -336,7 +336,7 @@ describe('统率 leads troops, 武力 wins battles, armies meet in the field (v0
     expect(commandOf('zhangfei')).toBe(GENERALS.zhangfei.lead * CFG.sg.leadTroops);
     expect(sent).toBeLessThanOrEqual(commandOf('zhangfei'));
   });
-  it('same troops: the higher 武力 always wins in the field (two armies meeting on a road)', () => {
+  it('same troops, same tactic (v2.0: both charge): the higher 武力 always wins in the field', () => {
     for (const [strong, weak] of [['lvbu', 'xuchu'], ['guanyu', 'zhangliao'], ['zhangfei', 'liubei']]) {
       for (const flip of [false, true]) {
         const s = duo(), [p0, p1] = flip ? [weak, strong] : [strong, weak];
@@ -345,10 +345,10 @@ describe('统率 leads troops, 武力 wins battles, armies meet in the field (v0
         s.factions[0].cap = 'btv'; s.factions[1].cap = 'wdb'; s.turn = 6;
         CFG.sg.duelChance = 0; CFG.sg.duelRival = 0; CFG.sg.duelBig = 0;
         try {
-          beginTurn(s, { [p0]: { cmd: 'march', to: 'wdb', n: 3000 } });
+          beginTurn(s, { [p0]: { cmd: 'march', to: 'wdb', n: 3000, tac: 'charge' } });
           // lord 1 sends the same 3,000 the other way
           s.cities.wdb.troops -= 3000; join(s, p1, 1, null);
-          s.armies.push({ id: 99, f: 1, kind: 'march', from: 'wdb', to: 'btv', route: ['wdb', 'btv'], gens: [p1], troops: 3000, terr: 1, total: 2, left: 2 });
+          s.armies.push({ id: 99, f: 1, kind: 'march', from: 'wdb', to: 'btv', route: ['wdb', 'btv'], gens: [p1], troops: 3000, terr: 1, total: 2, left: 2, tac: 'charge' });
           s.fields.push({ a: s.armies[0], b: s.armies[1] });
           for (let b = nextBattle(s); b; b = nextBattle(s)) resolveBattle(s, b.m, null, null);
         } finally { CFG.sg.duelChance = 0.5; CFG.sg.duelRival = 0.85; CFG.sg.duelBig = 0.15; }
@@ -1182,5 +1182,52 @@ describe('v1.9: the advisor and the forecast (D-125)', () => {
     s.cities[n].troops = 200;
     expect(E.advise(s, P, {}).some((x) => x.k === 'chance')).toBe(true);
     expect(E.advisorOf(s, P)).toBe(factionGens(s, P).sort((x, y) => E.gen(y).int - E.gen(x).int)[0]);
+  });
+});
+
+describe('v2.0: 战法 (D-126)', () => {
+  it('the ring: charge > fire > hold > ambush > charge, opposites even', () => {
+    expect(E.beats('charge', 'fire')).toBe(true); expect(E.beats('fire', 'hold')).toBe(true);
+    expect(E.beats('hold', 'ambush')).toBe(true); expect(E.beats('ambush', 'charge')).toBe(true);
+    expect(E.tacMatch('charge', 'hold')).toBe(0); expect(E.tacMatch('fire', 'ambush')).toBe(0);
+    expect(E.tacMatch('ambush', 'charge')).toBe(CFG.sg.tacWin); expect(E.tacMatch('charge', 'ambush')).toBe(-CFG.sg.tacLose);
+  });
+  it('aptitude follows the officers, the weather and the ground', () => {
+    const s = newGame(3);
+    expect(E.aptitude(s, ['lvbu'], 'charge')).toBeGreaterThan(E.aptitude(s, ['zhugeliang'], 'charge'));
+    expect(E.aptitude(s, ['zhugeliang'], 'fire')).toBeGreaterThan(E.aptitude(s, ['lvbu'], 'fire'));
+    expect(E.aptitude(s, ['zhugeliang'], 'ambush', { field: true })).toBeGreaterThan(E.aptitude(s, ['zhugeliang'], 'ambush', {}));
+    expect(E.aptitude(s, ['caocao'], 'hold', { defending: true })).toBeGreaterThan(E.aptitude(s, ['caocao'], 'hold', {}));
+    expect(E.bestTactic(s, ['lvbu'], {})).toBe('charge');
+  });
+  it('the tactic that beats the other turns an even siege', () => {
+    const run = (tA, tD) => {
+      const s = newGame(4), P = 0, cap = s.factions[P].cap, [a] = factionGens(s, P);
+      const n = ADJ[cap].map((x) => x.c).find((x) => s.cities[x].owner === -1 && !CITIES[x].pass) || ADJ[cap][0].c;
+      s.cities[cap].troops = 9000; s.factions[P].food = 99999;
+      s.cities[n].tac = tD;
+      CFG.sg.duelChance = 0; CFG.sg.duelRival = 0; CFG.sg.duelBig = 0;
+      try {
+        beginTurn(s, { [a]: { cmd: 'march', to: n, n: Math.min(E.commandOf(a), 6000), tac: tA } });
+        for (let i = 0; i < 6 && s.armies.length; i++) { for (let b = nextBattle(s); b; b = nextBattle(s)) resolveBattle(s, b.m, null, null); if (s.armies.length) { E.endTurn(s); beginTurn(s, {}); } }
+      } finally { CFG.sg.duelChance = 0.5; CFG.sg.duelRival = 0.85; CFG.sg.duelBig = 0.15; }
+      const e = s.events.concat(s.log || []).find((x) => (x.k === 'take' || x.k === 'repel') && x.f === P);
+      return e ? e.lostA : null;
+    };
+    // our losses are smaller when our tactic beats theirs than when theirs beats ours
+    const good = run('ambush', 'charge'), bad = run('charge', 'ambush');
+    if (good !== null && bad !== null) expect(good).toBeLessThan(bad);
+  });
+  it('the battle screen line names both tactics', () => {
+    let seen = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed);
+      for (let i = 0; i < 30 && !s.over; i++) {
+        beginTurn(s, autoPlayer(s));
+        for (let b = nextBattle(s); b; b = nextBattle(s)) { resolveBattle(s, b.m, b.duel ? E.autoDuel(s, b.duel) : null, b.duel); if (b.m.tacs) { seen++; expect(E.TACTICS).toContain(b.m.tacs[0]); expect(b.m.edge.filter((x) => String(x[4]).startsWith('tac:')).length).toBe(2); } }
+        E.endTurn(s);
+      }
+    }
+    expect(seen).toBeGreaterThan(5);
   });
 });

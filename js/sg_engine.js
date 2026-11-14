@@ -576,7 +576,7 @@ function runOrder(s, f, id, o) {
     // officers leaving the same city for the same place this month go as one army
     const j = s.armies.find((x) => x.f === f && x.from === c && x.to === o.to && x.kind === o.cmd && x.left === x.total && x.total === months);
     if (j) { j.gens.push(id); j.troops += n; }
-    else s.armies.push({ id: s.nextArmy++, f, kind: o.cmd, from: c, to: o.to, route, gens: [id], troops: n, terr: march ? terrain(route[route.length - 2], o.to).m : 1, total: months, left: months });
+    else s.armies.push({ id: s.nextArmy++, f, kind: o.cmd, from: c, to: o.to, route, gens: [id], troops: n, terr: march ? terrain(route[route.length - 2], o.to).m : 1, total: months, left: months, tac: o.tac || 'auto' });
     ev(s, { k: o.cmd, f, c, to: o.to, n, gens: [id], months });
   } else if (o.cmd === 'intercept') {
     // sally out against an enemy army on a road through this city: a field battle this month, then home
@@ -908,6 +908,17 @@ export function duelRound(s, d, mv = null) {
 export function autoDuel(s, d) { while (!d.done) duelRound(s, d); return d.win; }
 
 // what the battle screen shows (v1.4): each side's counters and weather buffs, [side, zh, en, fx]
+// the tactics line of the battle screen: each side's tactic with its aptitude, and who beat whom
+const TAC_NAME = { charge: ['冲锋', 'Charge'], fire: ['火攻', 'Fire'], hold: ['坚守', 'Hold'], ambush: ['伏兵', 'Ambush'] };
+function tacEdge(s, tacs, aIds, bIds, ca, cb) {
+  if (!tacs) return [];
+  const [tA, tB] = tacs, out = [];
+  for (const [si, t, ids, cx, o] of [[0, tA, aIds, ca, tB], [1, tB, bIds, cb, tA]]) {
+    const v = aptitude(s, ids, t, cx) + tacMatch(t, o), [zh, en] = TAC_NAME[t];
+    out.push([si, beats(t, o) ? `${zh}克${TAC_NAME[o][0]}` : zh, beats(t, o) ? `${en} beats ${TAC_NAME[o][1]}` : en, Math.round(v * 100) / 100, 'tac:' + t]);
+  }
+  return out;
+}
 export function edgeOf(s, aIds, bIds, river = false, siege = false, fa = -1, fb = -1) {
   const out = [];
   for (const [si, ids, foes, att, f] of [[0, aIds, bIds, true, fa], [1, bIds, aIds, !siege, fb]]) {
@@ -920,6 +931,42 @@ export function edgeOf(s, aIds, bIds, river = false, siege = false, fa = -1, fb 
   }
   return out;
 }
+// ---------------------------------------------------------------- v2.0 (D-126): 战法
+// Four tactics in a ring, each beating the next: 冲锋 charge > 火攻 fire > 坚守 hold > 伏兵 ambush > 冲锋.
+// (Charge rides down the fire-setters before they light up; fire burns out a stubborn defence; holding fast
+// will not take the bait of an ambush; an ambush catches a charge.) Opposites (charge/hold, fire/ambush) are even.
+// The winner of the matchup fights tacWin better, the loser tacLose worse. On top, each side's own aptitude:
+// charge from the best 武力, fire from the best 智力 (and dry weather, fire masters), hold from the best 统率
+// (better defending a city), ambush from 智力 (better on hills, at passes and in the open field).
+export const TACTICS = ['charge', 'fire', 'hold', 'ambush'];
+export const beats = (a, b) => TACTICS[(TACTICS.indexOf(a) + 1) % 4] === b;
+export function tacMatch(a, b) { const k = K(); return beats(a, b) ? k.tacWin : beats(b, a) ? -k.tacLose : 0; }
+// how good these officers are at tactic t here; ctx: { defending, field, hill }
+export function aptitude(s, ids, t, ctx = {}) {
+  if (!ids.length) return t === 'hold' && ctx.defending ? 0.05 : 0;
+  const k = K(), top = (st) => Math.max(...ids.map((id) => gen(id)[st])), w = weatherKey(s);
+  let v = 0;
+  if (t === 'charge') v = (top('war') - 60) / 200 + (ctx.defending ? -0.05 : 0);
+  if (t === 'fire') v = (top('int') - 60) / 200 + (w === 'rain' || w === 'snow' ? -0.15 : (seasonOf(s) === 'autumn' || seasonOf(s) === 'winter') ? 0.08 : 0) + (ids.some((id) => TIMELY.some((x) => x.when === 'dry' && x.m.includes(id))) ? 0.08 : 0);
+  if (t === 'hold') v = (top('lead') - 60) / 250 + (ctx.defending ? 0.08 : -0.05);
+  if (t === 'ambush') v = (top('int') - 60) / 250 + (ctx.field || ctx.hill ? 0.1 : -0.05);
+  return Math.max(-k.tacAptMax, Math.min(k.tacAptMax, v));
+}
+export const bestTactic = (s, ids, ctx) => TACTICS.reduce((a, t) => (aptitude(s, ids, t, ctx) > aptitude(s, ids, a, ctx) ? t : a), 'hold');
+// the computer guesses: often its own best, sometimes the counter to what you are best at, sometimes anything
+export function aiTactic(s, ids, foes, ctx, foeCtx) {
+  const r = rnd(s), mine = bestTactic(s, ids, ctx);
+  if (r < 0.45) return mine;
+  if (r < 0.8) { const theirs = bestTactic(s, foes, foeCtx); return TACTICS.find((t) => beats(t, theirs)); }
+  return TACTICS[Math.floor(rnd(s) * 4)];
+}
+// a side's tactic for this battle: given (player's choice), or worked out
+function tacticOf(s, f, ids, foes, given, ctx, foeCtx) {
+  if (given && given !== 'auto' && TACTICS.includes(given)) return given;
+  if (f === PLAYER || f < 0) return bestTactic(s, ids, ctx);
+  return aiTactic(s, ids, foes, ctx, foeCtx);
+}
+function tacticMul(s, ids, mine, theirs, ctx) { return 1 + aptitude(s, ids, mine, ctx) + tacMatch(mine, theirs); }
 function sidePower(s, f, ids, troops, { attacking, outnumbered, foes = [], river = false }) {
   const g = ids.length ? best(ids, 'lead') : null;
   let m = 1;
@@ -943,8 +990,13 @@ function resolveField(s, m, duelWin, duel) {
     if (duelWin === 'd') { a.troops = Math.round(a.troops * (1 - k.duelLoss)); bMul += k.duelWinAtk; }
   }
   let A = a.troops, B = b.troops;
+  { // v2.0: tactics (an open-field fight: ambushes do well)
+    const cx = { field: true }, tA = tacticOf(s, a.f, a.gens, b.gens, a.tac, cx, cx), tB = tacticOf(s, b.f, b.gens, a.gens, b.tac, cx, cx);
+    aMul *= tacticMul(s, a.gens, tA, tB, cx); bMul *= tacticMul(s, b.gens, tB, tA, cx);
+    m.tacs = [tA, tB];
+  }
   m.rounds = [[A, B]]; m.sideGens = [[...a.gens], [...b.gens]]; // the battle screen plays these back
-  m.edge = edgeOf(s, a.gens, b.gens, false, false, a.f, b.f);
+  m.edge = [...tacEdge(s, m.tacs, a.gens, b.gens, { field: true }, { field: true }), ...edgeOf(s, a.gens, b.gens, false, false, a.f, b.f)];
   for (let r = 0; r < k.fieldRounds && A > 0 && B > 0; r++) {
     const pa = sidePower(s, a.f, a.gens, A, { attacking: true, outnumbered: A < B, foes: b.gens }) * aMul;
     const pb = sidePower(s, b.f, b.gens, B, { attacking: true, outnumbered: B < A, foes: a.gens }) * bMul;
@@ -980,8 +1032,14 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   }
   let A = m.troops, D = T.troops;
   const walls = wallMul(T);
+  { // v2.0: tactics
+    const hill = (m.terr ?? 1) < 1 || !!T.pass, cA = { hill }, cD = { defending: true, hill };
+    const tA = tacticOf(s, m.f, m.gens, dGens, m.tac, cA, cD), tD = tacticOf(s, o, dGens, m.gens, T.tac, cD, cA);
+    aMul *= tacticMul(s, m.gens, tA, tD, cA); dMul *= tacticMul(s, dGens, tD, tA, cD);
+    m.tacs = [tA, tD];
+  }
   m.rounds = [[A, D]]; m.sideGens = [[...m.gens], [...dGens]]; // the battle screen plays these back
-  m.edge = edgeOf(s, m.gens, dGens, crossesRiver(m), true, m.f, o);
+  m.edge = [...tacEdge(s, m.tacs, m.gens, dGens, { hill: (m.terr ?? 1) < 1 || !!T.pass }, { defending: true, hill: (m.terr ?? 1) < 1 || !!T.pass }), ...edgeOf(s, m.gens, dGens, crossesRiver(m), true, m.f, o)];
   // v0.9.6: no dice in the fighting itself (troops x 武力 x walls decide); the siege goes on until one
   // side breaks, so the stronger side always carries the day
   for (let r = 0; r < k.rounds && A > 0 && D > 0; r++) {

@@ -437,6 +437,13 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 .sgTip.hot{border-color:#ff8a7a;background:rgba(255,100,80,.12)}
 .sgFc{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;font-weight:700;color:#d9c8ae;margin:0 0 6px}.sgFc b{color:#f5ebdd;width:100%;font-size:12px}
 .sgFc i{font-style:normal;color:#9fd38f}.sgFc .bad,.sgFc .bad i{color:#ff8a7a}
+/* v2.0 (D-126): tactics */
+.sgTac{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:4px 0 6px}
+.sgTac>span{flex:1 0 100%;font-size:11px;font-weight:800;color:#d9c8ae;cursor:help}
+.sgTac button{display:flex;flex-direction:column;align-items:center;font:900 12px 'STKaiti','KaiTi','Kaiti SC',system-ui,serif;background:linear-gradient(#4a3726,#33251a);color:#f5ebdd;border:1px solid #8a6a3a;border-radius:9px;padding:3px 7px;line-height:1.15;min-width:52px}
+.sgTac button small{font:700 9.5px system-ui,sans-serif;color:#d9c8ae;white-space:nowrap}
+.sgTac button.on{background:linear-gradient(#f2c14e,#c8963e);color:#2b211a;border-color:#f2c14e}.sgTac button.on small{color:#4a3424}
+.sgTacB{display:inline-block;background:#7a2a22;color:#fff3d6;border:1px solid #f2c14e;border-radius:7px;padding:0 6px;font-weight:900}
 </style>
 </head>
 <body>
@@ -530,8 +537,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=c07af61335","./js/bigmap.js":"./js/bigmap.js?v=c07af61335","./js/config.js":"./js/config.js?v=c07af61335","./js/fire.js":"./js/fire.js?v=c07af61335","./js/game.js":"./js/game.js?v=c07af61335","./js/geo.js":"./js/geo.js?v=c07af61335","./js/glb.js":"./js/glb.js?v=c07af61335","./js/hud.js":"./js/hud.js?v=c07af61335","./js/i18n.js":"./js/i18n.js?v=c07af61335","./js/input.js":"./js/input.js?v=c07af61335","./js/main.js":"./js/main.js?v=c07af61335","./js/math.js":"./js/math.js?v=c07af61335","./js/missions.js":"./js/missions.js?v=c07af61335","./js/models.js":"./js/models.js?v=c07af61335","./js/nav.js":"./js/nav.js?v=c07af61335","./js/orient.js":"./js/orient.js?v=c07af61335","./js/poi.js":"./js/poi.js?v=c07af61335","./js/pranks.js":"./js/pranks.js?v=c07af61335","./js/props.js":"./js/props.js?v=c07af61335","./js/renderer.js":"./js/renderer.js?v=c07af61335","./js/sg_art.js":"./js/sg_art.js?v=c07af61335","./js/sg_bios.js":"./js/sg_bios.js?v=c07af61335","./js/sg_data.js":"./js/sg_data.js?v=c07af61335","./js/sg_elev.js":"./js/sg_elev.js?v=c07af61335","./js/sg_engine.js":"./js/sg_engine.js?v=c07af61335","./js/sg_map.js":"./js/sg_map.js?v=c07af61335","./js/sg_paper.js":"./js/sg_paper.js?v=c07af61335","./js/sg_portrait.js":"./js/sg_portrait.js?v=c07af61335","./js/sg_sites.js":"./js/sg_sites.js?v=c07af61335","./js/sg_table.js":"./js/sg_table.js?v=c07af61335","./js/sg_ui.js":"./js/sg_ui.js?v=c07af61335","./js/signals.js":"./js/signals.js?v=c07af61335","./js/world.js":"./js/world.js?v=c07af61335"}}</script>
-<script type="module" src="js/main.js?v=c07af61335"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=ca207bab88","./js/bigmap.js":"./js/bigmap.js?v=ca207bab88","./js/config.js":"./js/config.js?v=ca207bab88","./js/fire.js":"./js/fire.js?v=ca207bab88","./js/game.js":"./js/game.js?v=ca207bab88","./js/geo.js":"./js/geo.js?v=ca207bab88","./js/glb.js":"./js/glb.js?v=ca207bab88","./js/hud.js":"./js/hud.js?v=ca207bab88","./js/i18n.js":"./js/i18n.js?v=ca207bab88","./js/input.js":"./js/input.js?v=ca207bab88","./js/main.js":"./js/main.js?v=ca207bab88","./js/math.js":"./js/math.js?v=ca207bab88","./js/missions.js":"./js/missions.js?v=ca207bab88","./js/models.js":"./js/models.js?v=ca207bab88","./js/nav.js":"./js/nav.js?v=ca207bab88","./js/orient.js":"./js/orient.js?v=ca207bab88","./js/poi.js":"./js/poi.js?v=ca207bab88","./js/pranks.js":"./js/pranks.js?v=ca207bab88","./js/props.js":"./js/props.js?v=ca207bab88","./js/renderer.js":"./js/renderer.js?v=ca207bab88","./js/sg_art.js":"./js/sg_art.js?v=ca207bab88","./js/sg_bios.js":"./js/sg_bios.js?v=ca207bab88","./js/sg_data.js":"./js/sg_data.js?v=ca207bab88","./js/sg_elev.js":"./js/sg_elev.js?v=ca207bab88","./js/sg_engine.js":"./js/sg_engine.js?v=ca207bab88","./js/sg_map.js":"./js/sg_map.js?v=ca207bab88","./js/sg_paper.js":"./js/sg_paper.js?v=ca207bab88","./js/sg_portrait.js":"./js/sg_portrait.js?v=ca207bab88","./js/sg_sites.js":"./js/sg_sites.js?v=ca207bab88","./js/sg_table.js":"./js/sg_table.js?v=ca207bab88","./js/sg_ui.js":"./js/sg_ui.js?v=ca207bab88","./js/signals.js":"./js/signals.js?v=ca207bab88","./js/world.js":"./js/world.js?v=ca207bab88"}}</script>
+<script type="module" src="js/main.js?v=ca207bab88"></script>
 <!-- stamp:end -->
 </body>
 </html>

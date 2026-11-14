@@ -127,6 +127,9 @@ export const CFG = {
     // soldiers (in proportion to the shortfall) and his officers lose unpaidLoyal loyalty
     // (the first payFree soldiers of every city farm for their keep)
     // v1.8: 委任 attacks only where your side is at least autoThr times as strong (about "有利" or better)
+    // v2.0 (D-126): 战法. The tactic that beats the other's fights tacWin better, the beaten one tacLose worse;
+    // a side's own aptitude for its tactic adds at most ±tacAptMax
+    tacWin: 0.25, tacLose: 0.15, tacAptMax: 0.25,
     autoThr: 1.3, foodKeep: 2, // (and, like the computer, keeps foodKeep months of food at home when it plans attacks)
     payTroop: 1 / 45, payGen: 10, payFree: 1000, desert: 0.12, unpaidLoyal: 4,
     // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,
