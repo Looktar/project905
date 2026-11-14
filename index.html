@@ -429,6 +429,14 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
 /* v1.8 (D-124): the sandtable view */
 #sg.t3d{background-color:#2a1d14;background-size:256px 256px}
 #sgZoom #sg3D{font:900 12px system-ui,sans-serif}#sgZoom #sg3D.off{opacity:.45}
+/* v1.9 (D-125): the advisor and next month's forecast */
+.sgAdv{display:flex;gap:8px;align-items:flex-start;background:linear-gradient(#3a2a1c,#2c2016);border:1px solid #8a6a3a;border-radius:12px;padding:7px 8px;margin:4px 0 6px}
+.sgAdv>img{width:40px;height:40px;border-radius:50%;border:2px solid #f2c14e;flex:none;background:#4a3a2a}
+.sgAdv>div{flex:1;min-width:0}.sgAdv b{display:block;font:900 13px 'STKaiti','KaiTi','Kaiti SC',serif;color:#f2c14e;margin-bottom:3px}
+.sgTip{display:block;width:100%;text-align:left;font:600 12px/1.35 system-ui,sans-serif;color:#f5ebdd;background:rgba(255,255,255,.04);border:1px solid rgba(242,193,78,.25);border-radius:8px;padding:4px 7px;margin:3px 0}
+.sgTip.hot{border-color:#ff8a7a;background:rgba(255,100,80,.12)}
+.sgFc{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;font-weight:700;color:#d9c8ae;margin:0 0 6px}.sgFc b{color:#f5ebdd;width:100%;font-size:12px}
+.sgFc i{font-style:normal;color:#9fd38f}.sgFc .bad,.sgFc .bad i{color:#ff8a7a}
 </style>
 </head>
 <body>
@@ -522,8 +530,8 @@ html[lang=en] .sgSeal{font:900 12px/40px system-ui,sans-serif}
   <div id="dbg"></div>
 </div>
 <!-- stamp:begin (npm run stamp) -->
-<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=8a81483677","./js/bigmap.js":"./js/bigmap.js?v=8a81483677","./js/config.js":"./js/config.js?v=8a81483677","./js/fire.js":"./js/fire.js?v=8a81483677","./js/game.js":"./js/game.js?v=8a81483677","./js/geo.js":"./js/geo.js?v=8a81483677","./js/glb.js":"./js/glb.js?v=8a81483677","./js/hud.js":"./js/hud.js?v=8a81483677","./js/i18n.js":"./js/i18n.js?v=8a81483677","./js/input.js":"./js/input.js?v=8a81483677","./js/main.js":"./js/main.js?v=8a81483677","./js/math.js":"./js/math.js?v=8a81483677","./js/missions.js":"./js/missions.js?v=8a81483677","./js/models.js":"./js/models.js?v=8a81483677","./js/nav.js":"./js/nav.js?v=8a81483677","./js/orient.js":"./js/orient.js?v=8a81483677","./js/poi.js":"./js/poi.js?v=8a81483677","./js/pranks.js":"./js/pranks.js?v=8a81483677","./js/props.js":"./js/props.js?v=8a81483677","./js/renderer.js":"./js/renderer.js?v=8a81483677","./js/sg_art.js":"./js/sg_art.js?v=8a81483677","./js/sg_bios.js":"./js/sg_bios.js?v=8a81483677","./js/sg_data.js":"./js/sg_data.js?v=8a81483677","./js/sg_elev.js":"./js/sg_elev.js?v=8a81483677","./js/sg_engine.js":"./js/sg_engine.js?v=8a81483677","./js/sg_map.js":"./js/sg_map.js?v=8a81483677","./js/sg_paper.js":"./js/sg_paper.js?v=8a81483677","./js/sg_portrait.js":"./js/sg_portrait.js?v=8a81483677","./js/sg_sites.js":"./js/sg_sites.js?v=8a81483677","./js/sg_table.js":"./js/sg_table.js?v=8a81483677","./js/sg_ui.js":"./js/sg_ui.js?v=8a81483677","./js/signals.js":"./js/signals.js?v=8a81483677","./js/world.js":"./js/world.js?v=8a81483677"}}</script>
-<script type="module" src="js/main.js?v=8a81483677"></script>
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=c07af61335","./js/bigmap.js":"./js/bigmap.js?v=c07af61335","./js/config.js":"./js/config.js?v=c07af61335","./js/fire.js":"./js/fire.js?v=c07af61335","./js/game.js":"./js/game.js?v=c07af61335","./js/geo.js":"./js/geo.js?v=c07af61335","./js/glb.js":"./js/glb.js?v=c07af61335","./js/hud.js":"./js/hud.js?v=c07af61335","./js/i18n.js":"./js/i18n.js?v=c07af61335","./js/input.js":"./js/input.js?v=c07af61335","./js/main.js":"./js/main.js?v=c07af61335","./js/math.js":"./js/math.js?v=c07af61335","./js/missions.js":"./js/missions.js?v=c07af61335","./js/models.js":"./js/models.js?v=c07af61335","./js/nav.js":"./js/nav.js?v=c07af61335","./js/orient.js":"./js/orient.js?v=c07af61335","./js/poi.js":"./js/poi.js?v=c07af61335","./js/pranks.js":"./js/pranks.js?v=c07af61335","./js/props.js":"./js/props.js?v=c07af61335","./js/renderer.js":"./js/renderer.js?v=c07af61335","./js/sg_art.js":"./js/sg_art.js?v=c07af61335","./js/sg_bios.js":"./js/sg_bios.js?v=c07af61335","./js/sg_data.js":"./js/sg_data.js?v=c07af61335","./js/sg_elev.js":"./js/sg_elev.js?v=c07af61335","./js/sg_engine.js":"./js/sg_engine.js?v=c07af61335","./js/sg_map.js":"./js/sg_map.js?v=c07af61335","./js/sg_paper.js":"./js/sg_paper.js?v=c07af61335","./js/sg_portrait.js":"./js/sg_portrait.js?v=c07af61335","./js/sg_sites.js":"./js/sg_sites.js?v=c07af61335","./js/sg_table.js":"./js/sg_table.js?v=c07af61335","./js/sg_ui.js":"./js/sg_ui.js?v=c07af61335","./js/signals.js":"./js/signals.js?v=c07af61335","./js/world.js":"./js/world.js?v=c07af61335"}}</script>
+<script type="module" src="js/main.js?v=c07af61335"></script>
 <!-- stamp:end -->
 </body>
 </html>

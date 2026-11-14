@@ -1143,3 +1143,44 @@ describe('v1.8: the sandtable camera (D-124)', () => {
     expect(T.project(0, 0, 500)[2]).toBeGreaterThan(T.project(0, 0, -500)[2]);
   });
 });
+
+describe('v1.9: the advisor and the forecast (D-125)', () => {
+  it('the forecast matches what the month actually does (with no battles or events)', () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed), P = 0, [a, b] = factionGens(s, P);
+      for (const f of s.factions.slice(1)) f.alive = false; // nobody else moves
+      s.events = [];
+      void b;
+      const orders = { [a]: { cmd: 'draft' } }; // (a search could find an officer or a treasure: not forecastable)
+      const fc = E.forecast(s, P, orders), g0 = s.factions[P].gold, f0 = s.factions[P].food;
+      const t0 = Object.values(s.cities).filter((c) => c.owner === P).reduce((x, c) => x + c.troops, 0);
+      const real = JSON.parse(JSON.stringify(s));
+      E.beginTurn(real, orders);
+      for (let x = E.nextBattle(real); x; x = E.nextBattle(real)) E.resolveBattle(real, x.m, x.duel ? E.autoDuel(real, x.duel) : null, x.duel);
+      const randomBefore = real.events.length;
+      E.endTurn(real);
+      if (real.events.slice(randomBefore).some((e) => ['event', 'riot', 'hunger', 'unpaid'].includes(e.k))) continue; // a random event changed things
+      expect(real.factions[P].gold - g0).toBeCloseTo(fc.gold, -1);
+      expect(real.factions[P].food - f0).toBeCloseTo(fc.food, -1);
+      const t1 = Object.values(real.cities).filter((c) => c.owner === P).reduce((x, c) => x + c.troops, 0);
+      expect(t1 - t0).toBe(fc.troops);
+    }
+  });
+  it('the advisor warns about an attack, hunger and spare officers, and points at a weak neighbour', () => {
+    const s = newGame(3), P = 0, cap = s.factions[P].cap, A = ADJ[cap][0].c;
+    let tips = E.advise(s, P, {});
+    expect(tips.some((x) => x.k === 'idle')).toBe(true);
+    s.factions[P].food = 0;
+    expect(E.advise(s, P, {})[0].k).toBe('hungry');
+    s.factions[P].food = 30000;
+    s.armies.push({ id: 999, f: 1, gens: [], troops: 20000, from: A, to: cap, route: [A, cap], left: 1, total: 1 });
+    tips = E.advise(s, P, {});
+    expect(tips[0]).toMatchObject({ k: 'attacked', c: cap });
+    s.armies.pop();
+    s.cities[cap].troops = 9000;
+    const n = ADJ[cap].map((x) => x.c).find((x) => s.cities[x].owner !== P);
+    s.cities[n].troops = 200;
+    expect(E.advise(s, P, {}).some((x) => x.k === 'chance')).toBe(true);
+    expect(E.advisorOf(s, P)).toBe(factionGens(s, P).sort((x, y) => E.gen(y).int - E.gen(x).int)[0]);
+  });
+});

@@ -1206,3 +1206,83 @@ export function factionName(s, f, zh = true) {
   const g = gen(fa.lord);
   return zh ? g.zh + '军' : g.en + "'s army";
 }
+
+// ---------------------------------------------------------------- v1.9 (D-125): the advisor and the forecast
+// What next month will do to lord f's gold, food and soldiers if these orders are carried out (before any battles,
+// random events or the computer's moves): order costs, drafting, rations, income, the harvest, pay and food eaten.
+export function forecast(s, f, orders = {}) {
+  const k = K(), fa = s.factions[f], sup = supplied(s, f);
+  let cost = 0, drafted = 0, rations = 0, leaving = 0;
+  const extra = {};
+  for (const [id, o] of Object.entries(orders)) {
+    if (!s.gens[id] || s.gens[id].f !== f || !validOrder(s, f, id, o)) continue;
+    cost += orderCost(o, id);
+    const c = s.gens[id].c, C = s.cities[c];
+    if (o.cmd === 'draft') { const n = Math.max(0, Math.min(capOf(C) - C.troops - (extra[c] || 0), Math.round(draftAmt(id, C) * (f !== PLAYER ? D(s).draft : 1)))); drafted += n; extra[c] = (extra[c] || 0) + n; }
+    if (o.cmd === 'march') { const months = travelMonths(routeOf(s, f, c, o.to)), n = Math.min(o.n ?? Math.floor(C.troops * k.marchFrac), feedable(s, f, months)); if (n >= k.minMarch) { rations += rationsOf(n, months); leaving += n; } }
+    if (o.cmd === 'intercept') { const n = o.n ?? Math.floor(C.troops * k.marchFrac); rations += rationsOf(n, 0); leaving += n; }
+  }
+  const home = ownedBy(s, f).reduce((a, c) => a + s.cities[c].troops, 0) + drafted - leaving;
+  const away = s.armies.filter((a) => a.f === f).reduce((a, x) => a + x.troops, 0) + leaving;
+  let income = 0, foodIn_ = 0;
+  for (const c of ownedBy(s, f)) if (sup.has(c) && !s.cities[c].pass) { const [g, fd] = cityIncome(s, c); income += g; foodIn_ += foodIn(s, fd); }
+  const pay = Math.round(Math.max(0, home + away - k.payFree * citiesOf(s, f).length) * k.payTroop + factionGens(s, f).length * k.payGen);
+  const eat = Math.round(home * k.foodPerTroop);
+  const gold = income - pay - cost, food = foodIn_ - eat - rations;
+  return { gold, food, troops: drafted, goldAfter: fa.gold + gold, foodAfter: fa.food + food, income, pay, cost, foodIn: foodIn_, eat, rations, harvest: dateOf(s).month === 9 };
+}
+// The advisor: the few things most worth knowing this month, most urgent first. Each tip: { k, pri, c?, ... }.
+export function advise(s, f = PLAYER, orders = {}) {
+  const k = K(), fa = s.factions[f], out = [], mine = new Set(ownedBy(s, f)), month = dateOf(s).month, fc = forecast(s, f, orders);
+  // an army is coming for one of my cities and the garrison looks too weak
+  for (const a of s.armies) {
+    if (a.f === f || !mine.has(a.to)) continue;
+    const C = s.cities[a.to], r = armyPower(a.troops, a.gens) / Math.max(1, armyPower(C.troops, defenders(s, a.to)) * wallMul(C));
+    if (r > 0.8) out.push({ k: 'attacked', pri: 100 + r, c: a.to, n: a.troops, d: C.troops, eta: a.left });
+  }
+  if (fc.goldAfter < 0) out.push({ k: 'broke', pri: 90, n: -fc.gold });
+  const fm = foodMonths(s, f);
+  if (fc.foodAfter < 0 || (fm < 2 && month !== 9)) out.push({ k: 'hungry', pri: 88, n: fm });
+  // a weak neighbour worth taking (the best odds from any of my supplied cities, with rations to get there)
+  let best = null;
+  const sup = supplied(s, f);
+  for (const c of mine) {
+    const C = s.cities[c], gs = gensIn(s, c, f);
+    if (!sup.has(c) || !gs.length || C.troops < k.minMarch * 1.5) continue;
+    const send = Math.min(Math.floor(C.troops * k.marchFrac), commandOfAll(gs.slice(0, 3)));
+    for (const { c: n } of ADJ[c]) {
+      const T = s.cities[n];
+      if (T.owner === f || truceLeft(s, f, T.owner) || (T.owner === PLAYER && f !== PLAYER)) continue;
+      const months = travelMonths(routeOf(s, f, c, n)), fed = Math.min(send, feedable(s, f, months));
+      if (fed < k.minMarch) continue;
+      const r = armyPower(fed, gs) * terrain(c, n).m / Math.max(1, armyPower(T.troops, defenders(s, n)) * wallMul(T));
+      if (r >= 1.5 && (!best || r > best.r)) best = { k: 'chance', pri: 60 + Math.min(20, r * 4), c: n, from: c, r: Math.round(r * 10) / 10, n: T.troops };
+    }
+  }
+  if (best) out.push(best);
+  // a frontier city much weaker than an enemy city next to it
+  for (const c of mine) {
+    if (out.some((x) => x.k === 'attacked' && x.c === c)) continue;
+    const C = s.cities[c], foe = ADJ[c].map((x) => x.c).filter((n) => s.cities[n].owner >= 0 && s.cities[n].owner !== f && !truceLeft(s, f, s.cities[n].owner)).sort((a, b) => s.cities[b].troops - s.cities[a].troops)[0];
+    if (foe && s.cities[foe].troops > C.troops * 2 && s.cities[foe].troops > 2000) { out.push({ k: 'weak', pri: 55, c, foe, n: s.cities[foe].troops, d: C.troops }); break; }
+  }
+  // the one officer missing from a bond, hiding in or next to my land
+  for (const x of bondView(s, f)) {
+    if (x.ready || x.need - x.have.length !== 1) continue;
+    const m = x.b.m.find((g) => x.where[g].k === 'wild' && (mine.has(x.where[g].c) || ADJ[x.where[g].c].some((y) => mine.has(y.c))));
+    if (m) { out.push({ k: 'bond', pri: 58, g: m, c: x.where[m].c, b: x.b.id, ownIt: mine.has(x.where[m].c) }); break; }
+  }
+  if (month === 8) out.push({ k: 'harvestSoon', pri: 40 });
+  if (month >= 9 && month <= 11 && fm < 12 && fa.gold > 800) out.push({ k: 'riceCheap', pri: 42, p: ricePrice(s) });
+  if (month >= 10 && month <= 12 && fm >= 6 && !best) out.push({ k: 'autumnWar', pri: 35 });
+  // spare gold and something to build
+  if (fa.gold - fc.cost > k.bldCost * 4) {
+    const c = [...mine].filter((x) => !s.cities[x].pass).sort((a, b) => s.cities[b].dev - s.cities[a].dev).find((x) => ['market', 'farm', 'barracks', 'walls', 'academy'].some((b) => canBuild(s.cities[x], b)));
+    if (c) out.push({ k: 'build', pri: 32, c });
+  }
+  const idle = factionGens(s, f).filter((g) => s.gens[g].c && !orders[g]).length;
+  if (idle) out.push({ k: 'idle', pri: 30, n: idle });
+  return out.sort((a, b) => b.pri - a.pri);
+}
+// who speaks for the advisor: the cleverest officer of f
+export const advisorOf = (s, f = PLAYER) => factionGens(s, f).sort((a, b) => gen(b).int - gen(a).int)[0] || null;

@@ -39,6 +39,13 @@ extend({
   sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
   sgHelpFood: '粮食（v1.7）：粮主要靠九月秋收，平时每月只有一点；城里的兵每月都要吃。出征要先带够军粮（兵越多、路越远带得越多），粮不够就只能少带兵或者出不了征。断粮会逃兵、武将不满，下个月打仗 −20%。米价秋后便宜、春夏贵，可以在势力面板买卖；计略“烧粮”能烧掉敌人的粮仓。',
+  sgAdvisor: '军师 {g}', sgAdvTap: '点一条建议，地图跳过去', sgAdvNone: '眼下没什么要紧的，主公放手去做。',
+  advAttacked: '{c} 告急！{n} 敌军 {eta} 到，城里只有 {d}：调兵过去，或者筑城、选坚守。', advBroke: '下个月的钱不够发军饷（差 {n} 金）：少征点兵，或者卖些粮。',
+  advHungry: '粮只够吃 {n} 个月了：去米市买粮，或者少打仗、等九月秋收。', advChance: '{c} 只有 {n} 守军，从 {from} 出兵胜算约 {r} 倍：可以打。',
+  advWeak: '{c} 只有 {d} 兵，隔壁的 {foe} 有 {n}：小心被打，先征兵或筑城。', advBond: '{g} 就藏在 {c}{own}：找到他就凑齐「{b}」。', advOwnIt: '（我们的城，派人搜索）',
+  advHarvestSoon: '下个月九月秋收，粮会大涨：现在可以大胆用粮。', advRiceCheap: '秋后米价便宜（{p} 金/百石），多囤点粮过冬开春。', advAutumnWar: '粮仓正满，正是出兵的季节。',
+  advBuild: '钱攒得多了，在 {c} 盖座建筑吧。', advIdle: '还有 {n} 位武将闲着：可以按“委任”。',
+  sgForecast: '下月预计', sgFcGold: '金 {a}→{b}', sgFcFood: '粮 {a}→{b}', sgFcTroops: '兵 +{n}', sgFcHarvest: '（含秋收）',
   sgAutoAtk: '出征 → {c}', sgSlow3D: '这台设备画 3D 沙盘太卡，已切换到 2D 地图（右边的 3D 按钮可以切回）', sgNo3D: '这台设备不支持 3D 沙盘',
   sgFoodLine: '粮：每月 +{a}（九月秋收 +{h}）· 养兵 −{u}/月 · 够吃 {m} 个月', sgRice: '米价 {p} 金/百石（{w}）', sgRiceCheap: '秋后便宜', sgRiceDear: '青黄不接，贵', sgRiceMid: '平价',
   sgBuy: '买粮 {n}', sgSell: '卖粮 {n}', sgRations: '军粮 {n}', sgNoRations: '粮不够出征', sgFeedOnly: '粮只够 {n} 兵', sgFoodLeft: '粮还剩 {n}', sgMonthsS: '够{n}月',
@@ -84,6 +91,13 @@ extend({
   sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
   sgHelpFood: 'Food (v1.7): food comes mostly with the September harvest, with only a trickle the rest of the year, and soldiers at home eat every month. An attack takes its rations along (more soldiers, longer road, more food); short of food you send fewer or cannot march. An empty granary costs soldiers and loyalty, and the next month you fight 20% worse. Rice is cheap after the harvest and dear in spring and summer: buy and sell it in your side panel. The Burn grain plot sets an enemy granary alight.',
+  sgAdvisor: 'Advisor {g}', sgAdvTap: 'Tap a tip to jump there', sgAdvNone: 'Nothing pressing right now, my lord.',
+  advAttacked: '{c} is in danger! {n} enemies arrive {eta}, only {d} inside: send troops, build walls or hold fast.', advBroke: 'Not enough gold for next month\'s pay (short by {n}): draft less or sell some food.',
+  advHungry: 'Food for only {n} months: buy rice, fight less, or wait for the September harvest.', advChance: '{c} has only {n} defenders; from {from} our odds are about {r} to 1: take it.',
+  advWeak: '{c} has only {d} soldiers and {foe} next door has {n}: draft or build walls before they come.', advBond: '{g} is hiding in {c}{own}: find him to complete {b}.', advOwnIt: ' (our city: search there)',
+  advHarvestSoon: 'The harvest comes next month: food can be spent freely now.', advRiceCheap: 'Rice is cheap after the harvest ({p} gold per 100): stock up for winter and spring.', advAutumnWar: 'The granary is full: the season for campaigns.',
+  advBuild: 'Gold is piling up: put up a building in {c}.', advIdle: '{n} officers have nothing to do: try Delegate.',
+  sgForecast: 'Next month', sgFcGold: 'gold {a}→{b}', sgFcFood: 'food {a}→{b}', sgFcTroops: 'troops +{n}', sgFcHarvest: ' (harvest)',
   sgAutoAtk: 'attacking {c}', sgSlow3D: 'The 3D sandtable is too slow on this device; switched to the flat map (the 3D button on the right brings it back)', sgNo3D: 'This device cannot show the 3D sandtable',
   sgFoodLine: 'Food: +{a} a month (+{h} at the September harvest) · soldiers eat −{u}/mo · lasts {m} months', sgRice: 'Rice {p} gold per 100 ({w})', sgRiceCheap: 'cheap after the harvest', sgRiceDear: 'dear before the harvest', sgRiceMid: 'fair price',
   sgBuy: 'Buy {n}', sgSell: 'Sell {n}', sgRations: 'rations {n}', sgNoRations: 'not enough food to march', sgFeedOnly: 'food for {n} only', sgFoodLeft: '{n} food left', sgMonthsS: '{n} mo',
@@ -728,13 +742,29 @@ export class Sanguo {
     const armies = (foeA.length ? `<h4 class="sgRed">⚠ ${t('sgIncoming')}</h4>${foeA.map(armyRow).join('')}` : '') + (mineA.length ? `<h4>🚩 ${t('sgOnRoad')}</h4>${mineA.map(armyRow).join('')}` : '');
     void bonds;
     const inc = E.citiesOf(st, E.PLAYER).reduce((a, c) => a + E.cityIncome(st, c)[0], 0), pay = E.payOf(st, E.PLAYER), net = inc - pay;
-    const money = `<p class="sgHint sgInc">💰 ${F('sgMoney', { a: inc, p: pay, n: (net >= 0 ? '+' : '') + net })}</p>` + this.foodBlock();
+    const money = this.adviceBlock() + `<p class="sgHint sgInc">💰 ${F('sgMoney', { a: inc, p: pay, n: (net >= 0 ? '+' : '') + net })}</p>` + this.foodBlock();
     const bv = E.bondView(st, E.PLAYER), shown = bv.filter((x) => x.ready || x.have.length).slice(0, 4);
-    const lead = st.lead && !bv.find((x) => x.b.id === st.lead.b && x.ready) && st.gens[st.lead.g] && st.gens[st.lead.g].hidden ? `<p class="sgHint sgLeadH">🔎 ${esc(F('sgLead', { g: gName(st.lead.g), c: cName(st.gens[st.lead.g].c), b: bondName(BONDS.find((b) => b.id === st.lead.b)) }))}</p>` : '';
+    const lead = st.lead && !bv.find((x) => x.b.id === st.lead.b && x.ready) && st.gens[st.lead.g] && st.gens[st.lead.g].hidden && !E.advise(st, E.PLAYER, st.orders).slice(0, 3).some((x) => x.k === 'bond' && x.g === st.lead.g) ? `<p class="sgHint sgLeadH">🔎 ${esc(F('sgLead', { g: gName(st.lead.g), c: cName(st.gens[st.lead.g].c), b: bondName(BONDS.find((b) => b.id === st.lead.b)) }))}</p>` : '';
     const bondsH = `<h4>♥ ${t('sgBonds')} <small>${F('sgBondsOn', { n: bv.filter((x) => x.ready).length })}</small><button class="sgMini" data-a="bonds">${t('sgBondPage')}</button></h4>${lead}${shown.length ? shown.map((x) => this.bondRow(x, true)).join('') : `<p class="sgHint">${t('sgBondHint')}</p>`}`;
     return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>${money}
       ${bondsH}
       <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}${bv.filter((x) => x.b.m.includes(g)).map((x) => ` <span class="sgBchip${x.ready ? ' on' : ''}">♥${esc(bondName(x.b))} ${x.have.length}/${x.need}</span>`).join('')}</div>`).join('')}`;
+  }
+  // v1.9 (D-125): the advisor's few tips (tap to jump to the city) and next month's forecast
+  tipText(x) {
+    const b = x.b && BONDS.find((y) => y.id === x.b);
+    const v = { c: x.c ? cName(x.c) : '', from: x.from ? cName(x.from) : '', foe: x.foe ? cName(x.foe) : '', n: typeof x.n === 'number' && x.k !== 'hungry' && x.k !== 'idle' ? kNum(x.n) : x.n, d: x.d !== undefined ? kNum(x.d) : '', r: x.r, eta: x.eta !== undefined ? this.eta({ left: x.eta }) : '', g: x.g ? gName(x.g) : '', b: b ? bondName(b) : '', own: x.ownIt ? t('advOwnIt') : '', p: x.p };
+    return F('adv' + x.k[0].toUpperCase() + x.k.slice(1), v);
+  }
+  adviceBlock() {
+    const st = this.s, P = E.PLAYER, tips = E.advise(st, P, st.orders).slice(0, 3), who = E.advisorOf(st, P), fc = E.forecast(st, P, st.orders);
+    const sgn = (n) => (n >= 0 ? '+' : '') + kNum(n);
+    const fcl = [`<span class="${fc.goldAfter < 0 ? 'bad' : ''}">${F('sgFcGold', { a: kNum(st.factions[P].gold), b: kNum(fc.goldAfter) })} <i>${sgn(fc.gold)}</i></span>`,
+      `<span class="${fc.foodAfter < 0 ? 'bad' : ''}">${F('sgFcFood', { a: kNum(st.factions[P].food), b: kNum(fc.foodAfter) })} <i>${sgn(fc.food)}</i>${fc.harvest ? t('sgFcHarvest') : ''}</span>`,
+      ...(fc.troops ? [`<span>${F('sgFcTroops', { n: kNum(fc.troops) })}</span>`] : [])].join('');
+    return `<div class="sgAdv">${who ? `<img src="${portraitURL(who)}" alt="">` : ''}<div><b>${esc(F('sgAdvisor', { g: who ? gName(who) : '' }))}</b>
+      ${tips.length ? tips.map((x) => `<button class="sgTip${x.pri >= 85 ? ' hot' : ''}" ${x.c ? `data-focus="${x.c}"` : x.k === 'idle' ? 'data-a="auto"' : ''}>${esc(this.tipText(x))}</button>`).join('') : `<p class="sgHint">${t('sgAdvNone')}</p>`}</div></div>
+      <div class="sgFc"><b>${t('sgForecast')}</b>${fcl}</div>`;
   }
   // v1.7 (D-123): the granary: what comes in, what goes out, and the rice market
   foodBlock() {
@@ -911,6 +941,8 @@ export class Sanguo {
     if (b.dataset.a === 'close') { this.sel = null; this.mode = null; this.render(); return; }
     if (b.dataset.a === 'hide') { this.togglePanel(true); return; }
     if (b.dataset.a === 'bonds') { this.ui(() => this.bondBook()); return; }
+    if (b.dataset.focus) { this.sel = b.dataset.focus; this.mode = null; this.focus(this.sel); this.render(); return; }
+    if (b.dataset.a === 'auto') { $('sgAuto').click(); return; }
     if (b.dataset.trade) { if (E.trade(this.s, E.PLAYER, +b.dataset.trade)) { sfx.cash(); this.save(); } this.render(); return; }
     if (b.dataset.a === 'cancel') { this.mode = null; this.render(); return; }
     const id = b.dataset.g;
@@ -1031,6 +1063,7 @@ export class Sanguo {
       await this.ui(() => this.report(evs));
       try { sfx.setBgmMood('calm'); } catch (e) { /* ignore */ }
       if (st.over) await this.ui(() => this.gameOver());
+      else { const top = E.advise(st, E.PLAYER, st.orders)[0]; if (top && top.pri >= 55) this.toast('🪶 ' + this.tipText(top)); } // v1.9: the advisor's first word
     } catch (err) {
       // the rules themselves failed part-way: finish the month without the show so the game can go on
       console.error('sg month:', err);
