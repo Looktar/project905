@@ -39,6 +39,9 @@ extend({
   sgCmdBuild: '建设', sgPickBld: '建什么？（地标城的特产建筑多算一级 ★）', sgBld: '建筑', sgBldNone: '还没有建筑', sgBldNeed: '开发 {n}', sgBldMax: '已满级',
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
   sgHelpFood: '粮食（v1.7）：粮主要靠九月秋收，平时每月只有一点；城里的兵每月都要吃。出征要先带够军粮（兵越多、路越远带得越多），粮不够就只能少带兵或者出不了征。断粮会逃兵、武将不满，下个月打仗 −20%。米价秋后便宜、春夏贵，可以在势力面板买卖；计略“烧粮”能烧掉敌人的粮仓。',
+  sgHelpTac: '战法（v2.0）：出征时（和每座城的“守城战法”）可以选冲锋、火攻、坚守、伏兵。冲锋克火攻，火攻克坚守，坚守克伏兵，伏兵克冲锋：克住对方 +25%，被克 −15%。另外看武将擅长什么：冲锋看武力，火攻看智力（秋冬干燥更好，雨雪天不行），坚守看统率（守城更好），伏兵看智力（山地、关隘、野战更好）。“自动”选你最擅长的；电脑会猜你的战法，偶尔换一换才打得出奇兵。',
+  tacCharge: '冲锋', tacFire: '火攻', tacHold: '坚守', tacAmbush: '伏兵', tacAuto: '自动', sgTactic: '战法', sgDefTactic: '守城战法', sgTacBeats: '克{t}',
+  sgTacHint: '冲锋克火攻，火攻克坚守，坚守克伏兵，伏兵克冲锋。“自动”按武将最擅长的选——电脑会猜你，偶尔换一换。',
   sgAdvisor: '军师 {g}', sgAdvTap: '点一条建议，地图跳过去', sgAdvNone: '眼下没什么要紧的，主公放手去做。',
   advAttacked: '{c} 告急！{n} 敌军 {eta} 到，城里只有 {d}：调兵过去，或者筑城、选坚守。', advBroke: '下个月的钱不够发军饷（差 {n} 金）：少征点兵，或者卖些粮。',
   advHungry: '粮只够吃 {n} 个月了：去米市买粮，或者少打仗、等九月秋收。', advChance: '{c} 只有 {n} 守军，从 {from} 出兵胜算约 {r} 倍：可以打。',
@@ -91,6 +94,9 @@ extend({
   sgCmdBuild: 'Construct', sgPickBld: 'Build what? (a landmark\'s specialty counts one level more ★)', sgBld: 'Buildings', sgBldNone: 'No buildings yet', sgBldNeed: 'needs dev {n}', sgBldMax: 'max level',
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
   sgHelpFood: 'Food (v1.7): food comes mostly with the September harvest, with only a trickle the rest of the year, and soldiers at home eat every month. An attack takes its rations along (more soldiers, longer road, more food); short of food you send fewer or cannot march. An empty granary costs soldiers and loyalty, and the next month you fight 20% worse. Rice is cheap after the harvest and dear in spring and summer: buy and sell it in your side panel. The Burn grain plot sets an enemy granary alight.',
+  sgHelpTac: 'Tactics (v2.0): on an attack (and as each city\'s defence tactic) choose Charge, Fire, Hold or Ambush. Charge beats Fire, Fire beats Hold, Hold beats Ambush, Ambush beats Charge: +25% for the winner, −15% for the beaten. Then what your officers are good at: Charge from War, Fire from Intelligence (better when dry in autumn and winter, useless in rain or snow), Hold from Leadership (better defending), Ambush from Intelligence (better on hills, at passes and in the field). Auto picks your best; the computer tries to guess you, so surprise it now and then.',
+  tacCharge: 'Charge', tacFire: 'Fire', tacHold: 'Hold', tacAmbush: 'Ambush', tacAuto: 'Auto', sgTactic: 'Tactic', sgDefTactic: 'Defence tactic', sgTacBeats: 'beats {t}',
+  sgTacHint: 'Charge beats Fire, Fire beats Hold, Hold beats Ambush, Ambush beats Charge. Auto picks what your officers do best; the computer tries to guess you, so mix it up now and then.',
   sgAdvisor: 'Advisor {g}', sgAdvTap: 'Tap a tip to jump there', sgAdvNone: 'Nothing pressing right now, my lord.',
   advAttacked: '{c} is in danger! {n} enemies arrive {eta}, only {d} inside: send troops, build walls or hold fast.', advBroke: 'Not enough gold for next month\'s pay (short by {n}): draft less or sell some food.',
   advHungry: 'Food for only {n} months: buy rice, fight less, or wait for the September harvest.', advChance: '{c} has only {n} defenders; from {from} our odds are about {r} to 1: take it.',
@@ -203,6 +209,9 @@ const BFX = { atk: 'fxAtk', def: 'fxDef', duel: 'fxDuel', search: 'fxSearch', de
 const bondName = (b) => (zh() ? b.zh : b.en);
 const bondFxText = (b) => Object.entries(b.fx).map(([k, v]) => `${t(BFX[k] || k)} +${Math.round(v * 100)}%`).join(' · ');
 function miniFace(id, on) { return `<span class="sgMf${on ? ' on' : ''}" title="${esc(gName(id))}"><img src="${portraitURL(id)}" alt=""></span>`; }
+// v2.0 (D-126): tactics
+const TAC_KEY = { charge: 'tacCharge', fire: 'tacFire', hold: 'tacHold', ambush: 'tacAmbush', auto: 'tacAuto' };
+const pct = (v) => `${v >= 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%`;
 const bName = (b) => (zh() ? BUILDINGS[b].zh : BUILDINGS[b].en);
 // a building's effect for one level, numbers from config
 function bFx(b) {
@@ -838,7 +847,7 @@ export class Sanguo {
     if (rum.length) h += `<p class="sgHint">🗣 ${esc(F('sgRumoured', { g: rum.map(gName).join('、') }))}</p>`;
     if (mine && !E.supplied(st, E.PLAYER).has(c)) h += `<p class="sgWarn">${t('sgCut')}</p>`;
     for (const a of (st.armies || []).filter((x) => x.to === c && x.f !== C.owner)) h += `<p class="sgWarn">⚠ ${esc(F('sgArmyTo', { g: a.gens.map(gName).join('、') || this.fName(a.f), n: kNum(a.troops), to: cName(c), eta: this.eta(a) }))}</p>`;
-    if (mine) h += this.orderBlock(c, gs);
+    if (mine) h += this.tacticChips(null, C.tac || 'auto', gs, { defending: true, hill: !!info.pass }, `data-c="${c}" data-dtac`) + this.orderBlock(c, gs);
     else h += `<h4>${C.owner === -1 && gs.length ? t('sgGuard') : t('sgGarrison')}</h4>${gs.length ? gs.map((g) => genCard(g)).join('') : `<p class="sgHint">${t('sgNone')}</p>`}`;
     h += `<h4>${t('sgRoad')}</h4>${ADJ[c].map(({ c: n, road }) => `<div class="sgRoadRow"><span class="sgDot" style="background:${this.fColor(st.cities[n].owner)}"></span>${esc(cName(n))}<small>${esc(road)}${ADJ[c].find((x) => x.c === n).station ? ' · ⛽ ' + esc(F('sgStation', { n: ADJ[c].find((x) => x.c === n).station })) : ''}${this.terrTags(n, c).length ? ' · ' + esc(this.terrTags(n, c).join(' ')) : ''}</small></div>`).join('')}`;
     return h;
@@ -855,13 +864,21 @@ export class Sanguo {
   lastHop(c, n) { const r = E.routeOf(this.s, E.PLAYER, c, n); return r[r.length - 2]; } // the road an army ends on
   armyOf(g) { return (this.s.armies || []).find((a) => a.gens.includes(g)) || null; }
   eta(a) { return a.left <= 1 ? t('sgEtaNow') : F('sgEta', { n: a.left }); }
+  // the five tactic buttons: each with what these officers are good at, and what it beats
+  tacticChips(id, cur, ids, ctx, attr) {
+    const st = this.s, best = E.bestTactic(st, ids, ctx);
+    return `<div class="sgTac"><span title="${esc(t('sgTacHint'))}">${t(attr.includes('data-dtac') ? 'sgDefTactic' : 'sgTactic')} ⓘ</span>${['auto', ...E.TACTICS].map((tc) => {
+      const v = E.aptitude(st, ids, tc === 'auto' ? best : tc, ctx), beat = tc === 'auto' ? '' : E.TACTICS.find((x) => E.beats(tc, x));
+      return `<button ${attr}="${tc}" class="${cur === tc ? 'on' : ''}">${t(TAC_KEY[tc])}${tc === 'auto' ? `<small>${t(TAC_KEY[best])} ${pct(v)}</small>` : `<small>${pct(v)} · ${F('sgTacBeats', { t: t(TAC_KEY[beat]) })}</small>`}</button>`;
+    }).join('')}</div>`;
+  }
   orderText(o) {
     const k = o.cmd === 'plot' ? ({ fire: 'sgFire', grain: 'sgGrain' }[o.kind] || 'sgRumor') : CMD_KEY[o.cmd];
     if (o.cmd === 'build') return `${t(k)} · ${BUILDINGS[o.b] ? bName(o.b) : ''}`;
     if (o.cmd === 'poach') return `${t(k)} → ${gName(o.g)}`;
     if (o.cmd === 'envoy') return `${t(k)} → ${this.fName(o.f)}`;
     if (o.cmd === 'intercept') { const A = (this.s.armies || []).find((a) => a.id === o.army); return t(k) + (A ? ` → ${this.fName(A.f)}` : '') + (o.n ? ' · ' + kNum(o.n) : ''); }
-    return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}` : '');
+    return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}${o.tac && o.tac !== 'auto' ? ' · ' + t(TAC_KEY[o.tac]) : ''}` : '');
   }
   // troops in city c not yet promised to an officer's move / march (other than `id`)
   avail(c, id) { const st = this.s; return Math.max(0, st.cities[c].troops - Object.entries(st.orders).filter(([g, o]) => g !== id && st.gens[g]?.c === c && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')).reduce((a, [, o]) => a + (o.n || 0), 0)); }
@@ -920,6 +937,7 @@ export class Sanguo {
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
         const av = Math.min(E.commandOf(id), this.avail(c, id)), opts = o.cmd === 'move' ? [0, 0.5, 1] : [0.5, 0.8, 1]; // 统率 caps the troops
         const months = o.cmd === 'march' ? E.travelMonths(E.routeOf(st, E.PLAYER, c, o.to)) : 0, fed = o.cmd === 'move' ? 1e9 : Math.floor(Math.max(0, this.foodLeft() + E.rationsOf(o.n || 0, months)) / ((months + 1) * CFG.sg.foodPerTroop * CFG.sg.marchFood)); // v1.7: and so does the granary
+        if (o.cmd !== 'move') h += this.tacticChips(id, o.tac || 'auto', [id, ...(o.with || [])], o.cmd === 'intercept' ? { field: true } : { hill: !!CITIES[o.to]?.pass || E.terrain(this.lastHop(c, o.to), o.to).m < 1 }, `data-g="${id}" data-tac`);
         h += `<div class="sgSeg"><span>${t('sgMoveTroops')}</span>${opts.map((f) => { const n = Math.floor(av * f); return `<button data-g="${id}" data-n="${n}" class="${o.n === n ? 'on' : ''}" ${n > fed ? 'disabled' : ''}>${kNum(n)}${o.cmd === 'move' ? '' : `<small>${zh() ? '粮' : 'food'} ${E.rationsOf(n, months)}</small>`}</button>`; }).join('')}</div>`;
       }
       h += '</div>';
@@ -941,6 +959,8 @@ export class Sanguo {
     if (b.dataset.a === 'close') { this.sel = null; this.mode = null; this.render(); return; }
     if (b.dataset.a === 'hide') { this.togglePanel(true); return; }
     if (b.dataset.a === 'bonds') { this.ui(() => this.bondBook()); return; }
+    if (b.dataset.tac && b.dataset.g) { const o = this.s.orders[b.dataset.g]; if (o) o.tac = b.dataset.tac; this.save(); this.render(); return; }
+    if (b.dataset.dtac && b.dataset.c) { this.s.cities[b.dataset.c].tac = b.dataset.dtac; this.save(); this.render(); return; }
     if (b.dataset.focus) { this.sel = b.dataset.focus; this.mode = null; this.focus(this.sel); this.render(); return; }
     if (b.dataset.a === 'auto') { $('sgAuto').click(); return; }
     if (b.dataset.trade) { if (E.trade(this.s, E.PLAYER, +b.dataset.trade)) { sfx.cash(); this.save(); } this.render(); return; }
@@ -1108,7 +1128,7 @@ export class Sanguo {
     const L = $('sgLayer');
     L.className = 'show battle';
     L.innerHTML = `<div class="sgCard sgBattle charge"><h2 class="sgCenter">${esc(where)} · ${ic} ${zh() ? w : WEATHER_EN[w]}</h2>
-      ${(m.edge || []).length ? `<div class="sgEdge">${[left, 1 - left].map((si) => `<span class="${si === left ? 'me' : ''}">${(m.edge || []).filter((x) => x[0] === si).map((x) => `${esc(zh() ? x[1] : x[2])}${x[3] ? ' +' + Math.round(x[3] * 100) + '%' : ''}`).join(' · ')}</span>`).join('<i>⚔</i>')}</div>` : ''}
+      ${(m.edge || []).length ? `<div class="sgEdge">${[left, 1 - left].map((si) => `<span class="${si === left ? 'me' : ''}">${(m.edge || []).filter((x) => x[0] === si).map((x) => String(x[4] || '').startsWith('tac:') ? `<b class="sgTacB">${esc(zh() ? x[1] : x[2])} ${pct(x[3])}</b>` : `${esc(zh() ? x[1] : x[2])}${x[3] ? ' ' + pct(x[3]) : ''}`).join(' · ')}</span>`).join('<i>⚔</i>')}</div>` : ''}
       <div class="sgBrow">${col(left)}<span class="sgVs">VS</span>${col(1 - left)}</div><p class="sgCenter sgBres"></p><button class="sgBig" data-ok="1" style="visibility:hidden">${t('sgContinue')}</button></div>`;
     let skip = false;
     const onTap = () => { skip = true; };
@@ -1431,7 +1451,7 @@ export class Sanguo {
       <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}<small>${esc(F('sgDiffNow', { d: t('sgDiff_' + (this.s.diff || CFG.sg.diffDefault)) }))}</small></button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
     if (r === 'back') { this.save(); sfx.bgm(false); this.onClose(); }
     else if (r === 'music') { this.music = !this.music; sfx.bgm(this.music); this.menu(); }
-    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore') + '\n\n' + t('sgHelpV12') + '\n\n' + t('sgHelpFood'))}</p>`);
+    else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore') + '\n\n' + t('sgHelpV12') + '\n\n' + t('sgHelpFood') + '\n\n' + t('sgHelpTac'))}</p>`);
     else if (r === 'tut') this.tutorial(true);
     else if (r === 'new') this.newGame(true);
   }
