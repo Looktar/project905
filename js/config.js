@@ -130,6 +130,8 @@ export const CFG = {
     // v2.0 (D-126): 战法. The tactic that beats the other's fights tacWin better, the beaten one tacLose worse;
     // a side's own aptitude for its tactic adds at most ±tacAptMax
     tacWin: 0.25, tacLose: 0.15, tacAptMax: 0.25,
+    // v2.1 (D-127): the daily challenge lasts dailyMonths
+    dailyMonths: 36, scenFocus: 0.35, // (in a 剧本 the computer is that much keener on the city the story turns on)
     autoThr: 1.3, foodKeep: 2, // (and, like the computer, keeps foodKeep months of food at home when it plans attacks)
     payTroop: 1 / 45, payGen: 10, payFree: 1000, desert: 0.12, unpaidLoyal: 4,
     // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,

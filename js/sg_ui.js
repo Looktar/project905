@@ -7,7 +7,7 @@ import { t, getLang, extend } from './i18n.js';
 import { toGamePoint, toGameDelta } from './input.js';
 import * as E from './sg_engine.js';
 import * as sfx from './audio.js';
-import { BUILDINGS, BLD_IDS, COUNTERS, TIMELY, ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
+import { SCENARIOS, BUILDINGS, BLD_IDS, COUNTERS, TIMELY, ITEMS, GENERALS, ERAS, TRAITS, CITIES, NODE_IDS, PASS_IDS, ADJ, LINKS, BONDS, NEUTRAL_COLOR } from './sg_data.js';
 import { drawCity, cityKind } from './sg_art.js';
 import { BIOS } from './sg_bios.js';
 import { roadPath, routePath, along, slice, bakeTerritory, territoryKey, bakeDecor, boardKey, boatSpots, drawBoat, cloudShadows, birds, drawSquad } from './sg_map.js';
@@ -40,6 +40,10 @@ extend({
   sgEdge: '历史克制 · 天时', sgCounterOf: '克制', sgTimelyOf: '天时', evBuild: '{c}：{g} 建成 {b} {lv} 级', evBuildAi: '{f} 在 {c} 建成 {b} {lv} 级',
   sgHelpFood: '粮食（v1.7）：粮主要靠九月秋收，平时每月只有一点；城里的兵每月都要吃。出征要先带够军粮（兵越多、路越远带得越多），粮不够就只能少带兵或者出不了征。断粮会逃兵、武将不满，下个月打仗 −20%。米价秋后便宜、春夏贵，可以在势力面板买卖；计略“烧粮”能烧掉敌人的粮仓。',
   sgHelpTac: '战法（v2.0）：出征时（和每座城的“守城战法”）可以选冲锋、火攻、坚守、伏兵。冲锋克火攻，火攻克坚守，坚守克伏兵，伏兵克冲锋：克住对方 +25%，被克 −15%。另外看武将擅长什么：冲锋看武力，火攻看智力（秋冬干燥更好，雨雪天不行），坚守看统率（守城更好），伏兵看智力（山地、关隘、野战更好）。“自动”选你最擅长的；电脑会猜你的战法，偶尔换一换才打得出奇兵。',
+  sgPlayQ: '怎么玩？', sgFree: '自由模式', sgFreeS: '随机地图、随机武将，统一万锦为止', sgScen: '剧本', sgScenS: '有故事、有时限的短局：万锦赤壁、五丈原、楚汉争霸', sgDaily: '每日挑战', sgDailyS: '今天人人同一张地图同一批武将（困难），36 个月，比得分',
+  sgScenQ: '选一个剧本', sgBest: '最好 {n} 分', sgNoBest: '还没玩过', sgGoalHold: '🎯 守住 {c}（还剩 {n} 个月）', sgGoalTake: '🎯 拿下 {c}（还剩 {n} 个月）', sgGoalBeat: '🎯 消灭 {f}{n}', sgGoalBeatN: '（还剩 {n} 个月）', sgGoalDaily: '📅 每日挑战 {d} · 还剩 {n} 个月 · 现在 {s} 分', sgGoalOr: '，或者消灭 {f}',
+  sgScore: '得分 {n}', sgNewBest: '新纪录！', sgBestWas: '本机最好 {n} 分', sgTime: '时间到！', sgTimeS: '{n} 个月过去了，你拿下了 {c} 座城。', sgScenWin: '剧本完成！', sgScenLose: '剧本失败', sgShare: '复制成绩', sgCopied: '已复制，可以发给朋友比一比',
+  sgShareTxt: '万锦群英传 每日挑战 {d}：{s} 分（{c}/12 城，{r}）', sgSpeed: '战斗动画：{v}', sgSpd_normal: '正常', sgSpd_fast: '快', sgSpd_skip: '跳过',
   tacCharge: '冲锋', tacFire: '火攻', tacHold: '坚守', tacAmbush: '伏兵', tacAuto: '自动', sgTactic: '战法', sgDefTactic: '守城战法', sgTacBeats: '克{t}',
   sgTacHint: '冲锋克火攻，火攻克坚守，坚守克伏兵，伏兵克冲锋。“自动”按武将最擅长的选——电脑会猜你，偶尔换一换。',
   sgAdvisor: '军师 {g}', sgAdvTap: '点一条建议，地图跳过去', sgAdvNone: '眼下没什么要紧的，主公放手去做。',
@@ -95,6 +99,10 @@ extend({
   sgEdge: 'History & weather', sgCounterOf: 'Counters', sgTimelyOf: 'Weather', evBuild: '{c}: {g} built {b} level {lv}', evBuildAi: '{f} built {b} level {lv} in {c}',
   sgHelpFood: 'Food (v1.7): food comes mostly with the September harvest, with only a trickle the rest of the year, and soldiers at home eat every month. An attack takes its rations along (more soldiers, longer road, more food); short of food you send fewer or cannot march. An empty granary costs soldiers and loyalty, and the next month you fight 20% worse. Rice is cheap after the harvest and dear in spring and summer: buy and sell it in your side panel. The Burn grain plot sets an enemy granary alight.',
   sgHelpTac: 'Tactics (v2.0): on an attack (and as each city\'s defence tactic) choose Charge, Fire, Hold or Ambush. Charge beats Fire, Fire beats Hold, Hold beats Ambush, Ambush beats Charge: +25% for the winner, −15% for the beaten. Then what your officers are good at: Charge from War, Fire from Intelligence (better when dry in autumn and winter, useless in rain or snow), Hold from Leadership (better defending), Ambush from Intelligence (better on hills, at passes and in the field). Auto picks your best; the computer tries to guess you, so surprise it now and then.',
+  sgPlayQ: 'How do you want to play?', sgFree: 'Free play', sgFreeS: 'A random map and random officers, until Markham is yours', sgScen: 'Scenarios', sgScenS: 'Short games with a story and a deadline: Red Cliffs, Wuzhang Plains, Chu–Han', sgDaily: 'Daily challenge', sgDailyS: 'Everyone gets the same map and officers today (hard), 36 months, best score wins',
+  sgScenQ: 'Pick a scenario', sgBest: 'best {n}', sgNoBest: 'not played yet', sgGoalHold: '🎯 Hold {c} ({n} months to go)', sgGoalTake: '🎯 Take {c} ({n} months left)', sgGoalBeat: '🎯 Destroy {f}{n}', sgGoalBeatN: ' ({n} months left)', sgGoalDaily: '📅 Daily {d} · {n} months left · {s} points now', sgGoalOr: ', or destroy {f}',
+  sgScore: 'Score {n}', sgNewBest: 'New best!', sgBestWas: 'Best on this device: {n}', sgTime: 'Time!', sgTimeS: '{n} months gone, and you hold {c} cities.', sgScenWin: 'Scenario won!', sgScenLose: 'Scenario lost', sgShare: 'Copy result', sgCopied: 'Copied: send it to a friend',
+  sgShareTxt: 'Markham Heroes daily {d}: {s} points ({c}/12 cities, {r})', sgSpeed: 'Battle animations: {v}', sgSpd_normal: 'normal', sgSpd_fast: 'fast', sgSpd_skip: 'skip',
   tacCharge: 'Charge', tacFire: 'Fire', tacHold: 'Hold', tacAmbush: 'Ambush', tacAuto: 'Auto', sgTactic: 'Tactic', sgDefTactic: 'Defence tactic', sgTacBeats: 'beats {t}',
   sgTacHint: 'Charge beats Fire, Fire beats Hold, Hold beats Ambush, Ambush beats Charge. Auto picks what your officers do best; the computer tries to guess you, so mix it up now and then.',
   sgAdvisor: 'Advisor {g}', sgAdvTap: 'Tap a tip to jump there', sgAdvNone: 'Nothing pressing right now, my lord.',
@@ -209,6 +217,9 @@ const BFX = { atk: 'fxAtk', def: 'fxDef', duel: 'fxDuel', search: 'fxSearch', de
 const bondName = (b) => (zh() ? b.zh : b.en);
 const bondFxText = (b) => Object.entries(b.fx).map(([k, v]) => `${t(BFX[k] || k)} +${Math.round(v * 100)}%`).join(' · ');
 function miniFace(id, on) { return `<span class="sgMf${on ? ' on' : ''}" title="${esc(gName(id))}"><img src="${portraitURL(id)}" alt=""></span>`; }
+// v2.1 (D-127): the daily challenge's date (local) and its seed
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dateSeed = (d) => { let h = 2166136261; for (const ch of 'p905daily' + d) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
 // v2.0 (D-126): tactics
 const TAC_KEY = { charge: 'tacCharge', fire: 'tacFire', hold: 'tacHold', ambush: 'tacAmbush', auto: 'tacAuto' };
 const pct = (v) => `${v >= 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%`;
@@ -314,7 +325,10 @@ export class Sanguo {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { s = null; }
     const fresh = !s || s.v !== E.SAVE_V || s.over; // v0.8 changed the rules: an old save starts over
-    if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random', roster: this.nextRoster || 'mix', diff: this.nextDiff || this.lastDiff() }); // a new board every game (D-77), its own officers (D-87)
+    if (fresh && this.nextKind === 'scen') s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { roster: 'mix', diff: this.nextDiff || this.lastDiff(), scenario: this.nextScen }); // v2.1: a 剧本 on the classic map
+    else if (fresh && this.nextKind === 'daily') { const d = today(); s = E.newGame(dateSeed(d), { map: 'random', roster: 'mix', diff: 'hard', daily: d }); } // v2.1: everyone's board today
+    else if (fresh) s = E.newGame((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0, { map: 'random', roster: this.nextRoster || 'mix', diff: this.nextDiff || this.lastDiff() }); // a new board every game (D-77), its own officers (D-87)
+    this.nextKind = null;
     E.loadMap(s);
     this.s = s; s.orders = s.orders || {};
     this.sel = null; this.mode = null;
@@ -755,9 +769,9 @@ export class Sanguo {
     const bv = E.bondView(st, E.PLAYER), shown = bv.filter((x) => x.ready || x.have.length).slice(0, 4);
     const lead = st.lead && !bv.find((x) => x.b.id === st.lead.b && x.ready) && st.gens[st.lead.g] && st.gens[st.lead.g].hidden && !E.advise(st, E.PLAYER, st.orders).slice(0, 3).some((x) => x.k === 'bond' && x.g === st.lead.g) ? `<p class="sgHint sgLeadH">🔎 ${esc(F('sgLead', { g: gName(st.lead.g), c: cName(st.gens[st.lead.g].c), b: bondName(BONDS.find((b) => b.id === st.lead.b)) }))}</p>` : '';
     const bondsH = `<h4>♥ ${t('sgBonds')} <small>${F('sgBondsOn', { n: bv.filter((x) => x.ready).length })}</small><button class="sgMini" data-a="bonds">${t('sgBondPage')}</button></h4>${lead}${shown.length ? shown.map((x) => this.bondRow(x, true)).join('') : `<p class="sgHint">${t('sgBondHint')}</p>`}`;
-    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>${money}
+    return `<h3>${t('sgYourSide')}<button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${st.goal ? `<p class="sgGoalL">${esc(this.goalText())}</p>` : ''}${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>${money}
       ${bondsH}
-      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}${bv.filter((x) => x.b.m.includes(g)).map((x) => ` <span class="sgBchip${x.ready ? ' on' : ''}">♥${esc(bondName(x.b))} ${x.have.length}/${x.need}</span>`).join('')}</div>`).join('')}`;
+      <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}${bv.filter((x) => x.b.m.includes(g)).map((x) => ` <span class="sgBchip${x.ready ? ' on' : ''}">♥${esc(bondName(x.b))} ${Math.min(x.have.length, x.need)}/${x.need}</span>`).join('')}</div>`).join('')}`;
   }
   // v1.9 (D-125): the advisor's few tips (tap to jump to the city) and next month's forecast
   tipText(x) {
@@ -801,7 +815,7 @@ export class Sanguo {
     const status = x.ready ? (b.scope === 'army' ? t('sgBondReadyArmy') : t('sgBondOn')) : F('sgBondNeed', { n: x.need - x.have.length });
     const faces = b.m.map((m) => `<div class="sgBm${x.where[m].k === 'mine' ? ' on' : ''}${x.where[m].k === 'out' ? ' out' : ''}">${miniFace(m, x.where[m].k === 'mine')}<b>${esc(GENERALS[m] ? gName(m) : m)}</b>${compact && x.where[m].k === 'mine' ? '' : `<small>${esc(where(m))}</small>`}</div>`).join('');
     void st;
-    return `<div class="sgBondR${x.ready ? ' on' : ''}"><div class="sgBh"><b>♥ ${esc(bondName(b))}</b><i>${x.have.length}/${x.need}</i><em>${esc(status)}</em></div>
+    return `<div class="sgBondR${x.ready ? ' on' : ''}"><div class="sgBh"><b>♥ ${esc(bondName(b))}</b><i>${Math.min(x.have.length, x.need)}/${x.need}</i><em>${esc(status)}</em></div>
       <div class="sgBms">${faces}</div><div class="sgBfx">${esc(bondFxText(b))} · ${t(b.scope === 'army' ? 'sgBondArmy' : 'sgBondFac')}</div></div>`;
   }
   bondBook() {
@@ -1054,7 +1068,7 @@ export class Sanguo {
     if (this.busy) return;
     const st = this.s;
     this.busy = true; this.mode = null;
-    this.skipFx = false;
+    this.skipFx = this.speed === 'skip'; // v2.1: 'skip' jumps straight to each result
     let ended = false, evs = [];
     try {
       try { sfx.drum(2); sfx.setBgmMood('battle'); } catch (e) { /* sound must never stop the month */ }
@@ -1100,12 +1114,15 @@ export class Sanguo {
 
   // battle playback (v0.9.4): the camera flies to a battle you are in, swords clash, then the result.
   // A tap on the map skips ahead.
+  ms(x) { return this.speed === 'fast' ? Math.round(x / 3) : x; } // v2.1: battle animation speed
+  get speed() { try { return localStorage.getItem('p905sgspd') || 'normal'; } catch (e) { return 'normal'; } }
   wait(ms) {
+    ms = this.ms(ms);
     return new Promise((res) => { const t0 = performance.now(); let done = false; const fin = () => { if (!done) { done = true; res(); } }; const tick = () => { if (done) return; if (this.skipFx || performance.now() - t0 >= ms) fin(); else requestAnimationFrame(tick); }; tick(); setTimeout(fin, ms + 400); });
   }
   async battleIntro(b) {
     const m = b.m, C = m.at || CITIES[m.to], k1 = Math.max(this.k, this.s0 * 1.25);
-    if (!this.skipFx) { this.tween = { x0: this.cx, z0: this.cz, k0: this.k, x1: C.x, z1: C.z, k1, t0: performance.now(), dur: 450 }; await this.wait(480); }
+    if (!this.skipFx) { this.tween = { x0: this.cx, z0: this.cz, k0: this.k, x1: C.x, z1: C.z, k1, t0: performance.now(), dur: this.ms(450) }; await this.wait(480); }
     sfx.clash(); this.shake = 10;
     const other = m.field ? m.b.troops : this.s.cities[m.to].troops, ob = m.field ? m.fb : this.s.cities[m.to].owner;
     this.fx.push({ type: 'clash', c: m.to, at: m.at, t0: performance.now(), dur: 900, ca: this.fColor(m.f), cb: this.fColor(ob), text: `${m.field ? (zh() ? '野战 ' : 'Field ') : ''}${kNum(m.troops)} ⚔ ${kNum(other)}` });
@@ -1142,7 +1159,7 @@ export class Sanguo {
         if (!gs.length) { const c = L.querySelector(`.sgBside${si === left ? '.me' : ':not(.me)'} .garrison`); if (c) { c.querySelector('.sgCbar b').style.width = pct + '%'; c.querySelector('.sgCtroops').textContent = kNum(v); } }
       }
     };
-    if (!this.skipFx) await new Promise((r) => setTimeout(r, 520)); // the charge
+    if (!this.skipFx) await new Promise((r) => setTimeout(r, this.ms(520))); // the charge
     const acc = [0, 0], floatLoss = (si) => {
       if (acc[si] < 1) return;
       const head = L.querySelectorAll('.sgBside')[si === left ? 0 : 1]?.querySelector('.sgBhead');
@@ -1156,7 +1173,7 @@ export class Sanguo {
       if (i % 5 === 0) { floatLoss(0); floatLoss(1); }
       for (const si of [0, 1]) if (lost[si] > rounds[0][si] * 0.06) { const side = L.querySelectorAll('.sgBside')[si === left ? 0 : 1]; side.classList.remove('hit'); void side.offsetWidth; side.classList.add('hit'); }
       if (i % 3 === 1) sfx.clash(0.5);
-      await new Promise((r) => setTimeout(r, 110));
+      await new Promise((r) => setTimeout(r, this.ms(110)));
     }
     set(rounds[rounds.length - 1]);
     L.removeEventListener('pointerdown', onTap);
@@ -1320,6 +1337,14 @@ export class Sanguo {
   }
   async intro() {
     const st = this.s;
+    if (st.scen) { // v2.1: a scenario opens with its story and goal instead of blind boxes
+      const sc = SCENARIOS.find((x) => x.id === st.scen);
+      await this.layer(`<h2 class="sgCenter">${esc(zh() ? sc.zh : sc.en)}</h2><p>${esc(sc.blurb[zh() ? 0 : 1])}</p><p class="sgGoalL">${esc(this.goalText())}</p>
+        <div class="sgRivals">${[1, 2, 3].map((f) => `<div>${portrait(st.factions[f].lord, 56)}<b style="color:${st.factions[f].color}">${esc(this.fName(f))}</b><small>📍 ${esc(cName(st.factions[f].cap))}</small></div>`).join('')}</div>
+        <button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
+      this.sel = st.factions[E.PLAYER].cap; this.focus(this.sel); this.render(); this.tutorial(false);
+      return;
+    }
     await this.reveal(E.factionGens(st, E.PLAYER)[0], t('sgBlindStart'), F('sgJoined', { g: gName(E.factionGens(st, E.PLAYER)[0]) }));
     await this.reveal(E.factionGens(st, E.PLAYER)[1], t('sgBlindStart'), F('sgJoined', { g: gName(E.factionGens(st, E.PLAYER)[1]) }));
     const [a, b, c] = [1, 2, 3].map((f) => this.fName(f));
@@ -1426,13 +1451,54 @@ export class Sanguo {
     });
   }
   async gameOver() {
-    const st = this.s, win = st.over === 'win';
+    const st = this.s, win = st.over === 'win', key = this.bestKey();
+    if (key) { // v2.1: a scenario or the daily challenge: a score, and this device's best
+      const score = E.scoreOf(st), all = this.bests(), was = all[key] || 0, best = score > was;
+      if (best) { all[key] = score; try { localStorage.setItem('p905sgbest', JSON.stringify(all)); } catch (e) { /* ignore */ } }
+      const title = st.over === 'time' ? t('sgTime') : win ? t(st.scen ? 'sgScenWin' : 'sgWin') : t(st.scen ? 'sgScenLose' : 'sgLose');
+      const sub = st.over === 'time' ? F('sgTimeS', { n: st.turn - (st.turn0 || 0), c: E.citiesOf(st, E.PLAYER).length }) : '';
+      const share = F('sgShareTxt', { d: st.daily || '', s: score, c: E.citiesOf(st, E.PLAYER).length, r: title });
+      const r = await this.layer(`<h2 class="sgCenter sgBigName">${esc(title)}</h2>${sub ? `<p class="sgCenter">${esc(sub)}</p>` : ''}<p class="sgCenter sgScoreL">${F('sgScore', { n: score })}${best ? ` <b>${t('sgNewBest')}</b>` : ''}</p><p class="sgCenter sgHint">${F('sgBestWas', { n: Math.max(was, score) })}</p>
+        ${st.daily ? `<button class="sgBig alt" data-ok="share">${t('sgShare')}</button>` : ''}<button class="sgBig" data-ok="1">${t('sgAgain')}</button>`);
+      if (r === 'share') { try { await navigator.clipboard.writeText(share); this.toast(t('sgCopied')); } catch (e) { this.toast(share); } }
+      this.newGame(false);
+      return;
+    }
     await this.layer(`<h2 class="sgCenter sgBigName">${t(win ? 'sgWin' : 'sgLose')}</h2><p class="sgCenter">${esc(F(win ? 'sgWinS' : 'sgLoseS', { n: st.turn }))}</p><button class="sgBig" data-ok="1">${t('sgAgain')}</button>`);
     this.newGame(false);
   }
+  // v2.1 (D-127): the goal line, scores and this device's best
+  goalText() {
+    const st = this.s, g = st.goal;
+    if (!g) return '';
+    const n = E.monthsLeft(st);
+    if (g.daily) return F('sgGoalDaily', { d: st.daily, n, s: E.scoreOf(st) });
+    if (g.hold) return F('sgGoalHold', { c: cName(g.hold), n }) + (g.beat !== undefined ? F('sgGoalOr', { f: this.fName(g.beat) }) : '');
+    if (g.take) return F('sgGoalTake', { c: cName(g.take), n });
+    if (g.beat !== undefined) return F('sgGoalBeat', { f: this.fName(g.beat), n: n !== null ? F('sgGoalBeatN', { n }) : '' });
+    return '';
+  }
+  bestKey() { const st = this.s; return st.scen ? 'scen:' + st.scen : st.daily ? 'daily:' + st.daily : null; }
+  bests() { try { return JSON.parse(localStorage.getItem('p905sgbest') || '{}'); } catch (e) { return {}; } }
+  bestText(key) { const b = this.bests()[key]; return b ? F('sgBest', { n: b }) : t('sgNoBest'); }
   lastDiff() { let d = null; try { d = localStorage.getItem('p905sgdiff'); } catch (e) { /* ignore */ } return E.DIFFS.includes(d) ? d : CFG.sg.diffDefault; }
   async newGame(confirmFirst = true) {
     if (confirmFirst && !window.confirm(t('sgNewQ'))) return;
+    // v2.1 (D-127): free play, a scenario or today's challenge
+    const kind = await this.layer(`<h2>${t('sgPlayQ')}</h2><button class="sgBig" data-ok="free">${t('sgFree')}<small>${t('sgFreeS')}</small></button>
+      <button class="sgBig alt" data-ok="scen">${t('sgScen')}<small>${t('sgScenS')}</small></button><button class="sgBig alt" data-ok="daily">${t('sgDaily')}<small>${esc(t('sgDailyS'))} · ${this.bestText('daily:' + today())}</small></button>`);
+    if (kind === 'daily') { this.nextKind = 'daily'; try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ } this.open(this.w, this.W, this.H); return; }
+    if (kind === 'scen') {
+      const sc = await this.layer(`<h2>${t('sgScenQ')}</h2>${SCENARIOS.map((x) => `<button class="sgBig sgScenB" data-ok="${x.id}">${esc(zh() ? x.zh : x.en)}<small>${esc(x.blurb[zh() ? 0 : 1])}</small><i>${this.bestText('scen:' + x.id)}</i></button>`).join('')}`);
+      if (!SCENARIOS.find((x) => x.id === sc)) return;
+      this.nextKind = 'scen'; this.nextScen = sc;
+      const cur = this.lastDiff();
+      const d = await this.layer(`<h2>${t('sgDiffQ')}</h2>${E.DIFFS.map((x) => `<button class="sgBig${x === cur ? '' : ' alt'}" data-ok="${x}">${t('sgDiff_' + x)}<small>${t('sgDiffS_' + x)}</small></button>`).join('')}`);
+      this.nextDiff = E.DIFFS.includes(d) ? d : cur;
+      try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ }
+      this.open(this.w, this.W, this.H);
+      return;
+    }
     // v1.0 (D-87): all eras (the default) or the Three Kingdoms only
     const r = await this.layer(`<h2>${t('sgModeQ')}</h2><button class="sgBig" data-ok="mix">${t('sgModeMix')}<small>${t('sgModeMixS')}</small></button>
       <button class="sgBig alt" data-ok="sanguo">${t('sgModeSg')}<small>${t('sgModeSgS')}</small></button>`);
@@ -1448,7 +1514,8 @@ export class Sanguo {
   async menu() {
     if (this.busy) return;
     const r = await this.layer(`<h2>${t('sgMenu')}<button class="sgX" data-ok="x">✕</button></h2>
-      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}<small>${esc(F('sgDiffNow', { d: t('sgDiff_' + (this.s.diff || CFG.sg.diffDefault)) }))}</small></button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
+      <button class="sgBig" data-ok="back">${t('sgBack')}</button><button class="sgBig alt" data-ok="help">${t('sgHelp')}</button><button class="sgBig alt" data-ok="tut">${t('sgTutMenu')}</button><button class="sgBig alt" data-ok="speed">${F('sgSpeed', { v: t('sgSpd_' + this.speed) })}</button><button class="sgBig alt" data-ok="new">${t('sgNew')}<small>${esc(F('sgDiffNow', { d: t('sgDiff_' + (this.s.diff || CFG.sg.diffDefault)) }))}</small></button><button class="sgBig alt" data-ok="music">${t(this.music ? 'sgMusicOn' : 'sgMusicOff')}</button>`);
+    if (r === 'speed') { const order = ['normal', 'fast', 'skip'], nx = order[(order.indexOf(this.speed) + 1) % 3]; try { localStorage.setItem('p905sgspd', nx); } catch (e) { /* ignore */ } this.menu(); return; }
     if (r === 'back') { this.save(); sfx.bgm(false); this.onClose(); }
     else if (r === 'music') { this.music = !this.music; sfx.bgm(this.music); this.menu(); }
     else if (r === 'help') this.layer(`<h2>${t('sgHelp')}<button class="sgX" data-ok="1">✕</button></h2><p class="sgHelp">${esc(t('sgHelpText') + '\n\n' + t('sgHelpMore') + '\n\n' + t('sgHelpV12') + '\n\n' + t('sgHelpFood') + '\n\n' + t('sgHelpTac'))}</p>`);
