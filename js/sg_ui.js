@@ -48,6 +48,9 @@ extend({
   planS_none: '不自动', planS_troops: '征兵，满了筑城', planS_guard: '先筑城再征兵', planS_search: '有传闻就搜索', planS_build: '能盖就盖', sgPlanDid: '太守们按方针安排了 {n} 位武将',
   sgOverview: '城池总览', sgOvHint: '点城名跳过去；方针可以直接在这里改。', sgOvCols: '兵|城防|开发|建筑|坐镇|闲',
   sgUnifyT: '天下归心', sgUnifyQ: '你已占有 {c} 座城，兵力是其余各家总和的 {r} 倍。各路诸侯愿意归降——要现在就一统万锦吗？', sgUnifyYes: '受降，一统万锦', sgUnifyNo: '不，我要打到最后一城', sgUnifyS: '大势已定，群雄归心，用了 {n} 个月。',
+  sgRank: '战功', sgRankV: '{w} 胜 · {r}', sgRank0: '无名', sgRank1: '骁将 ★', sgRank2: '名将 ★★', sgRank3: '国士 ★★★', sgRankNext: '再胜 {n} 场升级，四项能力各 +2', sgSworn: '结义', sgSwornV: '与 {g} 结为兄弟：同军出征 +10%，谁也挖不走',
+  sgReward: '封赏（{n} 金，忠诚 +{l}）', sgRewarded: '本月已封赏', evRank: '{g} 屡立战功，晋升为{r}，四项能力各 +2', evSworn: '{a} 与 {b} 并肩百战，义结金兰！同军出征 +10%', evLeave: '{g} 心灰意冷，离开了 {c}（忠诚太低）', evLeaveAI: '{g} 离开了 {f}，流落在 {c}', evReco: '{by} 举荐：{g} 前来投效（{c}）',
+  sgSwornT: '义结金兰', sgRecoT: '太守举荐', advUnhappy: '{g} 心怀不满（忠诚 {n}），再不封赏可能出走。',
   tacCharge: '冲锋', tacFire: '火攻', tacHold: '坚守', tacAmbush: '伏兵', tacAuto: '自动', sgTactic: '战法', sgDefTactic: '守城战法', sgTacBeats: '克{t}',
   sgTacHint: '冲锋克火攻，火攻克坚守，坚守克伏兵，伏兵克冲锋。“自动”按武将最擅长的选——电脑会猜你，偶尔换一换。',
   sgAdvisor: '军师 {g}', sgAdvTap: '点一条建议，地图跳过去', sgAdvNone: '眼下没什么要紧的，主公放手去做。',
@@ -111,6 +114,9 @@ extend({
   planS_none: 'nothing automatic', planS_troops: 'draft, walls when full', planS_guard: 'walls first, then draft', planS_search: 'search on rumours', planS_build: 'build what can be built', sgPlanDid: 'Governors gave {n} officers their work',
   sgOverview: 'All cities', sgOvHint: 'Tap a name to go there; plans can be changed right here.', sgOvCols: 'Troops|Walls|Dev|Bldgs|Governor|Idle',
   sgUnifyT: 'All under heaven', sgUnifyQ: 'You hold {c} cities and {r} times the soldiers of everyone else together. The other lords are ready to yield. Unite Markham now?', sgUnifyYes: 'Accept their surrender', sgUnifyNo: 'No, I will fight to the last city', sgUnifyS: 'The outcome was plain and the lords came over, after {n} months.',
+  sgRank: 'Merit', sgRankV: '{w} wins · {r}', sgRank0: 'unproven', sgRank1: 'Veteran ★', sgRank2: 'Famed ★★', sgRank3: 'Peerless ★★★', sgRankNext: '{n} more wins to rise: +2 to every stat', sgSworn: 'Sworn', sgSwornV: 'Sworn brother of {g}: +10% in one army, and neither can be poached',
+  sgReward: 'Reward ({n} gold, loyalty +{l})', sgRewarded: 'rewarded this month', evRank: '{g} has earned his name: now {r}, +2 to every stat', evSworn: '{a} and {b} swear brotherhood after their battles together! +10% in one army', evLeave: '{g} has lost heart and left {c} (loyalty too low)', evLeaveAI: '{g} has left {f} and is at large in {c}', evReco: '{by} recommends {g}, who joins you in {c}',
+  sgSwornT: 'Sworn brothers', sgRecoT: 'A governor recommends', advUnhappy: '{g} is unhappy (loyalty {n}): reward him or he may walk out.',
   tacCharge: 'Charge', tacFire: 'Fire', tacHold: 'Hold', tacAmbush: 'Ambush', tacAuto: 'Auto', sgTactic: 'Tactic', sgDefTactic: 'Defence tactic', sgTacBeats: 'beats {t}',
   sgTacHint: 'Charge beats Fire, Fire beats Hold, Hold beats Ambush, Ambush beats Charge. Auto picks what your officers do best; the computer tries to guess you, so mix it up now and then.',
   sgAdvisor: 'Advisor {g}', sgAdvTap: 'Tap a tip to jump there', sgAdvNone: 'Nothing pressing right now, my lord.',
@@ -273,7 +279,7 @@ function tallCard(id, opts = {}) {
     <span class="sgCname">${esc(gName(id))}</span><span class="sgCstat">${zh() ? top[0] : top[1]}${top[2]}</span>${itemPip(id)}${bar}</div>`;
 }
 function genCard(id, opts = {}) {
-  return `<div class="sgG${opts.on ? ' on' : ''}${opts.pick ? ' pick' : ''}" ${opts.data || ''}>${portrait(id)}<div class="sgGi"><b>${esc(gName(id))}</b>${statBars(id)}<div class="sgTrw">${traitTag(id)}</div></div></div>`;
+  return `<div class="sgG${opts.on ? ' on' : ''}${opts.pick ? ' pick' : ''}" ${opts.data || ''}>${portrait(id)}<div class="sgGi"><b>${esc(gName(id))}${E.rankOf(id) ? `<i class="sgStar">${'★'.repeat(E.rankOf(id))}</i>` : ''}</b>${statBars(id)}<div class="sgTrw">${traitTag(id)}</div></div></div>`;
 }
 
 export class Sanguo {
@@ -976,7 +982,7 @@ export class Sanguo {
         // v1.6 (D-120): a companion who would switch on a bond for this army says so
         const grp = [id, ...(m.with || [])], armyB = (ids) => E.activeBonds(st, E.PLAYER, ids).filter((b) => b.scope === 'army').map((b) => b.id);
         const now = armyB(grp), adds = (x) => BONDS.filter((b) => armyB([...grp.filter((y) => y !== x), x]).includes(b.id) && !armyB(grp.filter((y) => y !== x)).includes(b.id));
-        if (mates.length && (m.cmd === 'march' || m.cmd === 'move')) h += `<p class="sgPick">${t(m.cmd === 'march' ? 'sgWith' : 'sgWithMove')}</p><div class="sgChips sgWith">${mates.map((x) => { const nb = m.cmd === 'march' ? adds(x) : []; return `<button data-g="${id}" data-with="${x}" class="${(m.with || []).includes(x) ? 'on' : ''}${nb.length ? ' bond' : ''}">${(m.with || []).includes(x) ? '✓ ' : ''}${esc(gName(x))} <small>${zh() ? '统' : 'L'}${E.gen(x).lead} ${zh() ? '武' : 'W'}${E.gen(x).war}${nb.length ? ' · ♥' + esc(nb.map(bondName).join('、')) : ''}</small></button>`; }).join('')}</div>`;
+        if (mates.length && (m.cmd === 'march' || m.cmd === 'move')) h += `<p class="sgPick">${t(m.cmd === 'march' ? 'sgWith' : 'sgWithMove')}</p><div class="sgChips sgWith">${mates.map((x) => { const nb = m.cmd === 'march' ? adds(x) : []; return `<button data-g="${id}" data-with="${x}" class="${(m.with || []).includes(x) ? 'on' : ''}${nb.length ? ' bond' : ''}">${(m.with || []).includes(x) ? '✓ ' : ''}${esc(gName(x))} <small>${zh() ? '统' : 'L'}${E.gen(x).lead} ${zh() ? '武' : 'W'}${E.gen(x).war}${nb.length ? ' · ♥' + esc(nb.map(bondName).join('、')) : ''}${E.swornOf(st, id) === x ? ' · ' + t('sgSworn') : ''}</small></button>`; }).join('')}</div>`;
         if (m.cmd === 'march' && now.length) h += `<p class="sgHint sgBondOnH">♥ ${esc(F('sgWithBond', { b: BONDS.filter((b) => now.includes(b.id)).map((b) => `${bondName(b)} ${bondFxText(b)}`).join('；') }))}</p>`;
         h += `<p class="sgPick">${t('sgTargets')}</p><div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))}${m.cmd === 'march' ? this.odds(c, n, id) : ''} <small>${esc([F('sgMonths', { n: E.travelMonths(E.routeOf(st, E.PLAYER, c, n)) }), ...(m.cmd === 'march' ? [this.rationTag(c, n, id), ...this.terrTags(this.lastHop(c, n), n)] : [])].join(' '))}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (o && (o.cmd === 'march' || o.cmd === 'move' || o.cmd === 'intercept')) {
@@ -1127,6 +1133,8 @@ export class Sanguo {
       for (const e of evs) if ((e.k === 'found' || e.k === 'recruit') && e.f === E.PLAYER) await this.ui(() => this.reveal(e.g, t(e.k === 'found' ? 'sgBlind' : 'sgDuel'), F(e.k === 'found' ? 'sgJoined' : 'sgRecruited', { g: gName(e.g) })));
       for (const e of evs) if (e.k === 'item' && e.f === E.PLAYER) await this.ui(() => this.itemReveal(e));
       for (const e of evs) if (e.k === 'bond' && e.f === E.PLAYER) await this.ui(() => this.bondCard(e));
+      for (const e of evs) if (e.k === 'reco' && e.f === E.PLAYER) await this.ui(() => this.reveal(e.g, t('sgRecoT'), F('evReco', { by: gName(e.by), g: gName(e.g), c: cName(e.c) })));
+      for (const e of evs) if (e.k === 'sworn' && e.f === E.PLAYER) await this.ui(() => { sfx.sparkle(); return this.layer(`<h2 class="sgCenter">${t('sgSwornT')}</h2><div class="sgBondBig"><div class="sgBfaces">${[e.a, e.b].map((g) => `<div class="on">${portrait(g, 64)}<b>${esc(gName(g))}</b></div>`).join('')}</div><p>${esc(F('evSworn', { a: gName(e.a), b: gName(e.b) }))}</p></div><button class="sgBig" data-ok="1">${t('sgContinue')}</button>`, 'flip rSR'); });
       this.render();
       await this.ui(() => this.report(evs));
       try { sfx.setBgmMood('calm'); } catch (e) { /* ignore */ }
@@ -1249,7 +1257,9 @@ export class Sanguo {
           ${edgeText(detail).length ? row(t('sgCounterOf'), edgeText(detail).join('<br>')) : ''}
           ${timelyText(detail).length ? row(t('sgTimelyOf'), timelyText(detail).join('<br>')) : ''}
           ${bonds.length ? row(t('sgBonds'), bonds.map((x) => esc(zh() ? x.zh : x.en)).join('、')) : ''}
-          ${G.f >= 0 ? row(t('sgLoyal'), `${G.loyal ?? 70} <small>${t('sgLoyalS')}</small>`) : ''}
+          ${G.f >= 0 ? row(t('sgLoyal'), `${G.loyal ?? 70} <small>${t('sgLoyalS')}</small>${G.f === P && detail !== st.factions[P].lord ? ` <button class="sgMini sgRew" data-reward="1" ${E.canReward(st, P, detail) ? '' : 'disabled'}>${G.rewarded === st.turn ? t('sgRewarded') : F('sgReward', { n: CFG.sg.rewardGold, l: CFG.sg.rewardLoyal })}</button>` : ''}`) : ''}
+          ${G.f >= 0 ? row(t('sgRank'), `${F('sgRankV', { w: G.wins || 0, r: t('sgRank' + (G.rank || 0)) })}${(G.rank || 0) < 3 ? ` <small>${F('sgRankNext', { n: CFG.sg.rankWins[G.rank || 0] - (G.wins || 0) })}</small>` : ''}`) : ''}
+          ${E.swornOf(st, detail) ? row(t('sgSworn'), esc(F('sgSwornV', { g: gName(E.swornOf(st, detail)) }))) : ''}
           ${G.item ? row(t('sgItem'), `${ITEMS[G.item].glyph} ${esc(iName(G.item))} · ${esc(itemFxText(G.item))}`) : ''}
           ${G.item && G.f === P ? `<div class="sgChips sgGive"><span>${t('sgItemGive')}</span>${mine().filter((x) => x !== detail).map((x) => `<button data-give="${x}">${esc(gName(x))}${E.itemOf(x) ? ' ⇄' : ''}</button>`).join('')}</div>` : ''}
           ${row(zh() ? '所在' : 'Where', esc(where(detail)))}
@@ -1270,8 +1280,9 @@ export class Sanguo {
     L.className = 'show page';
     paint();
     const h = (e) => {
-      const b = e.target.closest('[data-tab],[data-gid],[data-back],[data-ok],[data-give]');
+      const b = e.target.closest('[data-tab],[data-gid],[data-back],[data-ok],[data-give],[data-reward]');
       if (!b) return;
+      if (b.dataset.reward) { if (E.reward(st, P, detail)) { sfx.cash(); this.save(); this.render(); } paint(); return; }
       if (b.dataset.give) { E.passItem(st, detail, b.dataset.give); this.save(); this.render(); paint(); return; }
       if (b.dataset.ok) { L.removeEventListener('click', h); L.className = ''; L.innerHTML = ''; return; }
       if (b.dataset.back) detail = null;
@@ -1305,6 +1316,10 @@ export class Sanguo {
       case 'build': return e.f === P ? F('evBuild', { c: cName(e.c), g: gName(e.g), b: bName(e.b), lv: e.lv }) : ADJ[e.c].some((x) => this.s.cities[x.c].owner === P) ? F('evBuildAi', { f: this.fName(e.f), c: cName(e.c), b: bName(e.b), lv: e.lv }) : null;
       case 'fort': return e.f === P ? F('evFort', { c: cName(e.c), g: gName(e.g), n: e.n }) : null;
       case 'skip': return e.f === P ? F(e.why === 'food' ? 'evSkipFood' : 'evSkip', { g: gName(e.g) }) : null;
+      case 'rank': return e.f === P ? F('evRank', { g: gName(e.g), r: t('sgRank' + e.n) }) : null;
+      case 'sworn': return e.f === P ? F('evSworn', { a: gName(e.a), b: gName(e.b) }) : null;
+      case 'leave': return e.f === P ? F('evLeave', { g: gName(e.g), c: cName(e.c) }) : F('evLeaveAI', { g: gName(e.g), f, c: cName(e.c) });
+      case 'reco': return e.f === P ? F('evReco', { by: gName(e.by), g: gName(e.g), c: cName(e.c) }) : null;
       case 'found': return e.f === P ? F('evFound', { c: cName(e.c), by: gName(e.by), g: gName(e.g) }) : F('evFoundAI', { f, c: cName(e.c), g: gName(e.g) });
       case 'item': return e.f === P ? F('evItem', { c: cName(e.c), g: gName(e.g), i: iName(e.item) }) : F('evItemAI', { f, c: cName(e.c), i: iName(e.item) });
       case 'poach': return e.ok ? (e.from === P ? F('evPoachedYou', { t: gName(e.who), f }) : F('evPoachOk', { g: gName(e.g), t: gName(e.who), from: this.fName(e.from), f })) : e.f === P || e.from === P ? F('evPoachNo', { g: gName(e.g), t: gName(e.who) }) : null;

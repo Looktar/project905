@@ -134,6 +134,12 @@ export const CFG = {
     dailyMonths: 36, scenFocus: 0.35, // (in a 剧本 the computer is that much keener on the city the story turns on)
     // v2.2 (D-128): 天下归心 is offered once you hold unifyCities of the cities and unifyTroops times everyone else's soldiers
     unifyCities: 2 / 3, unifyTroops: 2,
+    // v2.3 (D-129): ranks at rankWins victories (+rankStat to every stat each), sworn brothers after swornWins wins in
+    // one army (+swornAtk together); a win is worth winLoyal loyalty, a defeat costs loseLoyal; 封赏 costs rewardGold
+    // for rewardLoyal; below leaveBelow loyalty an officer may walk out (leaveRate x the shortfall a month); a governor
+    // with 政治 recoPol or more brings in a hidden officer of his city with recoChance a month
+    rankWins: [2, 5, 10], rankStat: 2, swornWins: 3, swornAtk: 0.1, swornLoyal: 10, winLoyal: 2, loseLoyal: 2,
+    rewardGold: 100, rewardLoyal: 12, leaveBelow: 40, leaveRate: 0.5, recoPol: 75, recoChance: 0.06,
     autoThr: 1.3, foodKeep: 2, // (and, like the computer, keeps foodKeep months of food at home when it plans attacks)
     payTroop: 1 / 45, payGen: 10, payFree: 1000, desert: 0.12, unpaidLoyal: 4,
     // the computer lords turn spare gold (above aiReserve) into soldiers for their front cities: D(s).merc of it a month,
