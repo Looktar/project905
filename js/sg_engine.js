@@ -104,12 +104,14 @@ export const PLAYER = 0;
 // an officer's stats in the current game: his own plus his treasure's (v1.1, D-97), at most 110
 const BOOST = new Map();
 export const itemOf = (id) => (CUR && CUR.gens && CUR.gens[id] && CUR.gens[id].item) || null;
+// (v2.3, D-129: plus rankStat for every rank he has earned in battle)
+export const rankOf = (id) => (CUR && CUR.gens && CUR.gens[id] && CUR.gens[id].rank) || 0;
 export function gen(id) {
-  const it = itemOf(id);
-  if (!it || !ITEMS[it]) return GENERALS[id];
-  const key = id + '|' + it;
+  const it = itemOf(id), rk = rankOf(id);
+  if ((!it || !ITEMS[it]) && !rk) return GENERALS[id];
+  const key = id + '|' + (it || '') + '|' + rk;
   let g = BOOST.get(key);
-  if (!g) { const b = GENERALS[id], f = ITEMS[it].fx; g = { ...b }; for (const k of ['lead', 'war', 'int', 'pol']) if (f[k]) g[k] = Math.min(110, b[k] + f[k]); BOOST.set(key, g); }
+  if (!g) { const b = GENERALS[id], f = it && ITEMS[it] ? ITEMS[it].fx : {}, up = rk * K().rankStat; g = { ...b }; for (const k of ['lead', 'war', 'int', 'pol']) g[k] = Math.min(110, b[k] + (f[k] || 0) + up); BOOST.set(key, g); }
   return g;
 }
 export const itemFx = (id, k) => { const it = itemOf(id); return (it && ITEMS[it].fx[k]) || 0; };
@@ -413,6 +415,7 @@ export function poachTargets(s, f, c) {
 }
 export function poachChance(s, f, id, tid) {
   const k = K(), T = s.gens[tid], mine = factionGens(s, f);
+  { const mate = swornOf(s, T.id); if (mate && s.gens[mate] && s.gens[mate].f === T.f) return 0; } // v2.3: he will not leave his sworn brother
   let p = (100 - (T.loyal ?? 70)) / 100 * k.poachLoyal + (gen(id).int - 70) * k.poachInt;
   if (BONDS.some((b) => b.m.includes(tid) && b.m.some((x) => x !== tid && mine.includes(x)))) p += k.poachBond;
   if (T.f >= 0 && citiesOf(s, T.f).length <= 1) p += k.poachLosing;
@@ -948,6 +951,7 @@ export function edgeOf(s, aIds, bIds, river = false, siege = false, fa = -1, fb 
   for (const [si, ids, foes, att, f] of [[0, aIds, bIds, true, fa], [1, bIds, aIds, !siege, fb]]) {
     // v1.6 (D-120): bonds show on the battle screen too, with their attack (and, defending a city, defence) bonus
     for (const b of activeBonds(s, f, ids)) { const v = (b.fx.atk || 0) + (att ? 0 : b.fx.def || 0); if (v) out.push([si, '♥ ' + b.zh, '♥ ' + b.en, v]); }
+    if (swornPairs(s, ids).length) out.push([si, '结义兄弟', 'Sworn brothers', swornPairs(s, ids).length * K().swornAtk]);
     if (f >= 0 && s.factions[f] && s.factions[f].hungry) out.push([si, '断粮', 'Hungry', -K().hungryPen]);
     for (const x of countersOf(ids, foes, !att)) out.push([si, x.c.zh, x.c.en, x.c.fx, x.a, x.b]);
     for (const x of timelyOf(s, ids, si === 0 && river)) out.push([si, x.t.zh, x.t.en, x.t.fx, x.id]);
@@ -991,11 +995,76 @@ function tacticOf(s, f, ids, foes, given, ctx, foeCtx) {
   return aiTactic(s, ids, foes, ctx, foeCtx);
 }
 function tacticMul(s, ids, mine, theirs, ctx) { return 1 + aptitude(s, ids, mine, ctx) + tacMatch(mine, theirs); }
+// ---------------------------------------------------------------- v2.3 (D-129): officers with a life of their own
+// Battles won make an officer's name: at rankWins victories he gains a rank (a star, +rankStat to every stat) and
+// some loyalty. Two officers who keep winning in the same army swear brotherhood (swornWins victories together):
+// from then on they fight swornAtk better side by side, and neither can be poached while the other serves you.
+const pairKey = (a, b) => (a < b ? a + '+' + b : b + '+' + a);
+export const swornOf = (s, id) => { const p = (s.sworn || []).find((x) => x.includes(id)); return p ? p.find((x) => x !== id) : null; };
+export const swornPairs = (s, ids) => (s.sworn || []).filter(([a, b]) => ids.includes(a) && ids.includes(b));
+function credit(s, f, ids, lost = []) {
+  const k = K();
+  for (const id of lost) { const G = s.gens[id]; if (G && G.f >= 0 && id !== s.factions[G.f].lord) G.loyal = Math.max(0, (G.loyal ?? 70) - k.loseLoyal); }
+  if (f < 0) return;
+  for (const id of ids) {
+    const G = s.gens[id]; if (!G) continue;
+    G.wins = (G.wins || 0) + 1; G.loyal = Math.min(100, (G.loyal ?? 70) + k.winLoyal);
+    const rk = k.rankWins.filter((n) => G.wins >= n).length;
+    if (rk > (G.rank || 0)) { G.rank = rk; ev(s, { k: 'rank', f, g: id, n: rk }); }
+  }
+  s.pairs = s.pairs || {}; s.sworn = s.sworn || [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = ids[i], b = ids[j], key = pairKey(a, b);
+    s.pairs[key] = (s.pairs[key] || 0) + 1;
+    if (s.pairs[key] >= k.swornWins && !swornOf(s, a) && !swornOf(s, b)) {
+      s.sworn.push([a, b]);
+      for (const x of [a, b]) s.gens[x].loyal = Math.min(100, (s.gens[x].loyal ?? 70) + k.swornLoyal);
+      ev(s, { k: 'sworn', f, a, b });
+    }
+  }
+}
+// 封赏: gold for loyalty, once a month for each officer, no order needed
+export function canReward(s, f, id) { const G = s.gens[id], fa = s.factions[f]; return !!G && G.f === f && id !== fa.lord && (G.loyal ?? 70) < 100 && G.rewarded !== s.turn && fa.gold >= K().rewardGold; }
+export function reward(s, f, id) {
+  if (!canReward(s, f, id)) return false;
+  const G = s.gens[id], k = K();
+  s.factions[f].gold -= k.rewardGold; G.loyal = Math.min(100, (G.loyal ?? 70) + k.rewardLoyal); G.rewarded = s.turn;
+  return true;
+}
+// the month's end for the officers: the unhappy may walk out (below leaveBelow), a good governor may bring a
+// hidden officer of his city to you (举荐), and a computer lord rewards his unhappiest man when he can afford it
+function officersMonth(s) {
+  const k = K();
+  for (const fa of s.factions) {
+    if (!fa.alive) continue;
+    const f = fa.id, gs = factionGens(s, f);
+    if (f !== PLAYER && fa.gold > k.aiReserve) { const low = gs.filter((g) => canReward(s, f, g)).sort((a, b) => (s.gens[a].loyal ?? 70) - (s.gens[b].loyal ?? 70))[0]; if (low && (s.gens[low].loyal ?? 70) < 70) reward(s, f, low); }
+    for (const id of gs) {
+      const G = s.gens[id], l = G.loyal ?? 70;
+      if (id === fa.lord || !G.c || l >= k.leaveBelow || gs.length <= 1) continue;
+      const mate = swornOf(s, id);
+      if (mate && s.gens[mate] && s.gens[mate].f === f) continue; // he will not leave his sworn brother
+      if (rnd(s) < (k.leaveBelow - l) / 100 * k.leaveRate) {
+        const c = G.c;
+        Object.assign(G, { f: -1, hidden: true, guard: false, loyal: 60 }); if (G.item) { delete G.item; }
+        ev(s, { k: 'leave', f, g: id, c });
+      }
+    }
+    for (const c of citiesOf(s, f)) {
+      const gov = governorOf(s, c), hid = hiddenIn(s, c);
+      if (!gov || !hid.length || gen(gov).pol < k.recoPol || rnd(s) >= k.recoChance) continue;
+      const nid = pick(s, hid);
+      Object.assign(s.gens[nid], { f, c, hidden: false, rumor: false, loyal: 75 + fx(nid, 'loyal') });
+      ev(s, { k: 'reco', f, c, g: nid, by: gov });
+    }
+  }
+}
 function sidePower(s, f, ids, troops, { attacking, outnumbered, foes = [], river = false }) {
   const g = ids.length ? best(ids, 'lead') : null;
   let m = 1;
   m += Math.min(K().counterMax, countersOf(ids, foes, !attacking).reduce((a, x) => a + x.c.fx, 0));
   m += timelyOf(s, ids, river).reduce((a, x) => a + x.t.fx, 0);
+  m += swornPairs(s, ids).length * K().swornAtk; // v2.3: sworn brothers side by side
   for (const id of ids) m += (fx(id, 'atk') + (attacking ? fx(id, 'raid') : 0) + (outnumbered ? fx(id, 'few') : 0)) * (id === g ? 1 : 0.5) + (attacking ? 0 : fx(id, 'def') * (id === g ? 1 : 0.5));
   if (f >= 0) m += bondFx(s, f, ids, 'atk') + (attacking ? 0 : bondFx(s, f, ids, 'def'));
   if (f >= 0 && s.factions[f].hungry) m -= K().hungryPen; // v1.7: hungry soldiers fight badly
@@ -1030,6 +1099,7 @@ function resolveField(s, m, duelWin, duel) {
   }
   const aWon = A * statMul(a.gens) * aMul >= B * statMul(b.gens) * bMul;
   const W = aWon ? a : b, L = aWon ? b : a, wLeft = aWon ? A : B, lLeft = aWon ? B : A;
+  credit(s, W.f, W.gens, L.gens);
   ev(s, { k: 'field', f: W.f, fl: L.f, c: m.to, at: m.at, lostW: W.troops - wLeft, lostL: L.troops - lLeft, gw: [...W.gens], gl: [...L.gens], intercept: a.kind === 'intercept' });
   // the loser turns back home with what is left; the winner goes on (an interceptor goes home)
   if (L.kind !== 'intercept') s.armies = s.armies.filter((x) => x !== L);
@@ -1077,11 +1147,13 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
     if (D > 0 && D < m.troops * 0.12 && A > D * 3) { D = 0; m.rounds.push([A, 0]); } // the garrison gives up
   }
   const won = D <= 0 && A > 0;
+  if (won) credit(s, m.f, m.gens, dGens); else credit(s, o, dGens, m.gens);
   ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A, pass: !!T.pass });
   if (won) {
     delete T.plan; delete T.tac; // the old owner's standing orders go with him
     T.owner = m.f; T.troops = Math.min(capOf(T), A); T.def = Math.max(20, T.def - k.siegeDef);
     if (T.bld) for (const b of Object.keys(T.bld)) T.bld[b] = Math.max(0, T.bld[b] - 1); // sacked: every building loses a level
+    T.troops = Math.min(T.troops, capOf(T)); // (a lost barracks level lowers the cap)
     for (const id of m.gens) s.gens[id].c = m.to;
     for (const id of dGens) {
       const home = o >= 0 ? ADJ[m.to].find(({ c }) => s.cities[c].owner === o) : null;
@@ -1239,6 +1311,7 @@ export function endTurn(s) {
     }
     fixLord(s, fa.id);
   }
+  officersMonth(s);
   checkBonds(s);
   s.traded = {};
   for (const c of NODE_IDS) {
@@ -1371,6 +1444,10 @@ export function advise(s, f = PLAYER, orders = {}) {
     if (x.ready || x.need - x.have.length !== 1) continue;
     const m = x.b.m.find((g) => x.where[g].k === 'wild' && (mine.has(x.where[g].c) || ADJ[x.where[g].c].some((y) => mine.has(y.c))));
     if (m) { out.push({ k: 'bond', pri: 58, g: m, c: x.where[m].c, b: x.b.id, ownIt: mine.has(x.where[m].c) }); break; }
+  }
+  { // v2.3: an officer close to walking out
+    const low = factionGens(s, f).filter((g) => g !== fa.lord && (s.gens[g].loyal ?? 70) < 50).sort((a, b) => (s.gens[a].loyal ?? 70) - (s.gens[b].loyal ?? 70))[0];
+    if (low) out.push({ k: 'unhappy', pri: 57, g: low, n: s.gens[low].loyal ?? 70, c: s.gens[low].c || undefined });
   }
   if (month === 8) out.push({ k: 'harvestSoon', pri: 40 });
   if (month >= 9 && month <= 11 && fm < 12 && fa.gold > 800) out.push({ k: 'riceCheap', pri: 42, p: ricePrice(s) });

@@ -1312,3 +1312,60 @@ describe('v2.2: governor plans and 天下归心 (D-128)', () => {
     expect(E.unify(s)).toBe(true); expect(s.over).toBe('win'); expect(s.unified).toBe(true);
   });
 });
+
+describe('v2.3: ranks, sworn brothers, rewards, walk-outs (D-129)', () => {
+  const win = (s, P, a, n, withB) => { // P wins n fights with officer a (and b) by taking empty neighbours
+    const cap = s.factions[P].cap;
+    for (let i = 0; i < n; i++) {
+      const m = { f: P, gens: withB ? [a, withB] : [a], troops: 5000, from: cap, to: ADJ[cap][0].c, route: [cap, ADJ[cap][0].c], terr: 1, total: 1, left: 0, id: 900 + i, kind: 'march' };
+      const T = s.cities[m.to]; T.owner = -1; T.troops = 100; T.def = 20;
+      for (const g of Object.values(s.gens)) if (g.c === m.to && !g.hidden && g.f !== P) g.hidden = true;
+      s.armies.push(m); s.events = s.events || [];
+      resolveBattle(s, m, null, null);
+      for (const g of m.gens) s.gens[g].c = cap; // home again
+      s.armies = s.armies.filter((x) => x !== m);
+    }
+  };
+  it('victories earn ranks (stats up), and fighting together makes sworn brothers', () => {
+    const s = newGame(3), P = 0, [a, b] = factionGens(s, P), k = CFG.sg;
+    const lead0 = E.gen(a).lead;
+    win(s, P, a, k.rankWins[0], b);
+    expect(s.gens[a].rank).toBe(1); expect(E.gen(a).lead).toBe(Math.min(110, lead0 + k.rankStat));
+    expect(s.events.some((e) => e.k === 'rank' && e.g === a)).toBe(true);
+    win(s, P, a, k.swornWins - k.rankWins[0], b);
+    expect(E.swornOf(s, a)).toBe(b); expect(E.swornOf(s, b)).toBe(a);
+    expect(E.swornPairs(s, [a, b]).length).toBe(1);
+    expect(E.edgeOf(s, [a, b], [], false, false, P, 1).some((x) => x[1] === '结义兄弟')).toBe(true);
+    // a sworn brother cannot be poached while the other serves
+    const foe = factionGens(s, 1)[0];
+    expect(E.poachChance(s, 1, foe, a)).toBe(0);
+  });
+  it('封赏 buys loyalty once a month; the unhappy walk out, but not from a sworn brother', () => {
+    const s = newGame(4), P = 0, k = CFG.sg, gs = factionGens(s, P), a = gs.find((g) => g !== s.factions[P].lord) || gs[1];
+    s.gens[a].loyal = 50; s.factions[P].gold = 1000;
+    expect(E.reward(s, P, a)).toBe(true);
+    expect(s.gens[a].loyal).toBe(50 + k.rewardLoyal); expect(s.factions[P].gold).toBe(1000 - k.rewardGold);
+    expect(E.reward(s, P, a)).toBe(false); // once a month
+    let left = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const g = newGame(seed), ids = factionGens(g, P), x = ids[ids.length - 1];
+      for (const f of g.factions.slice(1)) f.alive = false;
+      g.gens[x].loyal = 0; g.factions[P].gold = 9999; g.factions[P].food = 99999;
+      for (let i = 0; i < 6 && g.gens[x].f === P; i++) { g.gens[x].loyal = 0; runTurn(g, {}); }
+      if (g.gens[x].f !== P) { left++; expect(g.gens[x].hidden).toBe(true); }
+    }
+    expect(left).toBeGreaterThanOrEqual(8);
+  });
+  it('a governor with good 政治 brings hidden officers in over time', () => {
+    let got = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const s = newGame(seed), P = 0, cap = s.factions[P].cap;
+      for (const f of s.factions.slice(1)) f.alive = false;
+      s.gens.xunyu = Object.assign(s.gens.xunyu || { id: 'xunyu' }, { f: P, c: cap, hidden: false, guard: false, loyal: 90 });
+      const hid = Object.values(s.gens).filter((g) => g.hidden).slice(0, 3); for (const g of hid) g.c = cap;
+      s.factions[P].gold = 9999; s.factions[P].food = 99999;
+      for (let i = 0; i < 40; i++) got += runTurn(s, {}).filter((e) => e.k === 'reco' && e.f === P).length;
+    }
+    expect(got).toBeGreaterThan(3);
+  });
+});
