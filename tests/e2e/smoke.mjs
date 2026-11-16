@@ -66,7 +66,7 @@ const appState = (page) => page.evaluate(() => {
   const app = document.getElementById('app'), cs = getComputedStyle(app), r = app.getBoundingClientRect();
   const m = cs.transform && cs.transform !== 'none' ? new DOMMatrix(cs.transform) : new DOMMatrix();
   const a = m.transformPoint(new DOMPoint(0, 0)), b = m.transformPoint(new DOMPoint(0, -1));
-  const joy = document.getElementById('joy').getBoundingClientRect();
+  const joy = (document.getElementById('joy') || app).getBoundingClientRect(); // (sg.html has no joystick)
   return {
     vw: innerWidth, vh: innerHeight, w: app.offsetWidth, h: app.offsetHeight,
     rect: [r.left, r.top, r.width, r.height].map(Math.round), transform: cs.transform,
@@ -161,9 +161,14 @@ async function runViewport(browser, base, vp) {
     notes.push('big map: ' + (await page.locator('#bmCard b').textContent()).trim());
     await tap('#bigmap .x');
     // 万锦三国志 (D-73): open it from the settings panel, flip the starting blind boxes, play a month
+    // v2.2 (D-128): the strategy game is its own page now: title screen, then the first game
     await page.evaluate(() => localStorage.removeItem('p905sg'));
-    await tap('#setBtn');
-    await tap('#openSg');
+    await page.goto(new URL('sg.html', base).href, { waitUntil: 'load' });
+    await page.waitForFunction(() => { const b = document.getElementById('sgHomeGo'); return b && !b.disabled && window.__sg; }, null, { timeout: 120000 });
+    if (portrait) await checkPortrait(page, 'sg title');
+    await sleep(300);
+    await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-title.png`) });
+    await tap('#sgHomeGo');
     await page.waitForSelector('#sgLayer.show', { timeout: 15000 });
     await sleep(700);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-sg-blindbox.png`) });
@@ -189,7 +194,8 @@ async function runViewport(browser, base, vp) {
     if ((await page.locator('#sgDate').textContent()).trim() === '') throw new Error('sg: no date');
     await tap('#sgMenuBtn');
     await tap('#sgLayer [data-ok="back"]');
-    await page.waitForFunction(() => !document.getElementById('sg').classList.contains('show'), null, { timeout: 15000 });
+    await page.waitForFunction(() => !document.getElementById('sgHome').hidden, null, { timeout: 15000 });
+    if ((await page.locator('#sgHomeGo').textContent()).trim() === '') throw new Error('sg: the title screen has no continue button');
   } catch (e) {
     problems.push(e.message.split('\n')[0]);
     await page.screenshot({ path: join(SHOT_DIR, `${name}-failure.png`) }).catch(() => {});

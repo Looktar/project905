@@ -1278,3 +1278,37 @@ describe('v2.1: 剧本, the daily challenge, scores (D-127)', () => {
     expect(E.scoreOf(w)).toBeGreaterThan(E.scoreOf(a) + 900);
   });
 });
+
+describe('v2.2: governor plans and 天下归心 (D-128)', () => {
+  it('a plan gives idle officers their orders, keeps yours, and stays within the gold', () => {
+    const s = newGame(3), P = 0, cap = s.factions[P].cap, C = s.cities[cap], gs = E.gensIn(s, cap, P);
+    expect(E.planOrders(s, {})).toEqual({}); // no plan, nothing automatic
+    C.plan = 'troops'; C.troops = 1000; s.factions[P].gold = 5000;
+    const o = E.planOrders(s, { [gs[0]]: { cmd: 'search' } });
+    expect(o[gs[0]]).toEqual({ cmd: 'search' });
+    for (const g of gs.slice(1)) { expect(o[g].cmd).toBe('draft'); expect(o[g].plan).toBe(true); expect(validOrder(s, P, g, o[g])).toBe(true); }
+    C.plan = 'guard'; C.def = 10;
+    expect(Object.values(E.planOrders(s, {})).every((x) => x.cmd === 'fort')).toBe(true);
+    C.plan = 'build'; C.dev = 70;
+    const b = Object.values(E.planOrders(s, {}));
+    expect(b.filter((x) => x.cmd === 'build').length).toBe(1); // one building a month per city
+    s.factions[P].gold = 0;
+    expect(Object.values(E.planOrders(s, {})).every((x) => E.orderCost(x, gs[0]) === 0)).toBe(true);
+    // the orders run
+    s.factions[P].gold = 5000; C.plan = 'troops'; const t0 = C.troops;
+    runTurn(s, E.planOrders(s, {}));
+    expect(C.troops).toBeGreaterThan(t0);
+    // a captured city forgets its plan
+    C.owner = 1; expect(E.planOrders(s, {})).toEqual({});
+  });
+  it('天下归心: offered only in free play with most cities and twice the soldiers', () => {
+    const s = newGame(5), P = 0;
+    expect(E.canUnify(s)).toBe(false);
+    CITY_IDS.slice(0, 9).forEach((c) => { s.cities[c].owner = P; s.cities[c].troops = 6000; });
+    CITY_IDS.slice(9).forEach((c) => { s.cities[c].owner = 1; s.cities[c].troops = 1000; });
+    for (const c of PASS_IDS) s.cities[c].owner = -1;
+    expect(E.canUnify(s)).toBe(true);
+    s.goal = { months: 12 }; expect(E.canUnify(s)).toBe(false); delete s.goal;
+    expect(E.unify(s)).toBe(true); expect(s.over).toBe('win'); expect(s.unified).toBe(true);
+  });
+});

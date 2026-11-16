@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="万锦群英传">
+<meta name="theme-color" content="#2b211a">
+<link rel="manifest" href="sg.webmanifest">
+<link rel="icon" href="assets/sg-icon.svg" type="image/svg+xml">
+<title>万锦群英传 Heroes of Markham</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#2b211a;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{position:fixed;inset:0;width:100%}
+body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif}
+#app{position:fixed;left:0;top:0;transform-origin:0 0;overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+.modal{position:absolute;inset:0;display:none}.modal.show{display:flex}
+</style>
+<!-- stamp:begin (npm run stamp) -->
+<link rel="stylesheet" href="css/sg.css?v=72e0941926">
+<script type="importmap">{"imports":{"./js/audio.js":"./js/audio.js?v=72e0941926","./js/bigmap.js":"./js/bigmap.js?v=72e0941926","./js/config.js":"./js/config.js?v=72e0941926","./js/fire.js":"./js/fire.js?v=72e0941926","./js/game.js":"./js/game.js?v=72e0941926","./js/geo.js":"./js/geo.js?v=72e0941926","./js/glb.js":"./js/glb.js?v=72e0941926","./js/hud.js":"./js/hud.js?v=72e0941926","./js/i18n.js":"./js/i18n.js?v=72e0941926","./js/input.js":"./js/input.js?v=72e0941926","./js/main.js":"./js/main.js?v=72e0941926","./js/math.js":"./js/math.js?v=72e0941926","./js/missions.js":"./js/missions.js?v=72e0941926","./js/models.js":"./js/models.js?v=72e0941926","./js/nav.js":"./js/nav.js?v=72e0941926","./js/orient.js":"./js/orient.js?v=72e0941926","./js/poi.js":"./js/poi.js?v=72e0941926","./js/pranks.js":"./js/pranks.js?v=72e0941926","./js/props.js":"./js/props.js?v=72e0941926","./js/renderer.js":"./js/renderer.js?v=72e0941926","./js/sg_art.js":"./js/sg_art.js?v=72e0941926","./js/sg_bios.js":"./js/sg_bios.js?v=72e0941926","./js/sg_data.js":"./js/sg_data.js?v=72e0941926","./js/sg_elev.js":"./js/sg_elev.js?v=72e0941926","./js/sg_engine.js":"./js/sg_engine.js?v=72e0941926","./js/sg_main.js":"./js/sg_main.js?v=72e0941926","./js/sg_map.js":"./js/sg_map.js?v=72e0941926","./js/sg_paper.js":"./js/sg_paper.js?v=72e0941926","./js/sg_portrait.js":"./js/sg_portrait.js?v=72e0941926","./js/sg_sites.js":"./js/sg_sites.js?v=72e0941926","./js/sg_table.js":"./js/sg_table.js?v=72e0941926","./js/sg_ui.js":"./js/sg_ui.js?v=72e0941926","./js/signals.js":"./js/signals.js?v=72e0941926","./js/world.js":"./js/world.js?v=72e0941926"}}</script>
+<script type="module" src="js/sg_main.js?v=72e0941926"></script>
+<!-- stamp:end -->
+</head>
+<body>
+<div id="app">
+  <div id="sg" class="modal show">
+    <canvas id="sgTable"></canvas>
+    <canvas id="sgMap"></canvas>
+    <div id="sgTop"><b id="sgTitle"></b><span id="sgDate"></span><div id="sgRes"></div><button id="sgAuto"></button><button id="sgEnd"></button><button id="sgGenBtn"></button><button id="sgLogBtn"></button><button id="sgMenuBtn"></button></div>
+    <div id="sgPanel"></div>
+    <button id="sgPanelTab">»</button>
+    <div id="sgZoom"><button id="sgZIn">+</button><button id="sgZOut">−</button><button id="sgZHome">◎</button><button id="sg3D">3D</button></div>
+    <div id="sgToast"></div>
+    <div id="sgTut"></div>
+    <div id="sgHome">
+      <h1 id="sgHomeT"></h1><p id="sgHomeS"></p>
+      <button id="sgHomeGo" class="sgBig" disabled></button><button id="sgHomeNew" class="sgBig alt" disabled></button>
+      <div id="sgHomeRow"><button id="sgHomeLang"></button><button id="sgHomeHelp"></button></div>
+      <small id="sgHomeC">Map data © OpenStreetMap contributors · Elevation: Copernicus DEM</small>
+    </div>
+    <div id="sgLayer"></div>
+  </div>
+</div>
+</body>
+</html>

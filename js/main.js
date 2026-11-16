@@ -3,7 +3,6 @@ import { World } from './world.js';
 import { Game } from './game.js';
 import { HUD } from './hud.js';
 import { BigMap } from './bigmap.js';
-import { Sanguo } from './sg_ui.js';
 import { CFG } from './config.js';
 import { input, layout, initTouch, poll, clearEdges, isTouch } from './input.js';
 import * as sfx from './audio.js';
@@ -38,7 +37,6 @@ const autoQ = !/noauto=1/.test(location.search) && !bench; // ?noauto=1 keeps gr
 function applyTexts() {
   document.documentElement.lang = settings.lang === 'zh' ? 'zh-CN' : 'en';
   $('startBtn').textContent = t('start');
-  $('sgBtn').textContent = t('sgStart');
   $('subtitle').textContent = t('subtitle');
   $('tagline').textContent = t('tagline');
   $('langBtn').textContent = t('lang');
@@ -53,7 +51,7 @@ function applyTexts() {
 }
 
 // ---------------- renderer / sizing
-let renderer, world, game, hud, sanguo = null;
+let renderer, world, game, hud;
 let W = 0, H = 0;
 function resize() {
   [W, H] = layout(app);
@@ -63,7 +61,6 @@ function resize() {
   const mini = $('mini'), ms = Math.round(Math.min(W, H) * 0.26);
   mini.width = mini.height = Math.round(ms * Math.min(2, window.devicePixelRatio || 1));
   mini.style.width = mini.style.height = ms + 'px';
-  if (sanguo && $('sg').classList.contains('show')) sanguo.resize(W, H);
 }
 function applyQuality() {
   if (!renderer) return;
@@ -137,7 +134,6 @@ async function boot() {
   $('loading').style.display = 'none';
   $('loadbar').style.display = 'none';
   $('startBtn').disabled = false;
-  $('sgBtn').disabled = false;
   // preview camera behind the title screen
   previewCam = map.spawn;
   if (bench) startGame();
@@ -170,7 +166,7 @@ $('muteBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); setti
 let paused = false; // the game pauses while a panel is open
 const anyModal = () => !!document.querySelector('.modal.show');
 function openModal(id) { $(id).classList.add('show'); paused = true; sfx.setMuted(true); }
-function closeModal(id) { if (id === 'sg') sfx.bgm(false); $(id).classList.remove('show'); paused = anyModal(); if (!paused) sfx.setMuted(settings.mute); }
+function closeModal(id) { $(id).classList.remove('show'); paused = anyModal(); if (!paused) sfx.setMuted(settings.mute); }
 for (const m of document.querySelectorAll('.modal')) {
   m.addEventListener('pointerdown', (e) => e.stopPropagation()); // never start the joystick under a panel
   m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
@@ -182,11 +178,6 @@ $('listBtn').addEventListener('click', () => { if (game) game.pranks.render($('p
 $('openCredits').addEventListener('click', () => openModal('credits'));
 // the big map (v0.5, D-71): minimap tap or M
 const bigmap = new BigMap(() => closeModal('bigmap'));
-// 万锦三国志 (D-73): the strategy mode, from the title screen or the settings panel
-sanguo = new Sanguo(() => closeModal('sg'));
-function openSg() { if (!world) return; for (const m of document.querySelectorAll('.modal.show')) closeModal(m.id); openModal('sg'); sfx.quiet(); sfx.setMuted(settings.mute); sanguo.open(world, W, H); /* 三国 has its own sounds (D-81) */ window.__sg = sanguo; }
-$('sgBtn').addEventListener('click', () => { sfx.unlock(); goLandscape(); openSg(); });
-$('openSg').addEventListener('click', openSg);
 function openMap() { if (!game || anyModal()) return; openModal('bigmap'); bigmap.open(game, W, H); }
 $('titleCredits').addEventListener('click', () => openModal('credits'));
 addEventListener('keydown', (e) => {
@@ -232,7 +223,6 @@ function loop(now) {
   let dt = Math.min(0.05, raw);
   fpsAcc += raw; fpsN++;
   const cpu0 = performance.now();
-  if ($('sg').classList.contains('show')) return; // the strategy screen covers the town: no need to draw it
   if (fpsAcc > 1) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
     // auto-lower quality on slow devices (spec 5.6), unless the player chose graphics by hand
     if (game && autoQ && !settings.manualQ && !paused && fps < Q.autoFps) {
