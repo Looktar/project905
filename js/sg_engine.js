@@ -1079,6 +1079,7 @@ export function resolveBattle(s, m, duelWin = null, duel = null) {
   const won = D <= 0 && A > 0;
   ev(s, { k: won ? 'take' : 'repel', f: m.f, c: m.to, from: m.from, fd: o, lostA: m.troops - A, lostD: T.troops - D, gens: [...m.gens], left: A, pass: !!T.pass });
   if (won) {
+    delete T.plan; delete T.tac; // the old owner's standing orders go with him
     T.owner = m.f; T.troops = Math.min(capOf(T), A); T.def = Math.max(20, T.def - k.siegeDef);
     if (T.bld) for (const b of Object.keys(T.bld)) T.bld[b] = Math.max(0, T.bld[b] - 1); // sacked: every building loses a level
     for (const id of m.gens) s.gens[id].c = m.to;
@@ -1379,9 +1380,48 @@ export function advise(s, f = PLAYER, orders = {}) {
     const c = [...mine].filter((x) => !s.cities[x].pass).sort((a, b) => s.cities[b].dev - s.cities[a].dev).find((x) => ['market', 'farm', 'barracks', 'walls', 'academy'].some((b) => canBuild(s.cities[x], b)));
     if (c) out.push({ k: 'build', pri: 32, c });
   }
-  const idle = factionGens(s, f).filter((g) => s.gens[g].c && !orders[g]).length;
+  const idle = factionGens(s, f).filter((g) => s.gens[g].c && !orders[g] && !(s.cities[s.gens[g].c].plan && s.cities[s.gens[g].c].plan !== 'none')).length; // (officers under a governor's plan are not idle)
   if (idle) out.push({ k: 'idle', pri: 30, n: idle });
   return out.sort((a, b) => b.pri - a.pri);
 }
 // who speaks for the advisor: the cleverest officer of f
 export const advisorOf = (s, f = PLAYER) => factionGens(s, f).sort((a, b) => gen(b).int - gen(a).int)[0] || null;
+
+// ---------------------------------------------------------------- v2.2 (D-128): governor plans, early unification
+// A city can be given a standing plan (三国志's 委任, but per city and optional): every officer there who has no
+// order of his own follows it each month. troops: draft (walls when full); guard: walls first, then draft;
+// search: look for hidden officers while there are rumours, else draft; build: put up what can be built, else draft.
+export const PLANS = ['none', 'troops', 'guard', 'search', 'build'];
+export function planOrders(s, orders = {}) {
+  const fa = s.factions[PLAYER], out = { ...orders };
+  let gold = fa.gold - Object.entries(orders).reduce((a, [id, o]) => a + orderCost(o, id), 0);
+  const room = {}; // drafting room left per city this month
+  for (const c of ownedBy(s, PLAYER)) {
+    const C = s.cities[c], plan = C.plan;
+    if (!plan || plan === 'none') continue;
+    room[c] = capOf(C) - C.troops;
+    let built = false;
+    for (const id of byLead(gensIn(s, c, PLAYER))) {
+      if (out[id]) continue;
+      const tryOrder = (o) => { const cost = orderCost(o, id); if (cost > gold || !validOrder(s, PLAYER, id, o)) return false; out[id] = { ...o, plan: true }; gold -= cost; return true; };
+      const draft = () => room[c] > 200 && tryOrder({ cmd: 'draft' }) && ((room[c] -= draftAmt(id, C)), true);
+      const fort = () => tryOrder({ cmd: 'fort' });
+      const build = () => { if (built) return false; const b = ['market', 'farm', 'barracks', 'academy', 'walls', 'beacon'].find((x) => canBuild(C, x)); if (b && tryOrder({ cmd: 'build', b })) { built = true; return true; } return false; };
+      const search = () => hiddenIn(s, c).length > 0 && tryOrder({ cmd: 'search' });
+      if (plan === 'troops') draft() || fort();
+      else if (plan === 'guard') fort() || draft();
+      else if (plan === 'search') search() || draft() || fort();
+      else if (plan === 'build') build() || draft() || fort();
+    }
+  }
+  return out;
+}
+// 天下归心: in free play, once you hold most of the land and far more soldiers than everyone else together, the
+// rest can be told to yield, so the last cities need not be taken one by one
+export function canUnify(s) {
+  if (s.over || s.goal) return false;
+  const k = K(), mine = citiesOf(s, PLAYER).length, troops = (f) => ownedBy(s, f).reduce((a, c) => a + s.cities[c].troops, 0) + s.armies.filter((a) => a.f === f).reduce((a, x) => a + x.troops, 0);
+  const rest = s.factions.filter((f) => f.alive && f.id !== PLAYER).reduce((a, f) => a + troops(f.id), 0);
+  return mine >= Math.ceil(CITY_IDS.length * k.unifyCities) && troops(PLAYER) >= rest * k.unifyTroops;
+}
+export function unify(s) { if (!canUnify(s)) return false; s.over = 'win'; s.unified = true; return true; }

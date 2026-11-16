@@ -6,14 +6,15 @@
 网页 + 手机浏览器都能玩的 3D 卡通“玩具城”开放世界小游戏，地图基于真实万锦（OpenStreetMap）。溜达、打路人、抢车，街上有巡逻警察。轻松休闲，给自己和朋友玩。
 试玩：https://looktar.github.io/project905/ （推到 `main` 后 GitHub Pages 自动发布，约 1 分钟）
 
-## 当前状态：v0.1 打磨（2026-11-01）；群英传 v2.1（2026-11-13）
+## 当前状态：v0.1 打磨（2026-11-01）；群英传 v2.2（2026-11-16，独立页面 sg.html）
 - **游戏本身零依赖、零构建**：原生 WebGL2 + ES Modules，直接静态托管。
 - **D-08 已定**：不迁移到规格原定的 Three.js + Vite + TypeScript + Rapier2D；npm 只用于开发工具（ESLint、Vitest、Playwright）。**不要在没和总决策确认前做大重构。**
 - 进度和已知问题见 `docs/PROGRESS.md`；以后的想法在 `docs/BACKLOG.md`。
 
 ## 目录
 ```
-index.html            页面 + HUD + 样式
+index.html            玩具城页面 + HUD + 样式（v2.2 起不含群英传）
+sg.html               万锦群英传自己的页面（标题画面 + 策略界面骨架）；样式在 css/sg.css；入口 js/sg_main.js（D-128）
 js/main.js            启动、主循环、镜头、渲染调度、设置/制作人员面板、自动画质、基准测试
 js/renderer.js        WebGL2：带阴影的实例化着色器 + 阴影贴图 + 招牌 + 遮挡淡出/X 光轮廓 + 微缩景深后处理
 js/geo.js             几何体（圆角盒、球、二十面体、圆柱、圆环、屋顶、星星、路面条带、多边形挤出）
@@ -70,11 +71,12 @@ npm run smoke                        # 三种画面的冒烟测试 + 截图（�
 npm run map:fetch                    # 重新抓 OSM 原始数据（需要联网；之后再跑 npm run map）
 npm run map                          # 重新生成地图（改了 build_map.py 后必须跑并提交 maps/markham.json）
 npm run check:map                    # 确认提交的地图和 build_map.py 一致
-npm run stamp                        # 改了 js/ 或 maps/ 后更新 index.html 的版本号（D-61，不更新单元测试会失败）
+npm run stamp                        # 改了 js/、css/ 或 maps/ 后更新 index.html 和 sg.html 的版本号（D-61，不更新单元测试会失败）
 ```
 - 网址参数：`?debug=1` 显示帧率、CPU、draw call、实体数；`?bench=1` 在出生点跑 20 秒基准测试；`?noauto=1` 关掉自动降画质（截图、测试用）。
 - 云端环境里 Playwright 浏览器已预装（1.63.0），**不要**运行 `playwright install`。
 - 群英传 3D 沙盘在软件渲染（无头浏览器）里默认关闭，截图要看 3D 时加 `?sg3d=1`。
+- 群英传试玩：https://looktar.github.io/project905/sg.html （和玩具城互不相干：不要在两边之间加入口或共享界面代码）。
 
 ## 关键约定
 - 坐标：x 向东、z 向南、y 向上，单位米（游戏尺度，真实距离 ×0.4）。“地图北” = -z（路网已转正约 15.5°）。
