@@ -161,7 +161,7 @@ extend({
 });
 // v1.1 (D-97, D-98): treasures, envoys, poaching, the first-game guide
 extend({
-  sgPoach: '挖角', sgPoachS: '策反邻城敌将', sgEnvoy: '停战', sgEnvoyS: '派使者，停战 {n} 个月', sgPickGen: '选要挖的敌将（只能挖邻城的，君主挖不动）', sgPickLord: '选要停战的君主', sgNoTarget: '现在没有可选的对象',
+  sgPoach: '挖角', sgPoachS: '策反邻城敌将', sgEnvoy: '停战', sgEnvoyS: '派使者，停战 {n} 个月', sgPickGen: '选要挖的敌将（只能挖邻城的，君主挖不动）', sgPickLord: '选一位君主', sgNoTarget: '现在没有可选的对象',
   sgTruceWith: '🤝 停战中，还剩 {n} 个月：双方都不能进攻', sgItem: '宝物', sgItemGive: '转交给', sgLoyal: '忠诚', sgLoyalS: '越低越容易被挖走', sgItemBox: '宝物盲盒！', sgItemGot: '{g} 在 {c} 搜出了宝物！', sgItemTo: '{g} 佩带。可以在“将”页面里转交给别人',
   itLead: '统率', itWar: '武力', itInt: '智力', itPol: '政治', itHp: '单挑体力', itSp: '单挑斗志',
   evItem: '{c}：{g} 找到了宝物 {i}', evItemAI: '{f} 在 {c} 找到了宝物 {i}', evPoachOk: '{g} 说动了 {t}：{t} 离开{from}，投奔{f}！', evPoachNo: '{g} 去挖 {t}，被一口回绝', evPoachedYou: '{t} 被{f}挖走了！',
@@ -171,8 +171,14 @@ extend({
   sgTut3: '再让另一位“征兵”或“建设”。政治高的武将留在城里坐镇，城市发展更快。嫌麻烦就点上面的“委任”，空闲的武将会自动安排好。', sgTut4: '兵够了就点“出征”，再点地图上发光的城。先打灰色的空城，别急着碰其他君主。', sgTut5: '“计略”里除了流言和火计，还能“挖角”邻城的敌将，或者派人“停战”。',
   sgTut6: '都安排好了，点右上角的“结束本月”。占满所有城池，你就统一了万锦！',
   sgHelpMore: '宝物：搜索没找到人时，有机会搜出宝物（每局藏 10 件）。宝物由一位武将佩带，直接加他的能力，可以在“将”页面里转交。武将被俘、被挖走时宝物跟着走。\n\n挖角和停战（在“计略”里）：挖角是花钱策反邻城的敌将，对方忠诚越低、你的武将智力越高越容易，君主挖不动；电脑也会来挖你的人。停战是派使者和一位君主讲和 6 个月，期间双方都不能进攻；你太强、或者对方已经结盟对付你时很难谈成。',
+  sgGift: '送礼', sgGiftS: '花 {g} 金换好感，必定成功', sgAlly: '结盟', sgAllyS: '好感 {r} 以上才谈得成；一年不互攻，盟友帮你打别人', sgYield: '劝降', sgYieldS: '对方只剩 {c} 城以内、兵力不到你三分之一时可以劝他归顺',
+  sgLords: '诸侯', persHawk: '好战', persKeeper: '守成', persSteady: '稳健', persHawkS: '兵力差不多就敢打，不爱讲和', persKeeperS: '有把握才出兵，好说话', persSteadyS: '不急不躁', sgRel: '好感', sgRelN: ['仇视', '冷淡', '平平', '友善', '亲近'], sgAllied: '🤝 同盟，还剩 {n} 个月', sgTruceShort: '停战 {n} 月', sgLordCities: '{n} 城',
+  sgRelHint: '打他、用计、挖他的人会掉好感；送礼、停战会涨。好感低的诸侯更爱打你，也更难讲和。', sgLetter: '📜 来信', sgLetterT: '{f}来信',
+  sgOfferAlly: '{f}（{p}）派人来说：{v}势大，不如你我结盟 {n} 个月，互不相攻，一起对付他。', sgOfferTribute: '{f}（{p}）兵强马壮，派人来要 {n} 金“岁币”。给了，{m} 个月不来犯；不给，他记你一笔。',
+  sgOfferYes: '答应', sgOfferNo: '回绝', sgOfferPay: '给 {n} 金', sgOfferPoor: '金不够，给不起',
+  evGift: '{g} 带着礼物去见{to}：好感 +{n}', evGiftAI: '{f}给{to}送了礼', evAllyOk: '{g} 出使成功：{f}与{to}结盟 {n} 个月！', evAllyNo: '{g} 出使{to}，对方不肯结盟', evYieldOk: '{g} 说动了{to}：{lord} 带着 {n} 座城和全部人马归顺！', evYieldNo: '{g} 去劝降{to}，被赶了出来',
 }, {
-  sgPoach: 'Poach', sgPoachS: 'turn an officer next door', sgEnvoy: 'Truce', sgEnvoyS: 'an envoy: {n} months of peace', sgPickGen: 'Pick an enemy officer next door (lords cannot be turned)', sgPickLord: 'Pick a lord to make peace with', sgNoTarget: 'Nobody to pick right now',
+  sgPoach: 'Poach', sgPoachS: 'turn an officer next door', sgEnvoy: 'Truce', sgEnvoyS: 'an envoy: {n} months of peace', sgPickGen: 'Pick an enemy officer next door (lords cannot be turned)', sgPickLord: 'Choose a lord', sgNoTarget: 'Nobody to pick right now',
   sgTruceWith: '🤝 Truce, {n} months left: neither side may attack', sgItem: 'Treasure', sgItemGive: 'Hand to', sgLoyal: 'Loyalty', sgLoyalS: 'the lower, the easier to poach', sgItemBox: 'Treasure box!', sgItemGot: '{g} dug up a treasure in {c}!', sgItemTo: '{g} carries it. Hand it on from the Officers page',
   itLead: 'LED', itWar: 'WAR', itInt: 'INT', itPol: 'POL', itHp: 'duel stamina', itSp: 'duel spirit',
   evItem: '{c}: {g} found the treasure {i}', evItemAI: '{f} found the treasure {i} in {c}', evPoachOk: '{g} talked {t} round: {t} leaves {from} for {f}!', evPoachNo: '{g} tried to poach {t} and was turned down flat', evPoachedYou: '{t} was poached by {f}!',
@@ -182,6 +188,12 @@ extend({
   sgTut3: 'Have another Draft or Construct; an officer with high POL left in a city makes it grow faster. Or tap Auto at the top and idle officers get a job by themselves.', sgTut4: 'With enough troops tap Attack, then a glowing city on the map. Take the grey unclaimed cities first and leave the other lords alone for now.', sgTut5: 'Under Plot, besides rumours and fire, you can Poach an enemy officer next door or send an envoy for a Truce.',
   sgTut6: 'All set? Tap End month at the top right. Hold every city and Markham is yours!',
   sgHelpMore: 'Treasures: a search that finds nobody may dig up a treasure (10 are hidden each game). One officer carries it and it adds straight to his stats; hand it on from the Officers page. It goes with him if he is captured or poached.\n\nPoaching and truces (under Plot): poaching pays an enemy officer next door to change sides; lower loyalty and a cleverer agent help, and lords cannot be turned. The computer poaches too. An envoy buys 6 months of peace with one lord, with no attacks either way; it rarely works when you are much stronger or the lords have united against you.',
+  sgGift: 'Gift', sgGiftS: '{g} gold for goodwill, always works', sgAlly: 'Alliance', sgAllyS: 'needs goodwill {r}+; a year of peace, and your ally presses the others', sgYield: 'Demand surrender', sgYieldS: 'a lord down to {c} cities with under a third of your army may come over',
+  sgLords: 'The lords', persHawk: 'Warlike', persKeeper: 'Cautious', persSteady: 'Steady', persHawkS: 'attacks on even odds, hates making peace', persKeeperS: 'attacks only when sure, easy to talk to', persSteadyS: 'takes his time', sgRel: 'Goodwill', sgRelN: ['hostile', 'cold', 'neutral', 'friendly', 'close'], sgAllied: '🤝 Allied, {n} months left', sgTruceShort: 'truce {n} mo', sgLordCities: '{n} cities',
+  sgRelHint: 'Attacks, plots and poaching cost goodwill; gifts and truces earn it. A lord who dislikes you attacks you sooner and makes peace later.', sgLetter: '📜 Letter', sgLetterT: 'A letter from {f}',
+  sgOfferAlly: '{f} ({p}) writes: {v} grows too strong. Let us be allies for {n} months, leave each other alone and deal with him together.', sgOfferTribute: '{f} ({p}) has the bigger army and demands {n} gold in tribute. Pay, and he keeps away for {m} months; refuse, and he will remember it.',
+  sgOfferYes: 'Accept', sgOfferNo: 'Refuse', sgOfferPay: 'Pay {n} gold', sgOfferPoor: 'Not enough gold to pay',
+  evGift: '{g} took gifts to {to}: goodwill +{n}', evGiftAI: '{f} sent gifts to {to}', evAllyOk: "{g}'s embassy worked: {f} and {to} are allies for {n} months!", evAllyNo: '{g} went to {to}, who would not be allies', evYieldOk: '{g} talked {to} round: {lord} comes over with {n} cities and every man!', evYieldNo: '{g} asked {to} to surrender and was thrown out',
 });
 
 const SAVE = 'p905sg';
@@ -208,6 +220,9 @@ export function weatherOf(s) {
 }
 const WEATHER_EN = { 雪: 'snow', 秋收: 'harvest', 晴: 'fair', 雨: 'rain', 阴: 'cloudy', 炎热: 'hot', 秋风: 'windy' };
 const dateText = (s) => { const d = E.dateOf(s), y = d.year - 195, [w, ic] = weatherOf(s); return F(s.roster === 'mix' ? 'sgDateMix' : 'sgDate', { y: y === 1 ? '元' : y, Y: d.year, m: d.month }) + ` · ${ic} ${zh() ? w : WEATHER_EN[w]}`; };
+const EK = (kd) => (kd === 'envoy' ? 'truce' : E.ENVOYS.includes(kd) ? kd : null);
+const ENVOY_KEY = { gift: 'sgGift', ally: 'sgAlly', yield: 'sgYield' };
+const PERS_KEY = { hawk: 'persHawk', keeper: 'persKeeper', steady: 'persSteady' };
 const CMD_KEY = { build: 'sgCmdBuild', poach: 'sgPoach', envoy: 'sgEnvoy', dev: 'sgCmdDev', draft: 'sgCmdDraft', search: 'sgCmdSearch', fort: 'sgCmdFort', plot: 'sgCmdPlot', move: 'sgCmdMove', march: 'sgCmdMarch', intercept: 'sgCmdIntercept' };
 
 // v0.9.5 (D-82): rarity from the two best stats (UR: a 100 or two great ones), letter grades per stat
@@ -785,7 +800,32 @@ export class Sanguo {
     const bondsH = `<h4>♥ ${t('sgBonds')} <small>${F('sgBondsOn', { n: bv.filter((x) => x.ready).length })}</small><button class="sgMini" data-a="bonds">${t('sgBondPage')}</button></h4>${lead}${shown.length ? shown.map((x) => this.bondRow(x, true)).join('') : `<p class="sgHint">${t('sgBondHint')}</p>`}`;
     return `<h3>${t('sgYourSide')}<button class="sgMini sgOvBtn" data-a="overview">${t('sgOverview')}</button><button class="sgX" data-a="hide" title="${t('sgHide')}">«</button></h3>${st.goal ? `<p class="sgGoalL">${esc(this.goalText())}</p>` : ''}${season}${armies}<p class="sgHint">${t('sgPickCity')}</p><p class="sgHint">${F('sgOrders', { n, m: gs.length })} · ${F('sgGoldLeft', { n: this.goldLeft() })}</p>${money}
       ${bondsH}
+      ${this.lordsBlock()}
       <h4>${t('sgAllGens')} · ${gs.length}</h4>${gs.map((g) => genCard(g) + `<div class="sgWhere">${st.gens[g].c ? '📍 ' + esc(cName(st.gens[g].c)) : '🚩 ' + esc(this.armyOf(g) ? F('sgMarching', { to: cName(this.armyOf(g).to), eta: this.eta(this.armyOf(g)) }) : t('sgOnRoad'))}${st.orders[g] ? ' · ' + esc(this.orderText(st.orders[g])) : ''}${bv.filter((x) => x.b.m.includes(g)).map((x) => ` <span class="sgBchip${x.ready ? ' on' : ''}">♥${esc(bondName(x.b))} ${Math.min(x.have.length, x.need)}/${x.need}</span>`).join('')}</div>`).join('')}`;
+  }
+  // v2.4 (D-130): the other lords: temper, what they think of you, truce / alliance, and any letter waiting
+  relWord(n) { return t('sgRelN')[n <= -40 ? 0 : n <= -10 ? 1 : n < 10 ? 2 : n < 40 ? 3 : 4]; }
+  lordLine(f) {
+    const st = this.s, p = E.persOf(st, f), r = E.relOf(st, f), tl = E.truceLeft(st, E.PLAYER, f);
+    return `<span class="sgPers ${p}" title="${esc(t(PERS_KEY[p] + 'S'))}">${t(PERS_KEY[p])}</span> ${t('sgRel')} <b class="${r <= -10 ? 'sgRed' : r >= 10 ? 'sgGreen' : ''}">${r > 0 ? '+' : ''}${r}</b> ${esc(this.relWord(r))}${E.allied(st, f) ? ' · ' + esc(F('sgAllied', { n: tl })) : tl ? ' · 🤝 ' + esc(F('sgTruceShort', { n: tl })) : ''}`;
+  }
+  lordsBlock() {
+    const st = this.s, lords = st.factions.filter((x) => x.alive && x.id !== E.PLAYER);
+    if (!lords.length) return '';
+    const mail = (st.offers || []).some((o, i) => !o.done && st.factions[o.f].alive && (i >= 0));
+    return `<h4>🏯 ${t('sgLords')}${mail ? `<button class="sgMini sgMail" data-a="letters">${t('sgLetter')}</button>` : ''}</h4>${lords.map((x) => `<div class="sgLord" data-focus="${x.cap}"><span class="sgDot" style="background:${x.color}"></span><b>${esc(this.fName(x.id))}</b> <small>${F('sgLordCities', { n: E.citiesOf(st, x.id).length })}</small><div>${this.lordLine(x.id)}</div></div>`).join('')}<p class="sgHint">${t('sgRelHint')}</p>`;
+  }
+  async letters() {
+    const st = this.s;
+    for (let i = 0; i < (st.offers || []).length; i++) {
+      const o = st.offers[i];
+      if (o.done || !st.factions[o.f].alive) continue;
+      const v = { f: this.fName(o.f), p: t(PERS_KEY[E.persOf(st, o.f)]), v: o.vs !== undefined ? this.fName(o.vs) : '', n: o.n, m: o.m }, can = E.canAnswer(st, i);
+      const r = await this.layer(`<h2 class="sgCenter">${esc(F('sgLetterT', v))}</h2><div class="sgLetterC">${portrait(st.factions[o.f].lord, 72)}<p>${esc(F(o.k === 'ally' ? 'sgOfferAlly' : 'sgOfferTribute', v))}</p></div>${can ? '' : `<p class="sgHint sgRed">${t('sgOfferPoor')}</p>`}
+        <button class="sgBig" data-ok="yes" ${can ? '' : 'disabled'}>${o.k === 'ally' ? t('sgOfferYes') : esc(F('sgOfferPay', v))}</button><button class="sgBig alt" data-ok="no">${t('sgOfferNo')}</button>`, 'sgLetterL');
+      if (r === 'yes' || r === 'no') { E.answer(st, i, r === 'yes'); if (r === 'yes') sfx.cash(); this.save(); }
+    }
+    this.render();
   }
   // v1.9 (D-125): the advisor's few tips (tap to jump to the city) and next month's forecast
   tipText(x) {
@@ -888,7 +928,8 @@ export class Sanguo {
       const [g, f] = E.cityIncome(st, c), gov = E.governorOf(st, c);
       h += `<p class="sgHint sgInc">💰 ${F('sgIncome', { g, f })} · ${gov ? F('sgGov', { g: gName(gov), p: E.gen(gov).pol }) : t('sgNoGov')}</p>`;
     }
-    if (C.owner > 0 && E.truceLeft(st, E.PLAYER, C.owner)) h += `<p class="sgHint sgTruce">${esc(F('sgTruceWith', { n: E.truceLeft(st, E.PLAYER, C.owner) }))}</p>`;
+    if (C.owner > 0) h += `<p class="sgHint sgLordL">${this.lordLine(C.owner)}</p>`;
+    if (C.owner > 0 && !E.allied(st, C.owner) && E.truceLeft(st, E.PLAYER, C.owner)) h += `<p class="sgHint sgTruce">${esc(F('sgTruceWith', { n: E.truceLeft(st, E.PLAYER, C.owner) }))}</p>`;
     if (C.owner >= 0 || BLD_IDS.some((b) => E.bldRaw(C, b))) h += `<h4>${t('sgBld')}</h4>` + bldRow(C);
     if (info.big) h += `<p class="sgHint">🏯 ${t('sgBigPass')}</p>`;
     if (info.pass) h += `<p class="sgHint">${t('sgPassNote')}</p>`;
@@ -927,7 +968,7 @@ export class Sanguo {
     const k = o.cmd === 'plot' ? ({ fire: 'sgFire', grain: 'sgGrain' }[o.kind] || 'sgRumor') : CMD_KEY[o.cmd];
     if (o.cmd === 'build') return `${t(k)} · ${BUILDINGS[o.b] ? bName(o.b) : ''}`;
     if (o.cmd === 'poach') return `${t(k)} → ${gName(o.g)}`;
-    if (o.cmd === 'envoy') return `${t(k)} → ${this.fName(o.f)}`;
+    if (o.cmd === 'envoy') return `${t(ENVOY_KEY[o.kind] || k)} → ${this.fName(o.f)}`;
     if (o.cmd === 'intercept') { const A = (this.s.armies || []).find((a) => a.id === o.army); return t(k) + (A ? ` → ${this.fName(A.f)}` : '') + (o.n ? ' · ' + kNum(o.n) : ''); }
     return t(k) + (o.to ? ` → ${cName(o.to)}${o.n ? ' · ' + kNum(o.n) : ''}${o.tac && o.tac !== 'auto' ? ' · ' + t(TAC_KEY[o.tac]) : ''}` : '');
   }
@@ -970,11 +1011,14 @@ export class Sanguo {
       } else if (m && m.cmd === 'intercept') {
         h += `<p class="sgPick">${t('sgPickArmy')}</p><div class="sgChips">${E.interceptTargets(st, E.PLAYER, c).map((A) => `<button data-g="${id}" data-army="${A.id}">${esc(F('sgArmyChip', { f: this.fName(A.f), n: kNum(A.troops), to: cName(A.to) }))}${this.odds(c, null, id, A)}</button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m && m.cmd === 'plot') {
-        const KT = { rumor: ['sgRumor', 'sgRumorS'], fire: ['sgFire', 'sgFireS'], grain: ['sgGrain', 'sgGrainS'], poach: ['sgPoach', 'sgPoachS'], envoy: ['sgEnvoy', 'sgEnvoyS'] }, extra = this.plotKinds(c, id);
+        const KT = { rumor: ['sgRumor', 'sgRumorS'], fire: ['sgFire', 'sgFireS'], grain: ['sgGrain', 'sgGrainS'], poach: ['sgPoach', 'sgPoachS'], envoy: ['sgEnvoy', 'sgEnvoyS'], gift: ['sgGift', 'sgGiftS'], ally: ['sgAlly', 'sgAllyS'], yield: ['sgYield', 'sgYieldS'] }, extra = this.plotKinds(c, id);
         const kinds = [...(m.cities.length ? E.PLOTS : []), ...extra];
-        h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${kinds.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(KT[kd][0])} <small>${esc(F(KT[kd][1], { n: CFG.sg.envoyMonths }))} · ${E.costOf(kd === 'poach' || kd === 'envoy' ? kd : 'plot', id)}${zh() ? '金' : 'g'}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
+        h += `<p class="sgPick">${t('sgPickKind')}</p><div class="sgChips">${kinds.map((kd) => `<button data-g="${id}" data-kind="${kd}" class="${m.kind === kd ? 'on' : ''}">${t(KT[kd][0])} <small>${esc(F(KT[kd][1], { n: CFG.sg.envoyMonths, g: CFG.sg.giftGold, r: CFG.sg.allyRel, c: CFG.sg.yieldCities }))} · ${EK(kd) ? E.envoyCost(EK(kd), id) : E.costOf(kd === 'poach' ? kd : 'plot', id)}${zh() ? '金' : 'g'}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
         if (m.kind === 'poach') h += `<p class="sgPick">${t('sgPickGen')}</p><div class="sgChips">${E.poachTargets(st, E.PLAYER, c).map((x) => `<button data-g="${id}" data-pg="${x}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'poach', g: x }) ? '' : 'disabled'}>${esc(gName(x))} <small>${esc(cName(st.gens[x].c))} · ${t('sgLoyal')} ${st.gens[x].loyal ?? 70} · ${F('sgChance', { n: Math.round(E.poachChance(st, E.PLAYER, id, x) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
-        else if (m.kind === 'envoy') h += `<p class="sgPick">${t('sgPickLord')}</p><div class="sgChips">${st.factions.filter((x) => x.id !== E.PLAYER && x.alive && !E.truceLeft(st, E.PLAYER, x.id)).map((x) => `<button data-g="${id}" data-ef="${x.id}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'envoy', f: x.id }) ? '' : 'disabled'}><span class="sgDot" style="background:${x.color}"></span>${esc(this.fName(x.id))} <small>${F('sgChance', { n: Math.round(E.envoyChance(st, E.PLAYER, id, x.id) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
+        else if (EK(m.kind)) {
+          const ek = EK(m.kind), lords = st.factions.filter((x) => x.id !== E.PLAYER && x.alive && (ek !== 'truce' || !E.truceLeft(st, E.PLAYER, x.id)));
+          h += `<p class="sgPick">${t('sgPickLord')}</p><div class="sgChips">${lords.map((x) => `<button data-g="${id}" data-ef="${x.id}" data-ek="${ek}" ${E.validOrder(st, E.PLAYER, id, { cmd: 'envoy', f: x.id, kind: ek }) ? '' : 'disabled'}><span class="sgDot" style="background:${x.color}"></span>${esc(this.fName(x.id))} <small>${t(PERS_KEY[E.persOf(st, x.id)])} · ${t('sgRel')} ${E.relOf(st, x.id)}${ek === 'gift' ? '' : ' · ' + F('sgChance', { n: Math.round(E.envoyChance(st, E.PLAYER, id, x.id, ek) * 100) })}</small></button>`).join('') || `<small>${t('sgNoTarget')}</small>`}</div>`;
+        }
         else if (m.kind) h += `<div class="sgChips">${m.targets.map((n) => `<button data-g="${id}" data-to="${n}">${esc(cName(n))} <small>${F('sgChance', { n: Math.round(E.plotChance(st, id, n) * 100) })}</small></button>`).join('')}<button data-a="cancel">${t('sgCancel')}</button></div>`;
       } else if (m) {
         // v1.2 (D-104): take other officers of this city along; they get the same order and leave as one army
@@ -1001,6 +1045,7 @@ export class Sanguo {
     if (CITIES[c].pass) return out;
     if (E.poachTargets(st, P, c).length) out.push('poach');
     if (st.factions.some((x) => x.id !== P && x.alive && !E.truceLeft(st, P, x.id))) out.push('envoy');
+    if (st.factions.some((x) => x.id !== P && x.alive)) out.push('gift', 'ally', 'yield');
     return out;
   }
   panelClick(e) {
@@ -1011,6 +1056,7 @@ export class Sanguo {
     if (b.dataset.a === 'hide') { this.togglePanel(true); return; }
     if (b.dataset.a === 'bonds') { this.ui(() => this.bondBook()); return; }
     if (b.dataset.a === 'overview') { this.ui(() => this.overview()); return; }
+    if (b.dataset.a === 'letters') { this.ui(() => this.letters()); return; }
     if (b.dataset.plan && b.dataset.c) { this.s.cities[b.dataset.c].plan = b.dataset.plan; this.save(); this.render(); return; }
     if (b.dataset.tac && b.dataset.g) { const o = this.s.orders[b.dataset.g]; if (o) o.tac = b.dataset.tac; this.save(); this.render(); return; }
     if (b.dataset.dtac && b.dataset.c) { this.s.cities[b.dataset.c].tac = b.dataset.dtac; this.save(); this.render(); return; }
@@ -1024,7 +1070,7 @@ export class Sanguo {
     if (b.dataset.with && this.mode && this.mode.id === id) { const w = this.mode.with || (this.mode.with = []), x = b.dataset.with, k = w.indexOf(x); if (k >= 0) w.splice(k, 1); else w.push(x); this.render(); return; }
     if (b.dataset.bld) { st.orders[id] = { cmd: 'build', b: b.dataset.bld }; this.mode = null; this.render(); return; }
     if (b.dataset.pg) { st.orders[id] = { cmd: 'poach', g: b.dataset.pg }; this.mode = null; this.render(); return; }
-    if (b.dataset.ef) { st.orders[id] = { cmd: 'envoy', f: +b.dataset.ef }; this.mode = null; this.render(); return; }
+    if (b.dataset.ef) { st.orders[id] = { cmd: 'envoy', f: +b.dataset.ef, kind: b.dataset.ek || 'truce' }; this.mode = null; this.render(); return; }
     if (b.dataset.army) { const av = Math.min(E.commandOf(id), this.avail(c, id)); st.orders[id] = { cmd: 'intercept', army: +b.dataset.army, n: Math.floor(av * 0.8) }; this.mode = null; this.render(); return; }
     if (b.dataset.to) { this.mode = this.mode && this.mode.id === id ? this.mode : { id, c, cmd: 'move', targets: [b.dataset.to] }; this.setTarget(b.dataset.to); return; }
     if (b.dataset.cmd) {
@@ -1139,6 +1185,8 @@ export class Sanguo {
       await this.ui(() => this.report(evs));
       try { sfx.setBgmMood('calm'); } catch (e) { /* ignore */ }
       if (st.over) await this.ui(() => this.gameOver());
+      if (!st.over && (st.offers || []).some((o) => !o.done)) await this.ui(() => this.letters()); // v2.4: a lord has written
+      if (st.over) { /* shown above */ }
       else if (E.canUnify(st) && (st.unifyAsk || 0) <= st.turn) { // v2.2: 天下归心
         const tr = (f) => E.ownedBy(st, f).reduce((a, c) => a + st.cities[c].troops, 0), rest = st.factions.filter((f) => f.alive && f.id !== E.PLAYER).reduce((a, f) => a + tr(f.id), 0);
         const r = await this.ui(() => this.layer(`<h2 class="sgCenter sgBigName">${t('sgUnifyT')}</h2><p>${F('sgUnifyQ', { c: E.citiesOf(st, E.PLAYER).length, r: (tr(E.PLAYER) / Math.max(1, rest)).toFixed(1) })}</p><button class="sgBig" data-ok="yes">${t('sgUnifyYes')}</button><button class="sgBig alt" data-ok="no">${t('sgUnifyNo')}</button>`));
@@ -1324,6 +1372,9 @@ export class Sanguo {
       case 'item': return e.f === P ? F('evItem', { c: cName(e.c), g: gName(e.g), i: iName(e.item) }) : F('evItemAI', { f, c: cName(e.c), i: iName(e.item) });
       case 'poach': return e.ok ? (e.from === P ? F('evPoachedYou', { t: gName(e.who), f }) : F('evPoachOk', { g: gName(e.g), t: gName(e.who), from: this.fName(e.from), f })) : e.f === P || e.from === P ? F('evPoachNo', { g: gName(e.g), t: gName(e.who) }) : null;
       case 'truce': return e.ok ? F('evTruceOk', { g: gName(e.g), f, to: this.fName(e.to), n: e.n }) : e.f === P ? F('evTruceNo', { g: gName(e.g), to: this.fName(e.to) }) : null;
+      case 'gift': return e.f === P ? F('evGift', { g: gName(e.g), to: this.fName(e.to), n: e.n }) : null;
+      case 'ally': return e.ok ? F('evAllyOk', { g: gName(e.g), f, to: this.fName(e.to), n: e.n }) : F('evAllyNo', { g: gName(e.g), to: this.fName(e.to) });
+      case 'yield': return e.ok ? F('evYieldOk', { g: gName(e.g), to: this.fName(e.to), lord: gName(e.lord), n: e.n }) : F('evYieldNo', { g: gName(e.g), to: this.fName(e.to) });
       case 'truceEnd': return e.f === P || e.to === P ? F('evTruceEnd', { f, to: this.fName(e.to) }) : null;
       case 'treasure': return e.f === P ? F('evTreasure', { c: cName(e.c), n: e.n }) : null;
       case 'nothing': return e.f === P ? F('evNothing', { c: cName(e.c) }) : null;
@@ -1365,7 +1416,7 @@ export class Sanguo {
   }
   async report(evs) {
     const lines = evs.map((e) => [e, this.evLine(e)]).filter(([, x]) => x);
-    const imp = (e) => ['take', 'fall', 'coalition', 'coalitionEnd', 'duel', 'cut', 'hunger', 'found', 'recruit', 'event', 'harvest', 'plot', 'item', 'poach', 'truce', 'truceEnd'].includes(e.k);
+    const imp = (e) => ['take', 'fall', 'coalition', 'coalitionEnd', 'duel', 'cut', 'hunger', 'found', 'recruit', 'event', 'harvest', 'plot', 'item', 'poach', 'truce', 'truceEnd', 'ally', 'yield'].includes(e.k);
     await this.layer(`<h2>${t('sgReport')} · ${dateText({ turn: this.s.turn - 1 })}</h2>
       <ul class="sgEv">${lines.length ? lines.map(([e, x]) => `<li class="${imp(e) ? 'imp' : ''}${e.f === E.PLAYER ? ' me' : ''}">${esc(x)}</li>`).join('') : `<li>${t('sgQuiet')}</li>`}</ul>
       <button class="sgBig" data-ok="1">${t('sgContinue')}</button>`);
