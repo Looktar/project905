@@ -194,6 +194,11 @@ export const CFG = {
     itemCount: 10, itemUR: 2, itemBase: 0.06, itemPerInt: 0.0016,
     // v1.1 (D-98): envoys (停战) and poaching (挖角)
     envoyCost: 150, envoyBase: 0.35, envoyPol: 1 / 160, envoyStrong: 0.25, envoyWeak: 0.15, envoyCoalition: 0.3, envoyMonths: 6,
+    // v2.4 (D-130): lord tempers, relations, gifts, alliances, surrender, letters from the lords
+    persHawk: 30, persKeep: 25, persThr: 0.1, envoyPers: 0.1, envoyRel: 0.3, relAtk: 0.3, relAttack: 25, relPlot: 10, relPoach: 8, relDrift: 1, relAlly: 1, truceRel: 10,
+    giftGold: 300, giftRel: 15, giftPol: 0.1, allyRel: 30, allyHard: 0.1, allyMonths: 12, allyRelGain: 20, allyBold: 0.15,
+    yieldCities: 2, yieldRatio: 3, yieldBase: 0.1, yieldPer: 0.08, yieldMax: 0.35, yieldNo: 10, yieldLoyal: 60,
+    offerAlly: 0.25, offerAllyRel: -10, offerNo: 5, offerGap: 8, tributeChance: 0.2, tributeRel: 10, tributeRatio: 1.3, tributeGold: [200, 1000], tributeFrac: 0.2, tributeMonths: 4, tributeYes: 15, tributeNo: 20,
     poachCost: 120, poachLoyal: 0.8, poachInt: 1 / 200, poachBond: 0.2, poachLosing: 0.1, poachSpurned: 6, aiPoach: 0.2, aiPoachMin: 0.25,
   },
   bench: { warmup: 5, measure: 15 },  // seconds, ?bench=1

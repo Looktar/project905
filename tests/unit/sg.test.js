@@ -1369,3 +1369,101 @@ describe('v2.3: ranks, sworn brothers, rewards, walk-outs (D-129)', () => {
     expect(got).toBeGreaterThan(3);
   });
 });
+
+describe('v2.4 diplomacy and lord personalities (D-130)', () => {
+  const fresh = (seed = 5) => E.newGame(seed);
+  const envoy = (s) => E.factionGens(s, E.PLAYER)[0];
+  it('every computer lord has a temper; the player has none', () => {
+    const s = fresh();
+    for (const f of [1, 2, 3]) expect(E.PERS).toContain(E.persOf(s, f));
+    expect(E.persOf(s, E.PLAYER)).toBe('steady');
+  });
+  it('a gift always lands, costs gold and warms the lord to you', () => {
+    const s = fresh(); s.factions[0].gold = 1000;
+    const id = envoy(s), o = { cmd: 'envoy', f: 1, kind: 'gift' };
+    expect(E.validOrder(s, 0, id, o)).toBe(true);
+    const their = s.factions[1].gold;
+    E.beginTurn(s, { [id]: o });
+    expect(E.relOf(s, 1)).toBeGreaterThan(0);
+    expect(s.factions[1].gold).toBeGreaterThanOrEqual(their + CFG.sg.giftGold - 1);
+    expect(s.events.some((e) => e.k === 'gift' && e.to === 1 && e.n > 0)).toBe(true);
+  });
+  it('relations move the envoy odds, and fade month by month', () => {
+    const s = fresh(), id = envoy(s), p0 = E.envoyChance(s, 0, id, 1);
+    s.rel[1] = 60; expect(E.envoyChance(s, 0, id, 1)).toBeGreaterThan(p0);
+    s.rel[1] = -60; expect(E.envoyChance(s, 0, id, 1)).toBeLessThan(p0);
+    E.runTurn(s, {});
+    expect(E.relOf(s, 1)).toBe(-60 + CFG.sg.relDrift);
+  });
+  it('an alliance needs goodwill, then holds the peace for a year', () => {
+    const s = fresh(); s.factions[0].gold = 1000;
+    const id = envoy(s), o = { cmd: 'envoy', f: 2, kind: 'ally' };
+    expect(E.validOrder(s, 0, id, o)).toBe(false);
+    s.rel[2] = 100;
+    expect(E.validOrder(s, 0, id, o)).toBe(true);
+    let ok = false;
+    for (let seed = 1; seed < 40 && !ok; seed++) {
+      const g = fresh(seed); g.factions[0].gold = 1000; g.rel[2] = 100;
+      const e = envoy(g); E.beginTurn(g, { [e]: { cmd: 'envoy', f: 2, kind: 'ally' } });
+      if (g.events.some((x) => x.k === 'ally' && x.ok)) { ok = true; expect(E.allied(g, 2)).toBe(true); expect(E.truceLeft(g, 0, 2)).toBe(CFG.sg.allyMonths + 1); expect(E.isAlly(g, 2, 0)).toBe(true); }
+    }
+    expect(ok).toBe(true);
+  });
+  it('only a lord on his last legs can be talked into surrender, and then everything comes over', () => {
+    let done = false;
+    for (let seed = 1; seed < 80 && !done; seed++) {
+      const s = fresh(seed); s.factions[0].gold = 1000;
+      const id = envoy(s), o = { cmd: 'envoy', f: 3, kind: 'yield' };
+      expect(E.validOrder(s, 0, id, o)).toBe(false); // equals at the start
+      for (const c of E.ownedBy(s, 0)) s.cities[c].troops = 30000;
+      for (const c of E.ownedBy(s, 3)) s.cities[c].troops = 500;
+      s.rel[3] = 100;
+      expect(E.validOrder(s, 0, id, o)).toBe(true);
+      const gens = E.factionGens(s, 3), cities = E.ownedBy(s, 3);
+      E.beginTurn(s, { [id]: o });
+      const e = s.events.find((x) => x.k === 'yield');
+      if (!e || !e.ok) continue;
+      done = true;
+      expect(s.factions[3].alive).toBe(false);
+      for (const c of cities) expect(s.cities[c].owner).toBe(0);
+      for (const g of gens) expect(s.gens[g].f).toBe(0);
+      for (let b = E.nextBattle(s); b; b = E.nextBattle(s)) E.resolveBattle(s, b.m, null, null);
+      E.endTurn(s);
+      expect(s.armies.every((a) => a.f !== 3)).toBe(true);
+    }
+    expect(done).toBe(true);
+  });
+  it('attacking a lord sours him, and a soured lord rates your cities higher', () => {
+    const s = fresh();
+    s.rel[1] = 0; const a = E.relOf(s, 1);
+    const m = { f: 0, to: s.factions[1].cap, gens: [envoy(s)], troops: 3000, terr: 1 };
+    s.events = []; E.resolveBattle(s, m);
+    expect(E.relOf(s, 1)).toBeLessThan(a);
+  });
+  it('letters: tribute and alliance offers can be answered once, and say no without breaking anything', () => {
+    let seenT = false, seenA = false;
+    for (let seed = 1; seed < 60 && !(seenT && seenA); seed++) {
+      const s = fresh(seed);
+      for (let i = 0; i < 40 && !s.over; i++) {
+        E.runTurn(s, {});
+        expect(s.offers.length).toBeLessThanOrEqual(1);
+        const o = s.offers[0];
+        if (!o) continue;
+        const gold = s.factions[0].gold;
+        if (o.k === 'tribute') {
+          seenT = true;
+          if (E.canAnswer(s, 0)) { expect(E.answer(s, 0, true)).toBe(true); expect(s.factions[0].gold).toBe(gold - o.n); expect(E.truceLeft(s, 0, o.f)).toBe(o.m + 1); }
+          else { const r = E.relOf(s, o.f); expect(E.answer(s, 0, false)).toBe(true); expect(E.relOf(s, o.f)).toBeLessThan(r + 1); }
+        } else { seenA = true; expect(E.answer(s, 0, true)).toBe(true); expect(E.allied(s, o.f)).toBe(true); }
+        expect(E.answer(s, 0, true)).toBe(false);
+      }
+    }
+    expect(seenT || seenA).toBe(true);
+  });
+  it('old saves without the new fields still play', () => {
+    const s = fresh(); delete s.rel; delete s.ally; delete s.offers;
+    expect(E.relOf(s, 1)).toBe(0); expect(E.allied(s, 1)).toBe(false);
+    E.runTurn(s, {});
+    expect(Array.isArray(s.offers)).toBe(true);
+  });
+});
